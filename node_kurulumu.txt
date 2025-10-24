@@ -1,0 +1,3 @@
+npm i express pg cors cookie-parser jsonwebtoken bcrypt dotenv nodemailer speakeasy qrcode-terminal multer
+npm init -y
+npm start

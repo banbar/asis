@@ -2628,7 +2628,7 @@ async function login(){
   const usernameOrEmail = qs('#login-user')?.value.trim();
   const password = qs('#login-pass')?.value;
   const totp = (qs('#login-totp')?.value.trim() || undefined);
-  if (!usernameOrEmail || !password) return setError(qs('#login-error'), 'Kullanıcı adı ve şifre zorunludur.');
+  if (!usernameOrEmail || !password) return setError(qs('#login-error'), 'Kullanıcı adı ve parola zorunludur.');
 
   const btn = qs('#btn-login'); 
   if (btn) btn.disabled = true;
@@ -2670,9 +2670,9 @@ async function register(){
   const surname = qs('#reg-surname')?.value.trim() || undefined;
 
   if (!username || !email || !password) 
-    return setError(qs('#register-error'), 'Kullanıcı adı, e-posta ve şifre zorunludur.');
+    return setError(qs('#register-error'), 'Kullanıcı adı, e-posta ve parola zorunludur.');
   if (!isStrongPassword(password)) 
-    return setError(qs('#register-error'), 'Zayıf şifre: En az 8 karakter, bir büyük, bir küçük harf ve bir sembol içermeli.');
+    return setError(qs('#register-error'), 'Zayıf parola: En az 8 karakter, bir büyük, bir küçük harf ve bir sembol içermeli.');
 
   const btn = qs('#btn-register'); 
   if (btn) btn.disabled = true;
@@ -2807,7 +2807,7 @@ qs('#btn-forgot-verify')?.addEventListener('click', async () => {
       return;
     }
 
-    toast('Kod doğrulandı, yeni şifrenizi girin', 'success');
+    toast('Kod doğrulandı, yeni parolanızı girin', 'success');
     showForgotStep(3);
   } catch(e) {
     setError(qs('#forgot-error'), 'Hata: ' + e.message);
@@ -2826,9 +2826,9 @@ qs('#btn-forgot-reset')?.addEventListener('click', async () => {
   if (!email || !code || !newPw || !newPw2) 
     return setError(qs('#forgot-error'), 'Tüm alanları doldurun.');
   if (newPw !== newPw2) 
-    return setError(qs('#forgot-error'), 'Şifreler eşleşmiyor.');
+    return setError(qs('#forgot-error'), 'Parolalar eşleşmiyor.');
   if (!isStrongPassword(newPw)) 
-    return setError(qs('#forgot-error'), 'Zayıf şifre: En az 8 karakter, bir büyük, bir küçük harf ve bir sembol içermeli.');
+    return setError(qs('#forgot-error'), 'Zayıf parola: En az 8 karakter, bir büyük, bir küçük harf ve bir sembol içermeli.');
 
   const btn = qs('#btn-forgot-reset'); 
   if (btn) btn.disabled = true;
@@ -2841,11 +2841,11 @@ qs('#btn-forgot-reset')?.addEventListener('click', async () => {
     const data = await r.json().catch(() => ({}));
 
     if (!r.ok) {
-      setError(qs('#forgot-error'), data.message || data.error || 'Şifre sıfırlanamadı.');
+      setError(qs('#forgot-error'), data.message || data.error || 'Parola sıfırlanamadı.');
       return;
     }
 
-    alert('Şifreniz sıfırlandı! Giriş yapabilirsiniz.');
+    alert('Parolanız sıfırlandı! Giriş yapabilirsiniz.');
     resetForgotForm();
     hide(qs('#forgot-card')); 
     show(qs('#login-card'));

@@ -24,11 +24,11 @@
     "body-parser": "^2.2.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
-    "dotenv": "^17.2.1",
+    "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
-    "nodemailer": "^7.0.6",
+    "nodemailer": "^7.0.10",
     "pg": "^8.16.3",
     "qrcode-terminal": "^0.12.0",
     "speakeasy": "^2.0.0"
@@ -37,5 +37,13 @@
     "@playwright/test": "^1.48.0",
     "nodemon": "^3.1.10",
     "npm-run-all": "^4.1.5"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/banbar/asis.git"
+  },
+  "bugs": {
+    "url": "https://github.com/banbar/asis/issues"
+  },
+  "homepage": "https://github.com/banbar/asis#readme"
 }
