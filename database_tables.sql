@@ -1,5 +1,5 @@
 -- =========================================================
--- Afet Yönetimi – PostgreSQL tam kurulum betiği 
+-- Afet Yönetimi – PostgreSQL tam kurulum SQL komutları
 -- =========================================================
 
 -- 0) Gerekli eklentiler
