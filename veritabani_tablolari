@@ -1,0 +1,385 @@
+
+
+INSERT INTO users (username, password_hash, role, name, surname, email, email_verified, is_verified)
+VALUES (
+  'supervisor1',
+  crypt('AFET123', gen_salt('bf')),
+  'supervisor',
+  'Supervisor',
+  'Bir',
+  'supervisor1@gmail.com',
+  TRUE,
+  TRUE
+);
+UPDATE users
+SET two_factor_secret='JYTHULBQMI7TQRBTGFZHSRLIPN4TORKQ', two_factor_enabled=TRUE
+WHERE username='supervisor1';
+
+
+
+
+-- Silinmiş bir kullanıcıyı geri getirmek için örnek SQL
+BEGIN;
+
+UPDATE public.users
+SET is_active = TRUE,
+    deleted_by = NULL,
+    deleted_by_role = NULL,
+    deleted_by_id = NULL,
+    deleted_at = NULL
+WHERE id = 123   -- burada gerçek kullanıcı ID’sini yaz
+  AND COALESCE(is_active, FALSE) = FALSE
+RETURNING id, username, is_active;
+
+COMMIT;
+
+
+
+
+
+
+-- Bir kullanıcıyı ve onun oluşturduğu tüm olayları, olay türlerini ve kayıtları silmek için örnek SQL
+DO $$
+DECLARE
+  v_uid integer := 37;  -- SİLECEĞİN KULLANICI ID’Sİ
+  v_username text;
+BEGIN
+  -- Kullanıcıyı kilitle ve adını al
+  SELECT username INTO v_username
+  FROM public.users
+  WHERE id = v_uid
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'user_not_found';
+  END IF;
+
+  -- Bu kullanıcının oluşturduğu OLAYLARA bağlı kayıtları sil
+  DELETE FROM public.kayit k
+  WHERE k.olay_id IN (
+    SELECT o.olay_id
+    FROM public.olay o
+    WHERE (o.created_by_id = v_uid)
+       OR (o.created_by_id IS NULL AND o.created_by_name = v_username)
+  );
+
+  -- OLAY’ları sil
+  DELETE FROM public.olay o
+  WHERE (o.created_by_id = v_uid)
+     OR (o.created_by_id IS NULL AND o.created_by_name = v_username);
+
+  -- OLAY TÜRLERİ’ni (olaylar tablosu) sil
+  DELETE FROM public.olaylar t
+  WHERE (t.created_by_id = v_uid)
+     OR (t.created_by_id IS NULL AND t.created_by_name = v_username);
+
+  -- En son KULLANICI’yı sil
+  DELETE FROM public.users u
+  WHERE u.id = v_uid;
+END$$;
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- Gerekli: pgcrypto (crypt/gen_salt için)
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+BEGIN;
+
+-- Uygulama dışı doğrudan yazımı engelleyen trigger'ı atlatmak için
+-- bu oturumda application_name'i uygulamanınki ile aynı yapıyoruz.
+SET LOCAL application_name = 'afet-yonetimi';
+
+DO $$
+DECLARE
+  -- >>> İSTEDİĞİN GİBİ DÜZENLE <<<
+  v_username       text := 'supervisor1';
+  v_password_plain text := 'itpc501aB.';   -- politika: ≥8, [a-z], [A-Z], noktalama/simge
+  v_role           text := 'supervisor';
+  v_name           text := 'Supervisor';
+  v_surname        text := 'Bir';
+  v_email          text := 'supervisor1@gmail.com';
+  v_totp_base32    text := 'JYTHULBQMI7TQRBTGFZHSRLIPN4TORKQ';
+
+  v_new_id integer;
+BEGIN
+  -- Parola politikası kontrolü (uymazsa net hata ver)
+  IF length(v_password_plain) < 8
+     OR v_password_plain !~ '[a-z]'
+     OR v_password_plain !~ '[A-Z]'
+     OR v_password_plain !~ '[[:punct:]]'
+  THEN
+    RAISE EXCEPTION
+      'Şifre politikasına uymuyor: En az 8 karakter, en az bir küçük harf, en az bir büyük harf ve en az bir noktalama/simge içermeli.'
+      USING ERRCODE = 'P0001';
+  END IF;
+
+  -- En küçük boş ID'yi bul (silinmiş ID'leri yeniden kullanır; hiç yoksa 1)
+  SELECT gs.id
+    INTO v_new_id
+  FROM (
+    SELECT generate_series(1, COALESCE((SELECT MAX(id) FROM public.users),0) + 1) AS id
+  ) AS gs
+  LEFT JOIN public.users u ON u.id = gs.id
+  WHERE u.id IS NULL
+  ORDER BY gs.id
+  LIMIT 1;
+
+  -- Kullanıcıyı ekle (parola bcrypt ile hashlenir)
+  INSERT INTO public.users
+    (id, username, password_hash, role, name, surname, email, email_verified, is_verified)
+  VALUES
+    (v_new_id, v_username, crypt(v_password_plain, gen_salt('bf')),
+     v_role, v_name, v_surname, v_email, TRUE, TRUE);
+
+  -- Sequence'i senkronla ki bir sonraki ekleme doğru gitsin
+  PERFORM setval(
+    pg_get_serial_sequence('public.users','id'),
+    COALESCE((SELECT MAX(id) FROM public.users), 0)
+  );
+
+  -- TOTP'yi yaz (düz BASE32). Uygulama ilk girişte/boot'ta otomatik şifreler (enc:v1:...).
+  UPDATE public.users
+     SET two_factor_secret = v_totp_base32,
+         two_factor_enabled = TRUE
+   WHERE username = v_username;
+END;
+$$;
+
+COMMIT;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- =========================================================
+--  OLAY (events) — Sıfırdan Kurulum (QField uyumlu, TEXT(JSON) attachments)
+--  PostgreSQL 13+  |  Gerekli: postgis
+-- =========================================================
+
+-- PostGIS (geom için)
+CREATE EXTENSION IF NOT EXISTS postgis;
+
+-- Uygulama yardımcı fonksiyonları için şema
+CREATE SCHEMA IF NOT EXISTS app_api;
+
+-- =========================================================
+--  (İsteğe bağlı) Pasife alma meta’sını dolduran trigger fonksiyonu
+--  index.js -> ensureDbSqlHelpers() aynı mantık
+-- =========================================================
+CREATE OR REPLACE FUNCTION app_api.olay_fill_deactivated_meta()
+RETURNS trigger LANGUAGE plpgsql AS $fn$
+DECLARE
+  actor_name text := current_setting('app.actor_name', true);
+  actor_role text := current_setting('app.actor_role', true);
+  actor_id   int  := NULLIF(current_setting('app.actor_id', true),'')::int;
+BEGIN
+  IF COALESCE(OLD.active,true)=true AND COALESCE(NEW.active,false)=false THEN
+    IF NEW.deactivated_by_name IS NULL THEN NEW.deactivated_by_name := COALESCE(actor_name, current_user); END IF;
+    IF NEW.deactivated_by_role_name IS NULL THEN NEW.deactivated_by_role_name := COALESCE(actor_role, 'db_user'); END IF;
+    IF NEW.deactivated_by_id IS NULL THEN NEW.deactivated_by_id := actor_id; END IF;
+    IF NEW.deactivated_at IS NULL THEN NEW.deactivated_at := NOW(); END IF;
+  END IF;
+  RETURN NEW;
+END
+$fn$;
+
+
+
+
+
+
+
+
+-- OLAY tablosu
+DROP TABLE IF EXISTS public.olay CASCADE;
+
+CREATE TABLE public.olay (
+  olay_id               BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+
+  -- Konum
+  enlem                 NUMERIC(9,6)  NOT NULL,      
+  boylam                NUMERIC(9,6)  NOT NULL,      
+  geom                  geometry(Point, 4326),
+
+  -- Tür (olaylar tablosundaki o_id)
+  olay_turu             INTEGER NULL,
+  -- FK’yi olaylar(o_id)’a bağla; yoksa hataya düşmesin diye ayrı komutta ekleyeceğiz
+  -- (aşağıda “ALTER TABLE ... ADD CONSTRAINT ...” satırına bakın)
+
+  -- İçerik
+  aciklama              TEXT NULL,
+
+  -- Ekler (TEXT içinde JSON dizi – index.js böyle bekliyor)
+  photo_urls            TEXT NOT NULL DEFAULT '[]',
+  video_urls            TEXT NOT NULL DEFAULT '[]',
+
+  -- Oluşturan kişi meta
+  created_by_name       TEXT,
+  created_by_role_name  TEXT,
+  created_by_id         INTEGER,
+
+  -- Aktif / Pasif (soft delete)
+  active                BOOLEAN NOT NULL DEFAULT TRUE,
+  deactivated_by_name        TEXT,
+  deactivated_by_role_name   TEXT,
+  deactivated_by_id          INTEGER,
+  deactivated_at             TIMESTAMPTZ,
+
+  -- Basit aralık kontrolleri
+  CONSTRAINT chk_enlem  CHECK (enlem  BETWEEN -90  AND 90),
+  CONSTRAINT chk_boylam CHECK (boylam BETWEEN -180 AND 180)
+);
+
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema='public' AND table_name='olaylar'
+  ) THEN
+    BEGIN
+      ALTER TABLE public.olay
+        ADD CONSTRAINT olay_olaylar_fk
+        FOREIGN KEY (olay_turu) REFERENCES public.olaylar(o_id)
+        ON UPDATE RESTRICT ON DELETE SET NULL;
+    EXCEPTION WHEN duplicate_object THEN
+      -- zaten varsa sessizce geç
+      NULL;
+    END;
+  END IF;
+END$$;
+
+-- =========================================================
+CREATE OR REPLACE FUNCTION app_api.olay_set_geom()
+RETURNS trigger LANGUAGE plpgsql AS $fn$
+BEGIN
+  IF NEW.enlem IS NOT NULL AND NEW.boylam IS NOT NULL THEN
+    NEW.geom := ST_SetSRID(ST_MakePoint(NEW.boylam, NEW.enlem), 4326);
+  END IF;
+  RETURN NEW;
+END
+$fn$;
+
+DROP TRIGGER IF EXISTS trg_olay_set_geom_ins ON public.olay;
+DROP TRIGGER IF EXISTS trg_olay_set_geom_upd ON public.olay;
+
+CREATE TRIGGER trg_olay_set_geom_ins
+BEFORE INSERT ON public.olay
+FOR EACH ROW EXECUTE FUNCTION app_api.olay_set_geom();
+
+CREATE TRIGGER trg_olay_set_geom_upd
+BEFORE UPDATE OF enlem, boylam ON public.olay
+FOR EACH ROW EXECUTE FUNCTION app_api.olay_set_geom();
+
+-- index.js’in pasife alma meta doldurma tetikleyicisi
+DROP TRIGGER IF EXISTS trg_olay_fill_deactivated ON public.olay;
+CREATE TRIGGER trg_olay_fill_deactivated
+BEFORE UPDATE OF active ON public.olay
+FOR EACH ROW EXECUTE FUNCTION app_api.olay_fill_deactivated_meta();
+
+-- =========================================================
+--  İNDEKSLER
+-- =========================================================
+-- Aktif filtreleri hızlı olsun
+CREATE INDEX IF NOT EXISTS olay_active_idx ON public.olay (active) WHERE active IS TRUE;
+
+-- Tür bazlı filtreler
+CREATE INDEX IF NOT EXISTS olay_tur_idx    ON public.olay (olay_turu);
+
+-- Oluşturan bazlı filtreler
+CREATE INDEX IF NOT EXISTS olay_creator_id_idx   ON public.olay (created_by_id);
+CREATE INDEX IF NOT EXISTS olay_creator_name_idx ON public.olay (created_by_name);
+
+-- Geometri (mekânsal sorgular için)
+CREATE INDEX IF NOT EXISTS olay_geom_gix ON public.olay USING GIST (geom);
+
+-- Enlem/Boylam birlikte (sayı bazlı sıralama/filtre)
+CREATE INDEX IF NOT EXISTS olay_lat_lon_idx ON public.olay (enlem, boylam);
+
+-- Sık “son eklenenler” için identity üzerinden ters sıralama (planner’a ipucu)
+CREATE INDEX IF NOT EXISTS olay_id_desc_idx ON public.olay (olay_id DESC);
+
+
+
+
+
+
+
+
+
+
+-- =========================================================
+
+-- Yardımcı fonksiyonlar için şema
+CREATE SCHEMA IF NOT EXISTS app_api;
+
+-- Pasife alma meta’sını otomatik dolduran fonksiyon
+CREATE OR REPLACE FUNCTION app_api.olaylar_fill_deactivated_meta()
+RETURNS trigger LANGUAGE plpgsql AS $fn$
+DECLARE
+  actor_name text := current_setting('app.actor_name', true);
+  actor_role text := current_setting('app.actor_role', true);
+  actor_id   int  := NULLIF(current_setting('app.actor_id', true),'')::int;
+BEGIN
+  IF COALESCE(OLD.active,true)=true AND COALESCE(NEW.active,false)=false THEN
+    IF NEW.deactivated_by_name IS NULL THEN NEW.deactivated_by_name := COALESCE(actor_name, current_user); END IF;
+    IF NEW.deactivated_by_role_name IS NULL THEN NEW.deactivated_by_role_name := COALESCE(actor_role, 'db_user'); END IF;
+    IF NEW.deactivated_by_id IS NULL THEN NEW.deactivated_by_id := actor_id; END IF;
+    IF NEW.deactivated_at IS NULL THEN NEW.deactivated_at := NOW(); END IF;
+  END IF;
+  RETURN NEW;
+END
+$fn$;
+
+-- OLAYLAR tablosu
+DROP TABLE IF EXISTS public.olaylar CASCADE;
+
+CREATE TABLE public.olaylar (
+  o_id                    BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  o_adi                   TEXT NOT NULL,           -- Tür adı (benzersiz)
+  active                  BOOLEAN NOT NULL DEFAULT TRUE,
+
+  created_by_name         TEXT,
+  created_by_role_name    TEXT,
+  created_by_id           INTEGER,
+  created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+  deactivated_by_name     TEXT,
+  deactivated_by_role_name TEXT,
+  deactivated_by_id       INTEGER,
+  deactivated_at          TIMESTAMPTZ,
+
+  CONSTRAINT olaylar_o_adi_key UNIQUE (o_adi)
+);
+
+DROP TRIGGER IF EXISTS trg_olaylar_fill_deactivated ON public.olaylar;
+CREATE TRIGGER trg_olaylar_fill_deactivated
+BEFORE UPDATE OF active ON public.olaylar
+FOR EACH ROW EXECUTE FUNCTION app_api.olaylar_fill_deactivated_meta();
+
+CREATE INDEX IF NOT EXISTS olaylar_active_idx         ON public.olaylar (active) WHERE active IS TRUE;
+CREATE INDEX IF NOT EXISTS olaylar_created_by_id_idx  ON public.olaylar (created_by_id);
+CREATE INDEX IF NOT EXISTS olaylar_created_at_idx     ON public.olaylar (created_at DESC);
