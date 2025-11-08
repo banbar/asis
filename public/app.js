@@ -825,11 +825,11 @@ function buildDateFilterDropdown(data, state) {
         <span>(Tümünü Seç)</span>
       </label>
       <label class="filter-option" style="background:#e3f2fd; border-radius:4px; padding:4px 8px;">
-        <input type="checkbox" class="filter-sort-newest" />
+        <input type="radio" name="date-sort-order" class="filter-sort-newest" />
         <span>📅 En Son Eklenen Başta</span>
       </label>
       <label class="filter-option" style="background:#fff3e0; border-radius:4px; padding:4px 8px;">
-        <input type="checkbox" class="filter-sort-oldest" />
+        <input type="radio" name="date-sort-order" class="filter-sort-oldest" />
         <span>📅 İlk Eklenen Başta</span>
       </label>
       <hr style="margin:8px 0; border:none; border-top:1px solid var(--border);" />
@@ -1161,16 +1161,31 @@ const tableStates = {
 function applyFilters(tableKey) {
   const state = tableStates[tableKey];
   if (!state) return;
+  
+  // Hiçbir filtre yoksa tüm veriyi göster
+  if (Object.keys(state.filters).length === 0) {
+    state.filtered = [...state.data];
+    state.currentPage = 1;
+    renderTable(tableKey);
+    return;
+  }
+  
   state.filtered = state.data.filter(item => {
     for (const [column, selectedValues] of Object.entries(state.filters)) {
-      if (!selectedValues || selectedValues.length === 0) continue;
+      // Eğer selectedValues boş array ise (hiçbir seçenek seçilmemiş), bu item'ı gösterme
+      if (Array.isArray(selectedValues) && selectedValues.length === 0) {
+        return false;
+      }
+      
+      // Eğer selectedValues null veya undefined ise devam et (filtre yok sayılır)
+      if (!selectedValues) continue;
       
       let itemValue = '';
       
       switch(tableKey) {
         case 'types':
           if (column === 'name') itemValue = item.o_adi || '';
-          if (column === 'good') itemValue = (item.good === true || item.good === 'true' || item.good === 1) ? 'Evet' : 'Hayır';
+          if (column === 'good') itemValue = (item.good === true || item.good === 'true' || item.good === 1) ? 'Faydalı' : 'Faydasız';
           if (column === 'creator') itemValue = item.created_by_name || '-';
           break;
         case 'users':
@@ -1740,26 +1755,20 @@ function attachFilterEvents(tableKey) {
             });
           }
           
-          // SIRALAMA CHECKBOX'LARI (TARİH İÇİN)
+          // SIRALAMA RADIO BUTTON'LARI (TARİH İÇİN)
           if (tableKey === 'events' && column === 'date') {
             const newestBox = dropdown.querySelector('.filter-sort-newest');
             const oldestBox = dropdown.querySelector('.filter-sort-oldest');
             
             newestBox?.addEventListener('change', (e) => {
               if (e.target.checked) {
-                if (oldestBox) oldestBox.checked = false;
                 applySortFilter('newest');
-              } else {
-                applySortFilter(null);
               }
             });
             
             oldestBox?.addEventListener('change', (e) => {
               if (e.target.checked) {
-                if (newestBox) newestBox.checked = false;
                 applySortFilter('oldest');
-              } else {
-                applySortFilter(null);
               }
             });
           }
@@ -1771,8 +1780,10 @@ function attachFilterEvents(tableKey) {
             checkboxes.forEach(cb => cb.checked = e.target.checked);
             
             if (e.target.checked) {
+              // Tümü seçiliyse filtreyi kaldır
               delete tableStates[tableKey].filters[column];
             } else {
+              // Hiçbiri seçili değilse boş array ata (0 kayıt göster)
               tableStates[tableKey].filters[column] = [];
             }
             applyFilters(tableKey);
@@ -1785,15 +1796,19 @@ function attachFilterEvents(tableKey) {
               const checkedBoxes = Array.from(dropdown.querySelectorAll('.filter-checkbox:checked'));
               const allBoxes = dropdown.querySelectorAll('.filter-checkbox');
               
+              const selectAllBox = dropdown.querySelector('.filter-select-all');
+              
               if (checkedBoxes.length === 0) {
+                // Hiçbiri seçili değil -> Boş array (0 kayıt göster)
                 tableStates[tableKey].filters[column] = [];
+                if (selectAllBox) selectAllBox.checked = false;
               } else if (checkedBoxes.length === allBoxes.length) {
+                // Hepsi seçili -> Filtreyi kaldır (tümünü göster)
                 delete tableStates[tableKey].filters[column];
-                const selectAllBox = dropdown.querySelector('.filter-select-all');
                 if (selectAllBox) selectAllBox.checked = true;
               } else {
+                // Bazıları seçili -> Sadece seçilenleri göster
                 tableStates[tableKey].filters[column] = checkedBoxes.map(cb => cb.value);
-                const selectAllBox = dropdown.querySelector('.filter-select-all');
                 if (selectAllBox) selectAllBox.checked = false;
               }
               
@@ -1806,7 +1821,7 @@ function attachFilterEvents(tableKey) {
     });
   });
 }
-// Filter icon görünümünü güncelle
+
 function updateFilterIcon(tableKey, column) {
   const table = qs(`#${tableKey}-table`);
   if (!table) return;
@@ -1822,7 +1837,6 @@ function updateFilterIcon(tableKey, column) {
   }
 }
 
-// Sayfalama kontrollerini oluştur
 function renderPagination(tableKey) {
   const state = tableStates[tableKey];
   const infoEl = qs(`#${tableKey}-pagination-info`);
@@ -1835,7 +1849,7 @@ function renderPagination(tableKey) {
   const totalPages = pageSize > 0 ? Math.ceil(total / pageSize) : 1;
   const currentPage = Math.min(state.currentPage, totalPages);
   
-// Bilgi metni - FİLTRELEME DURUMUNU GÖSTER
+
   const totalData = state.data.length;
   const totalFiltered = state.filtered.length;
   
@@ -1855,7 +1869,7 @@ function renderPagination(tableKey) {
     }
   }
   
-  // Sayfa kontrolleri
+
   if (totalPages <= 1) {
     controlsEl.innerHTML = '';
     return;
@@ -1863,11 +1877,10 @@ function renderPagination(tableKey) {
   
   let html = '';
   
-  // İlk sayfa ve önceki
+
   html += `<button ${currentPage === 1 ? 'disabled' : ''} data-page="1">‹‹</button>`;
   html += `<button ${currentPage === 1 ? 'disabled' : ''} data-page="${currentPage - 1}">‹</button>`;
   
-  // Sayfa numaraları (max 7 tane göster)
   const maxButtons = 7;
   let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
   let endPage = Math.min(totalPages, startPage + maxButtons - 1);
@@ -2211,8 +2224,7 @@ function openUpdateTypeModal(typeId, currentName, currentGood) {
   if (goodRadioYes) goodRadioYes.checked = isGood;
   if (goodRadioNo) goodRadioNo.checked = !isGood;
   showModal(modal);
-  
-  // Önceki event'leri temizle
+
   const newSaveBtn = saveBtn.cloneNode(true);
   const newCancelBtn = cancelBtn.cloneNode(true);
   saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
@@ -2637,10 +2649,15 @@ qs('#btn-add-type')?.addEventListener('click', async () => {
       throw new Error(errorMsg);
     }
     
-    const nt = qs('#new-type-name'); 
-    const ng = qs('#new-type-good');
+    const nt = qs('#new-type-name');
     if (nt) nt.value = '';
-    if (ng) ng.checked = false;
+    
+    // Radio buttonları sıfırla
+    const goodYes = qs('#new-type-good-yes');
+    const goodNo = qs('#new-type-good-no');
+    if (goodYes) goodYes.checked = true;
+    if (goodNo) goodNo.checked = false;
+    
     await loadOlayTypes();
     toast('Yeni olay türü eklendi', 'success');
   } catch(e) {

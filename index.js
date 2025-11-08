@@ -51,7 +51,7 @@ const needSSL = sslEnv === '1' || sslEnv === 'true' || sslEnv === 'require' || s
 const BASE_DB_CFG = DATABASE_URL
   ? {
       connectionString: DATABASE_URL,
-      application_name: 'afet-yonetimi',
+      application_name: 'asis',
       max: parseInt(process.env.PGPOOL_MAX, 10),
       ssl: needSSL ? { rejectUnauthorized: false } : undefined,
     }
@@ -61,7 +61,7 @@ const BASE_DB_CFG = DATABASE_URL
       user: process.env.PGUSER,
       password: process.env.PGPASSWORD,
       database: process.env.PGDATABASE,
-      application_name: 'afet-yonetimi',
+      application_name: 'asis',
       max: parseInt(process.env.PGPOOL_MAX, 10),
       ssl: needSSL ? { rejectUnauthorized: false } : undefined,
     };

@@ -254,6 +254,13 @@
         padding:6px 8px;
       }
     }
+    
+    #btn-add-type {
+      padding: 0.35rem 0.7rem !important;
+      font-size: 0.9rem !important;
+      height: auto !important;
+      min-height: 32px !important;
+    }
   </style>
 </head>
 <body>
@@ -444,11 +451,10 @@
         <div id="types-tab" class="tab-content active">
           <div class="panel">
             <div style="margin:6px 0;">
-              <div class="row" style="gap:8px; align-items:center; margin-bottom:8px;">
-                <input id="new-type-name" type="text" placeholder="Yeni olay türü adı" style="flex:1;" />
-                <button id="btn-add-type" class="btn">Ekle</button>
+              <div style="margin-bottom:8px;">
+                <input id="new-type-name" type="text" placeholder="Yeni olay türü adı" style="width:100%;" />
               </div>
-              <div style="margin-top:8px;">
+              <div style="margin-bottom:8px;">
                 <label style="display:block; margin-bottom:6px; font-weight:500;">Vatandaşa Faydalı mı?</label>
                 <label style="display:inline-flex; align-items:center; gap:4px; margin-right:16px;">
                   <input type="radio" name="new-type-good" id="new-type-good-yes" value="true" checked style="margin:0;" />
@@ -458,6 +464,9 @@
                   <input type="radio" name="new-type-good" id="new-type-good-no" value="false" style="margin:0;" />
                   <span>Faydasız</span>
                 </label>
+              </div>
+              <div>
+                <button id="btn-add-type" class="btn" style="padding:0.35rem 0.7rem; font-size:0.9rem;">Ekle</button>
               </div>
             </div>
             <div class="table-wrap" style="overflow:auto;">
