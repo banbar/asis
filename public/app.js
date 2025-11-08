@@ -376,13 +376,13 @@ function ensureMapLegend(mapInstance) {
         </div>
       `;
       
-      console.log('[LEGEND]  Lejant oluşturuldu ve haritaya ekleniyor');
+      console.log('[LEGEND] ✅ Lejant oluşturuldu ve haritaya ekleniyor');
       return div;
     }
   });
   
   mapInstance.addControl(new Legend());
-  console.log('[LEGEND]  Lejant kontrolü haritaya eklendi');
+  console.log('[LEGEND] ✅ Lejant kontrolü haritaya eklendi');
 }
 function removeDownloadIfAny(){
   try{
@@ -3486,6 +3486,7 @@ async function openVideoModal(){
   const pv = qs('#vm-preview');
   const startBtn = qs('#vm-start'); 
   const stopBtn = qs('#vm-stop'); 
+  const galleryBtn = qs('#vm-gallery');
   const closeBtn = qs('#vm-close');
   
   if (modal) {
@@ -3574,6 +3575,8 @@ async function openVideoModal(){
     } catch {}
     hide(stopBtn);
   };
+
+  if (galleryBtn) galleryBtn.onclick = () => qs('#file-video')?.click();
 
   if (closeBtn) closeBtn.onclick = () => {
     closeModal(modal, stopVm);
@@ -4570,7 +4573,7 @@ function attachMapClickForLoggedIn(){
         .bindPopup('Seçili konum');
     }
     
-    console.log('[MAP CLICK]  Konum seçildi:', lat, lng);
+    console.log('[MAP CLICK] ✅ Konum seçildi:', lat, lng);
     
     if (currentUser && currentUser.role === 'user') {
       const olayCard = qs('#olay-card');
@@ -4581,7 +4584,7 @@ function attachMapClickForLoggedIn(){
         const mapEl = document.getElementById('map');
         if (mapEl) {
           mapEl.classList.add('blur-background');
-          console.log('[MAP CLICK] Blur eklendi');
+          console.log('[MAP CLICK] ✅ Blur eklendi');
         }
         pushOverlayState('olay-card');
         
