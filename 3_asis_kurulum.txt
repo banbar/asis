@@ -1,0 +1,4 @@
+1. NPM paketlerinin indirilmesi:
+npm install express dotenv pg cors cookie-parser jsonwebtoken bcrypt nodemailer speakeasy multer mime-types
+
+2. Çevresel değişkenlerin düzenlenmesi (Readme.md)
