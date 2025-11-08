@@ -376,13 +376,13 @@ function ensureMapLegend(mapInstance) {
         </div>
       `;
       
-      console.log('[LEGEND] ✅ Lejant oluşturuldu ve haritaya ekleniyor');
+      console.log('[LEGEND]  Lejant oluşturuldu ve haritaya ekleniyor');
       return div;
     }
   });
   
   mapInstance.addControl(new Legend());
-  console.log('[LEGEND] ✅ Lejant kontrolü haritaya eklendi');
+  console.log('[LEGEND]  Lejant kontrolü haritaya eklendi');
 }
 function removeDownloadIfAny(){
   try{
@@ -3055,7 +3055,7 @@ async function submitOlay(){
       const mapEl = document.getElementById('map');
       if (mapEl) {
         mapEl.classList.remove('blur-background');
-        console.log('[SUBMIT] ✅ Blur kaldırıldı');
+        console.log('[SUBMIT] Blur kaldırıldı');
       }
       
       document.querySelectorAll('.header-back-btn, .card-back-btn').forEach(btn => btn.remove());
@@ -3624,9 +3624,9 @@ function restoreMapViewFromOverlay(){
   const mapEl = document.getElementById('map');
   if (mapEl) {
     mapEl.classList.remove('blur-background');
-    console.log('[RESTORE] ✅ Blur kaldırıldı');
+    console.log('[RESTORE] Blur kaldırıldı');
   } else {
-    console.warn('[RESTORE] ❌ Map elementi bulunamadı!');
+    console.warn('[RESTORE] Map elementi bulunamadı!');
   }
 
   hide(qs('#login-card'));
@@ -3637,25 +3637,25 @@ function restoreMapViewFromOverlay(){
   if (typeof resetEdit === 'function') {
     try { 
       resetEdit(); 
-      console.log('[RESTORE] ✅ resetEdit() çağrıldı');
+      console.log('[RESTORE] resetEdit() çağrıldı');
     } catch(e) {
-      console.error('[RESTORE] ❌ resetEdit() hatası:', e);
+      console.error('[RESTORE] resetEdit() hatası:', e);
     }
   }
 
   document.querySelectorAll('.header-back-btn, .card-back-btn').forEach(btn => btn.remove());
-  console.log('[RESTORE] ✅ Geri butonları kaldırıldı');
+  console.log('[RESTORE] Geri butonları kaldırıldı');
   
   try {
     stopLiveLocation();
-    console.log('[RESTORE] ✅ Canlı konum durduruldu');
+    console.log('[RESTORE] Canlı konum durduruldu');
   } catch(e) {
     console.warn('[RESTORE] Canlı konum durdurma hatası:', e);
   }
   
   try { 
     history.back(); 
-    console.log('[RESTORE] ✅ history.back() çağrıldı');
+    console.log('[RESTORE] history.back() çağrıldı');
   } catch(e) {
     console.warn('[RESTORE] history.back() hatası:', e);
   }
@@ -3837,7 +3837,6 @@ function reflectAuth(){
     body.classList.remove('supervisor-mode-form', 'supervisor-mode-admin');
   }
 
-  // ↙↙↙ burası yeni
   try { ensureMapLegend(map); } catch (e) {}
 }
 const SUP_MODE_KEY = 'sup_mode';
@@ -4253,7 +4252,7 @@ function ensureBackButton(){
     const mapEl = document.getElementById('map');
     if (mapEl) {
       mapEl.classList.remove('blur-background');
-      console.log('[BACK BTN] ✅ Blur kaldırıldı');
+      console.log('[BACK BTN] Blur kaldırıldı');
     }
     
     hide(olayCard);
@@ -4571,7 +4570,7 @@ function attachMapClickForLoggedIn(){
         .bindPopup('Seçili konum');
     }
     
-    console.log('[MAP CLICK] ✅ Konum seçildi:', lat, lng);
+    console.log('[MAP CLICK]  Konum seçildi:', lat, lng);
     
     if (currentUser && currentUser.role === 'user') {
       const olayCard = qs('#olay-card');
@@ -4582,7 +4581,7 @@ function attachMapClickForLoggedIn(){
         const mapEl = document.getElementById('map');
         if (mapEl) {
           mapEl.classList.add('blur-background');
-          console.log('[MAP CLICK] ✅ Blur eklendi');
+          console.log('[MAP CLICK] Blur eklendi');
         }
         pushOverlayState('olay-card');
         
