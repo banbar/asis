@@ -322,7 +322,6 @@ function ensureMapLegend(mapInstance) {
     onAdd: function() {
       const div = L.DomUtil.create('div', 'map-legend');
       
-      // ✅ KRITIK: Inline stil ile kesin görünür yap
       div.style.cssText = `
         display: block !important;
         visibility: visible !important;
@@ -1640,7 +1639,6 @@ function attachFilterEvents(tableKey) {
         const isShown = dropdown.classList.toggle('show');
         
         if (isShown) {
-          // Fixed pozisyon hesapla
           const rect = newIcon.getBoundingClientRect();
           dropdown.style.top = `${rect.bottom + 4}px`;
           dropdown.style.left = `${rect.left}px`;
@@ -1650,7 +1648,6 @@ function attachFilterEvents(tableKey) {
           searchInput?.addEventListener('input', (e) => {
             const searchTerm = e.target.value.toLowerCase().trim();
             
-            // ÖZEL TARİH FİLTRELERİNİ OLUŞTUR
             if (tableKey === 'events' && column === 'date') {
               updateCustomDateFilters(dropdown, searchTerm, tableStates[tableKey].data);
             }
@@ -1674,7 +1671,6 @@ function attachFilterEvents(tableKey) {
                 return;
               }
               
-              // Ekleyen domain seçeneklerini kontrol et (events tablosu - creator kolonu)
               const isCreatorDomainOption = opt.querySelector('.filter-creator-domain');
               if (isCreatorDomainOption) {
                 const domainText = opt.textContent.toLowerCase();
@@ -1688,13 +1684,10 @@ function attachFilterEvents(tableKey) {
               
               let match = false;
               
-              // ORTAK KELİME ARAMA (YouTube mantığı - tüm kolonlar için)
               if (searchTerm) {
-                // TARİH KOLONU ÖZEL ARAMA
                 if (tableKey === 'events' && column === 'date') {
                   match = matchDateQuery(value, searchTerm);
                 } else {
-                  // NORMAL KOLONLAR: Kelimelerine ayır ve hepsini ara (AND mantığı)
                   const searchWords = searchTerm.split(/\s+/).filter(w => w.length > 0);
                   const valueText = value.toLowerCase();
                   const displayText = text;
@@ -2148,7 +2141,7 @@ function renderTypeTableRows(data) {
        (t.created_by_id === currentUser.id || t.created_by_name === currentUser.username))
     );
     
-    const goodText = (t.good === true || t.good === 'true' || t.good === 1) ? 'Evet' : 'Hayır';
+    const goodText = (t.good === true || t.good === 'true' || t.good === 1) ? 'Faydalı' : 'Faydasız';
     
     const updateBtn = canUpdate 
       ? `<button class="btn ghost" data-update-type="${t.o_id}" data-type-name="${escapeHtml(t.o_adi)}" data-type-good="${t.good === true || t.good === 'true' || t.good === 1 ? 'true' : 'false'}" style="margin-right:4px;">Güncelle</button>`
@@ -2203,7 +2196,8 @@ function renderTypeTableRows(data) {
 function openUpdateTypeModal(typeId, currentName, currentGood) {
   const modal = qs('#update-type-modal');
   const input = qs('#update-type-input');
-  const goodCheckbox = qs('#update-type-good');
+  const goodRadioYes = qs('#update-type-good-yes');
+  const goodRadioNo = qs('#update-type-good-no');
   const saveBtn = qs('#update-type-save-btn');
   const cancelBtn = qs('#update-type-cancel-btn');
   
@@ -2213,7 +2207,9 @@ function openUpdateTypeModal(typeId, currentName, currentGood) {
   }
   
   input.value = currentName;
-  if (goodCheckbox) goodCheckbox.checked = (currentGood === true || currentGood === 'true');
+  const isGood = (currentGood === true || currentGood === 'true' || currentGood === 1);
+  if (goodRadioYes) goodRadioYes.checked = isGood;
+  if (goodRadioNo) goodRadioNo.checked = !isGood;
   showModal(modal);
   
   // Önceki event'leri temizle
@@ -2225,14 +2221,14 @@ function openUpdateTypeModal(typeId, currentName, currentGood) {
   // Kaydet butonu
   newSaveBtn.onclick = async () => {
     const newName = input.value.trim();
-    const newGood = goodCheckbox ? goodCheckbox.checked : false;
+    const newGood = goodRadioYes ? goodRadioYes.checked : false;
     
     if (!newName) {
       toast('Olay türü adı boş olamaz', 'error');
       return;
     }
     
-    const goodChanged = (newGood !== (currentGood === true || currentGood === 'true'));
+    const goodChanged = (newGood !== (currentGood === true || currentGood === 'true' || currentGood === 1));
     
     if (newName === currentName && !goodChanged) {
       toast('Değişiklik yapılmadı', 'error');
@@ -2611,7 +2607,8 @@ async function loadPageSizeSettings() {
 /* ==================== OLAY TÜRÜ EKLEME ==================== */
 qs('#btn-add-type')?.addEventListener('click', async () => {
   const name = qs('#new-type-name')?.value.trim();
-  const good = qs('#new-type-good')?.checked || false;
+  const goodRadioYes = qs('#new-type-good-yes');
+  const good = goodRadioYes ? goodRadioYes.checked : false;
   
   if (!name) { 
     toast('Lütfen tür adı girin', 'error'); 
@@ -2658,7 +2655,6 @@ qs('#btn-add-type')?.addEventListener('click', async () => {
 /* ==================== HARITA VE OLAY YÖNETİMİ ==================== */
 
 function allowBlackMarker() {
-  // Sadece giriş yapmış ve rolü "user" olan için
   if (window.SUPERVISOR_NO_ADD) return false;
   return !!(currentUser && currentUser.role === 'user');
 }
@@ -3881,7 +3877,6 @@ function setSupervisorMode(mode) {
           const zoom = Number(APP_CONFIG.mapInitialZoom);
           map.setView([lat, lng], zoom, { animate: false });
           
-          // ✅ SORUN 3 ÇÖZÜMÜ: Form modunda da lejant
           ensureMapLegend(map);
         }
       } catch(e) { console.warn('Map resize hatası:', e); }
@@ -3905,12 +3900,11 @@ function setSupervisorMode(mode) {
     show(adminCard);
     show(olayCard);
     
-    // ✅ SORUN 2 ÇÖZÜMÜ: Admin modda haritayı güncelle
     setTimeout(() => {
       try {
-        ensureEventsMap(); // Haritayı oluştur/yenile
-        ensureEventsExportControl(); // Export kontrolü ekle
-        syncEventsMapWithFilteredEvents(); // Olayları senkronize et
+        ensureEventsMap(); 
+        ensureEventsExportControl(); 
+        syncEventsMapWithFilteredEvents(); 
       } catch(e) {
         console.warn('[setSupervisorMode] Harita güncelleme hatası:', e);
       }
@@ -3936,7 +3930,6 @@ function setSupervisorMode(mode) {
             map.setView([lat, lng], zoom, { animate: false });
           }
           
-          // ✅ SORUN 3 ÇÖZÜMÜ: Admin modunda da lejant
           ensureMapLegend(map);
         }
       } catch(e) { console.warn('Map resize hatası:', e); }
@@ -3948,7 +3941,6 @@ function setSupervisorMode(mode) {
     document.body.style.overflow = '';
   }
 
-  // ✅ EKLEME - Form ve Admin modunda lejantı yenile
   try { 
     ensureMapLegend(map); 
     console.log('[setSupervisorMode] Lejant güncellendi - mod:', mode);
@@ -3969,7 +3961,7 @@ function ensureSupervisorToggle(){
   box.style.gap = '6px';
   box.style.alignItems = 'center';
   box.innerHTML = `
-    <button id="sup-btn-form" class="btn ghost" type="button" title="Olay Bildirim Formu">Form</button>
+    <button id="sup-btn-form" class="btn ghost" type="button" title="Olay Görünümü">Görünüm</button>
     <button id="sup-btn-admin" class="btn ghost" type="button" title="Yönetim Paneli">Yönetim</button>
   `;
   host.appendChild(box);
@@ -3996,7 +3988,6 @@ async function checkMe(){
     }
   }
   
-  // ✅ SORUN ÇÖZÜMÜ: currentUser değiştiğinde supervisor flag'lerini sıfırla
   if (!currentUser || currentUser.role === 'user') {
     window.SUPERVISOR_NO_ADD = false;
     window.FORCE_BLUE_MARKERS = false;
@@ -4051,15 +4042,13 @@ async function login(){
 
     if (data.token) saveToken(data.token);
     
-    // ✅ SORUN ÇÖZÜMÜ: checkMe öncesi flag'leri sıfırla
     window.SUPERVISOR_NO_ADD = false;
     window.FORCE_BLUE_MARKERS = false;
     
     await checkMe();
     resetLoginForm();
     attachMapClickForLoggedIn();
-    
-    // Blur'u kaldır
+
     const mapEl = document.getElementById('map');
     if (mapEl) mapEl.classList.remove('blur-background');
     
@@ -4115,15 +4104,12 @@ async function logout(){
   saveToken(null);
   currentUser = null;
   
-  // ✅ SORUN ÇÖZÜMÜ: Tüm supervisor flag'lerini ve state'i temizle
   window.SUPERVISOR_NO_ADD = false;
   window.FORCE_BLUE_MARKERS = false;
   
-  // Supervisor mode sınıflarını ve toggle'ı temizle
   document.body.classList.remove('supervisor-mode-form', 'supervisor-mode-admin', 'supervisor-readonly-map');
   qs('#sup-panel-toggle')?.remove();
   
-  // Submit butonunu yeniden aktif et
   const submitBtn = qs('#submit-btn');
   if (submitBtn) {
     submitBtn.disabled = false;
@@ -4596,7 +4582,6 @@ function detachMapClickForLoggedOut(){
 }
 
 /* ==================== BAŞLANGIÇ ==================== */
-/* ==================== BAŞLANGIÇ ==================== */
 (async function init(){
   (function addHeaderLocationBtn(){
     const header = document.querySelector('header .wrap') || document.querySelector('header');
@@ -4655,7 +4640,6 @@ function detachMapClickForLoggedOut(){
 
   await loadAppConfig(); 
   await loadPageSizeSettings();
-  // .env değerleri artık APP_CONFIG'e yüklendi, doğrudan kullan
   try {
     const minZ = APP_CONFIG.mapMinZoom;
     const lat  = APP_CONFIG.mapInitialLat;
@@ -4713,13 +4697,11 @@ function detachMapClickForLoggedOut(){
       console.log('[INIT] showGood=false ve showBad=false, harita temizleniyor');
       try { if (markersLayer) markersLayer.clearLayers(); } catch {}
     }
-    // ✅ SORUN 3 ÇÖZÜMÜ: Public modda lejant
     try { ensureMapLegend(map); } catch {}
   } else {
     goDefaultScreen();
     attachMapClickForLoggedIn();
     
-    // ✅ SORUN 3 ÇÖZÜMÜ: Giriş sonrası lejant
     try { ensureMapLegend(map); } catch {}
   }
 
@@ -4730,7 +4712,6 @@ function detachMapClickForLoggedOut(){
       refreshAdminEvents()
     ]);
     
-    // ✅ SORUN 2 ÇÖZÜMÜ: Admin/Supervisor haritasını başlangıçta yükle
     setTimeout(() => {
       try {
         ensureEventsMap();
@@ -4741,7 +4722,6 @@ function detachMapClickForLoggedOut(){
       }
     }, 500);
     
-    // ✅ SORUN 3 ÇÖZÜMÜ: Admin/Supervisor lejant
     try { ensureMapLegend(map); } catch {}
   }
 })()
