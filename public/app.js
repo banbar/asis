@@ -58,7 +58,6 @@ async function loadAppConfig() {
       if (config.pageSizeUsers) config.pageSizeUsers = Number(config.pageSizeUsers);
       
       APP_CONFIG = { ...APP_CONFIG, ...config };
-      console.log('[CONFIG] Yüklendi:', APP_CONFIG);
       createOrUpdateMapFromConfig();
     }
   } catch (e) {
@@ -307,13 +306,11 @@ function ensureMapLegend(mapInstance) {
   if (!shouldShowLegend()) {
     const existing = mapInstance.getContainer().querySelector('.map-legend');
     if (existing) existing.remove();
-    console.log('[LEGEND] shouldShowLegend() false döndü, lejant kaldırıldı');
     return;
   }
   
   const existingLegend = mapInstance.getContainer().querySelector('.map-legend');
   if (existingLegend) {
-    console.log('[LEGEND] Lejant zaten mevcut');
     return;
   }
   
@@ -376,13 +373,11 @@ function ensureMapLegend(mapInstance) {
         </div>
       `;
       
-      console.log('[LEGEND] ✅ Lejant oluşturuldu ve haritaya ekleniyor');
       return div;
     }
   });
   
   mapInstance.addControl(new Legend());
-  console.log('[LEGEND] ✅ Lejant kontrolü haritaya eklendi');
 }
 function removeDownloadIfAny(){
   try{
@@ -409,7 +404,6 @@ function downloadFilteredEventsAsGeoJSON() {
   
   const eventIds = filtered.map(e => parseInt(e.olay_id, 10)).filter(id => !isNaN(id));
   
-  console.log('[GeoJSON Export] Gönderilen ID sayısı:', eventIds.length);
   
   fetch('/api/export/geojson', {
     method: 'POST',
@@ -497,34 +491,27 @@ function shouldShowLegend() {
     const showGood = boolFromConfigValue(APP_CONFIG.showGoodEventsOnLogin);
     const showBad  = boolFromConfigValue(APP_CONFIG.showBadEventsOnLogin);
 
-    console.log('[LEGEND DEBUG] showGoodEventsOnLogin:', APP_CONFIG.showGoodEventsOnLogin, '-> bool:', showGood);
-    console.log('[LEGEND DEBUG] showBadEventsOnLogin:', APP_CONFIG.showBadEventsOnLogin, '-> bool:', showBad);
 
     // İkisi de false -> lejant gösterme
     if (!showGood && !showBad) {
-      console.log('[LEGEND] Giriş ekranı: SHOW_GOOD=false, SHOW_BAD=false -> lejant GİZLE');
       return false;
     }
     
-    console.log('[LEGEND] Giriş ekranı: En az biri true -> lejant GÖSTER');
     return true;
   }
 
   // 2) KULLANICI GİRİŞİ -> her zaman göster
   if (currentUser.role === 'user') {
-    console.log('[LEGEND] Kullanıcı girişi: lejant GÖSTER');
     return true;
   }
 
   // 3) SUPERVISOR GİRİŞİ -> her zaman göster (form/admin fark etmez)
   if (currentUser.role === 'supervisor') {
-    console.log('[LEGEND] Supervisor girişi: lejant GÖSTER');
     return true;
   }
 
   // 4) ADMIN GİRİŞİ -> her zaman göster
   if (currentUser.role === 'admin') {
-    console.log('[LEGEND] Admin girişi: lejant GÖSTER');
     return true;
   }
 
@@ -591,7 +578,6 @@ function ensureEventsExportControl() {
           const filtered = tableStates?.events?.filtered || [];
           const eventIds = filtered.map(ev => parseInt(ev.olay_id, 10)).filter(id => !isNaN(id));
           
-          console.log('[ensureEventsExportControl] Gönderilen ID sayısı:', eventIds.length);
           
           const r = await fetch('/api/export/geojson', {
             method:'POST',
@@ -817,11 +803,29 @@ function parseDateStr(dateStr) {
 
 /* ==================== TARİH FİLTRE DROPDOWN ==================== */
 function buildDateFilterDropdown(data, state) {
+  let selectAllChecked = false;
+  
+  if (!state.filters.date || !Array.isArray(state.filters.date)) {
+    selectAllChecked = true;
+  } else if (state.filters.date.length === 0) {
+    selectAllChecked = false;
+  } else {
+    const valueCounts = {};
+    data.forEach(item => {
+      const value = formatDate(item.created_at || item.eklenme_tarihi);
+      if (value && value !== '-') {
+        valueCounts[value] = (valueCounts[value] || 0) + 1;
+      }
+    });
+    const totalValues = Object.keys(valueCounts).length;
+    selectAllChecked = state.filters.date.length === totalValues;
+  }
+  
   let html = `
     <input type="text" class="filter-search" placeholder="Ara: Mayıs, 2025, 14 Mayıs 2025, 01:00..." />
     <div class="filter-options-container">
       <label class="filter-option">
-        <input type="checkbox" class="filter-select-all" ${!state.filters.date || state.filters.date.length === 0 ? 'checked' : ''} />
+        <input type="checkbox" class="filter-select-all" ${selectAllChecked ? 'checked' : ''} />
         <span>(Tümünü Seç)</span>
       </label>
       <label class="filter-option" style="background:#e3f2fd; border-radius:4px; padding:4px 8px;">
@@ -852,7 +856,16 @@ function buildDateFilterDropdown(data, state) {
   
   sortedValues.forEach(value => {
     const count = valueCounts[value];
-    const checked = !state.filters.date || state.filters.date.length === 0 || state.filters.date.includes(value);
+    
+    let checked = false;
+    if (!state.filters.date || !Array.isArray(state.filters.date)) {
+      checked = true;
+    } else if (state.filters.date.length === 0) {
+      checked = false;
+    } else {
+      checked = state.filters.date.includes(value);
+    }
+    
     html += `
       <label class="filter-option">
         <input type="checkbox" class="filter-checkbox" value="${escapeHtml(value)}" ${checked ? 'checked' : ''} />
@@ -875,7 +888,6 @@ function buildEmailFilterDropdown(data, state) {
   
   const sortedEmails = Array.from(uniqueEmails).sort();
   
-  // E-posta sayılarını filtrelenmiş veriden hesapla
   const emailCounts = {};
   sortedEmails.forEach(email => {
     emailCounts[email] = 0;
@@ -888,7 +900,6 @@ function buildEmailFilterDropdown(data, state) {
     }
   });
   
-  // SADECE kullanıcısı olan domainleri topla
   const activeDomains = new Set();
   
   state.data.forEach(item => {
@@ -899,7 +910,6 @@ function buildEmailFilterDropdown(data, state) {
     }
   });
   
-  // Domain sayılarını hesapla
   const domainCounts = {};
   activeDomains.forEach(domain => {
     domainCounts[domain] = 0;
@@ -918,7 +928,6 @@ function buildEmailFilterDropdown(data, state) {
   
   const sortedDomains = Array.from(activeDomains).sort();
   
-  // Tümünü Seç durumunu belirle
   const specialFilters = state.specialFilters || {};
   const allEmailsSelected = !state.filters.email || state.filters.email.length === sortedEmails.length;
   const allDomainsSelected = !specialFilters.emailDomains || specialFilters.emailDomains.length === sortedDomains.length;
@@ -933,7 +942,6 @@ function buildEmailFilterDropdown(data, state) {
       </label>
   `;
   
-  // SADECE kullanıcısı olan domain'leri göster
   if (sortedDomains.length > 0) {
     html += '<div style="font-weight:600; font-size:0.85rem; color:var(--primary); margin:8px 0 4px 0;">📧 E-posta Domain\'leri:</div>';
     
@@ -951,23 +959,18 @@ function buildEmailFilterDropdown(data, state) {
     html += '<hr style="margin:8px 0; border:none; border-top:1px solid var(--border);" />';
   }
   
-  // HER E-POSTAYI GÖSTER (filtrelenmiş veride olmasa bile)
   sortedEmails.forEach(email => {
     const count = emailCounts[email] || 0;
     
-    // Checkbox durumunu belirle
     let checked = false;
     if (state.filters.email && state.filters.email.length > 0) {
-      // Eğer normal filtre varsa, sadece seçilenleri işaretle
       checked = state.filters.email.includes(email);
     } else if (specialFilters.emailDomains && specialFilters.emailDomains.length > 0) {
-      // Domain filtresi varsa, o domain'deki e-postaları işaretle
       const match = email.match(/@(.+)$/);
       if (match) {
         checked = specialFilters.emailDomains.includes(match[1]);
       }
     } else {
-      // Hiçbir filtre yoksa, hepsini işaretle
       checked = true;
     }
     
@@ -1258,7 +1261,7 @@ function applyFilters(tableKey) {
       switch(tableKey) {
         case 'types':
           if (column === 'name') itemValue = item.o_adi || '';
-          if (column === 'good') itemValue = (item.good === true || item.good === 'true' || item.good === 1) ? 'Faydalı' : 'Faydasız';
+          if (column === 'good') itemValue = (item.good === true || item.good === 'true' || item.good === 1) ? 'Faydalı' : 'Faydasız'; // DEĞİŞTİ
           if (column === 'creator') itemValue = item.created_by_name || '-';
           break;
         case 'users':
@@ -1363,7 +1366,7 @@ function buildFilterDropdown(tableKey, column, data) {
     switch(tableKey) {
       case 'types':
         if (column === 'name') value = item.o_adi || '';
-        if (column === 'good') value = (item.good === true || item.good === 'true' || item.good === 1) ? 'Evet' : 'Hayır';
+        if (column === 'good') value = (item.good === true || item.good === 'true' || item.good === 1) ? 'Faydalı' : 'Faydasız';
         if (column === 'creator') value = item.created_by_name || '-';
         break;
       case 'users':
@@ -1403,6 +1406,7 @@ function buildFilterDropdown(tableKey, column, data) {
     switch(tableKey) {
       case 'types':
         if (column === 'name') value = item.o_adi || '';
+        if (column === 'good') value = (item.good === true || item.good === 'true' || item.good === 1) ? 'Faydalı' : 'Faydasız';
         if (column === 'creator') value = item.created_by_name || '-';
         break;
       case 'users':
@@ -1422,17 +1426,28 @@ function buildFilterDropdown(tableKey, column, data) {
     if (value) valueCounts[value] = (valueCounts[value] || 0) + 1;
   });
   
+  let isAllSelected = false;
+  
+  if (!state.filters[column] || !Array.isArray(state.filters[column])) {
+    isAllSelected = true;
+  } else if (state.filters[column].length === 0) {
+    isAllSelected = false;
+  } else if (state.filters[column].length === sortedValues.length) {
+    isAllSelected = true;
+  } else {
+    isAllSelected = false;
+  }
+  
   let html = `
     <input type="text" class="filter-search" placeholder="Ara..." />
     <div class="filter-options-container">
       <label class="filter-option">
-        <input type="checkbox" class="filter-select-all" ${!state.filters[column] || state.filters[column].length === 0 ? 'checked' : ''} />
+        <input type="checkbox" class="filter-select-all" ${isAllSelected ? 'checked' : ''} />
         <span>(Tümünü Seç)</span>
       </label>
   `;
 
-
-sortedValues.forEach(value => {
+  sortedValues.forEach(value => {
     let filteredCount = 0;
     state.filtered.forEach(item => {
       let itemValue = '';
@@ -1440,7 +1455,7 @@ sortedValues.forEach(value => {
       switch(tableKey) {
         case 'types':
           if (column === 'name') itemValue = item.o_adi || '';
-          if (column === 'good') itemValue = (item.good === true || item.good === 'true' || item.good === 1) ? 'Evet' : 'Hayır';
+          if (column === 'good') itemValue = (item.good === true || item.good === 'true' || item.good === 1) ? 'Faydalı' : 'Faydasız'; 
           if (column === 'creator') itemValue = item.created_by_name || '-';
           break;
         case 'users':
@@ -1460,7 +1475,15 @@ sortedValues.forEach(value => {
       if (itemValue === value) filteredCount++;
     });
     
-    const checked = !state.filters[column] || state.filters[column].length === 0 || state.filters[column].includes(value);
+    let checked = false;
+    if (!state.filters[column] || !Array.isArray(state.filters[column])) {
+      checked = true;
+    } else if (state.filters[column].length === 0) {
+      checked = false;
+    } else {
+      checked = state.filters[column].includes(value);
+    }
+    
     html += `
       <label class="filter-option">
         <input type="checkbox" class="filter-checkbox" value="${escapeHtml(value)}" ${checked ? 'checked' : ''} />
@@ -1472,7 +1495,6 @@ sortedValues.forEach(value => {
   html += `</div>`;
   return html;
 }
-
 /* ==================== OLAY TÜRÜ FİLTRE DROPDOWN (İYİ/KÖTÜ) ==================== */
 function buildEventTypeFilterDropdown(data, state) {
   const typeMap = new Map();
@@ -1775,7 +1797,6 @@ function attachGlobalClickHandler() {
     }
   });
 }
-
 function attachFilterEvents(tableKey) {
   const table = qs(`#${tableKey}-table`);
   if (!table) return;
@@ -2195,13 +2216,11 @@ function attachFilterEvents(tableKey) {
                 dropdown.querySelectorAll('.filter-creator-domain').forEach(domainCb => {
                   const domain = domainCb.getAttribute('data-domain');
                   
-                  // Bu domain'e ait tüm kullanıcıları bul
                   const usersInDomain = [];
                   if (tableStates.users && tableStates.users.data) {
                     tableStates.users.data.forEach(user => {
                       const email = user.email || '';
                       if (email.endsWith('@' + domain)) {
-                        // Sadece filtrelenmiş veride olanları say
                         const hasEvents = state.data.some(item => item.created_by_username === user.username);
                         if (hasEvents) {
                           usersInDomain.push(user.username);
@@ -2210,12 +2229,10 @@ function attachFilterEvents(tableKey) {
                     });
                   }
                   
-                  // Eğer bu domain'deki TÜM kullanıcılar seçiliyse, domain checkbox'ı işaretle
                   const allUsersSelected = usersInDomain.length > 0 && usersInDomain.every(u => selectedUsernames.includes(u));
                   domainCb.checked = allUsersSelected;
                 });
                 
-                // Durumu güncelle
                 if (!state.specialFilters) state.specialFilters = {};
                 const checkedDomains = Array.from(dropdown.querySelectorAll('.filter-creator-domain:checked'))
                   .map(cb => cb.getAttribute('data-domain'));
@@ -2232,11 +2249,9 @@ function attachFilterEvents(tableKey) {
                   if (match) allDomains.add(match[1]);
                 });
                 
-                // Domain checkbox'larını güncelle
                 dropdown.querySelectorAll('.filter-email-domain').forEach(domainCb => {
                   const domain = domainCb.getAttribute('data-domain');
                   
-                  // Bu domain'e ait tüm e-postaları bul
                   const emailsInDomain = [];
                   state.data.forEach(item => {
                     const email = item.email;
@@ -2253,7 +2268,6 @@ function attachFilterEvents(tableKey) {
                   domainCb.checked = allEmailsSelected;
                 });
                 
-                // Durumu güncelle
                 if (!state.specialFilters) state.specialFilters = {};
                 const checkedDomains = Array.from(dropdown.querySelectorAll('.filter-email-domain:checked'))
                   .map(cb => cb.getAttribute('data-domain'));
@@ -2279,11 +2293,14 @@ function updateFilterIcon(tableKey, column) {
   const state = tableStates[tableKey];
   let hasFilter = false;
   
-  if (state.filters[column] && state.filters[column].length > 0) {
-    hasFilter = true;
+  if (state.filters[column]) {
+    if (Array.isArray(state.filters[column])) {
+      hasFilter = state.filters[column].length >= 0;
+    } else {
+      hasFilter = true;
+    }
   }
   
-  // Özel filtre kontrolü
   if (!hasFilter && state.specialFilters) {
     if (tableKey === 'events') {
       if (column === 'type') {
@@ -2293,7 +2310,6 @@ function updateFilterIcon(tableKey, column) {
       }
       
       if (column === 'creator' && state.specialFilters.creatorDomains) {
-        // SADECE kullanıcısı olan domainleri say
         const activeDomains = new Set();
         if (tableStates.users && tableStates.users.data) {
           tableStates.users.data.forEach(user => {
@@ -2647,7 +2663,7 @@ function renderTypeTableRows(data) {
        (t.created_by_id === currentUser.id || t.created_by_name === currentUser.username))
     );
     
-    const goodText = (t.good === true || t.good === 'true' || t.good === 1) ? 'Faydalı' : 'Faydasız';
+    const goodText = (t.good === true || t.good === 'true' || t.good === 1) ? 'Faydalı' : 'Faydasız'; // DEĞİŞTİ
     
     const updateBtn = canUpdate 
       ? `<button class="btn ghost" data-update-type="${t.o_id}" data-type-name="${escapeHtml(t.o_adi)}" data-type-good="${t.good === true || t.good === 'true' || t.good === 1 ? 'true' : 'false'}" style="margin-right:4px;">Güncelle</button>`
@@ -3255,13 +3271,10 @@ async function loadExistingEvents(opts = {}) {
     const showGood = boolFromConfigValue(APP_CONFIG.showGoodEventsOnLogin);
     const showBad = boolFromConfigValue(APP_CONFIG.showBadEventsOnLogin);
     
-    console.log('[loadExistingEvents DEBUG] SHOW_GOOD_EVENTS_ON_LOGIN:', APP_CONFIG.showGoodEventsOnLogin, '-> bool:', showGood);
-    console.log('[loadExistingEvents DEBUG] SHOW_BAD_EVENTS_ON_LOGIN:', APP_CONFIG.showBadEventsOnLogin, '-> bool:', showBad);
-    
+
     if (!showGood && !showBad) {
       eventIndex.clear();
       if (markersLayer) markersLayer.clearLayers();
-      console.log('[loadExistingEvents] SHOW_GOOD=false, SHOW_BAD=false -> harita temizlendi');
       return;
     }
   }
@@ -3270,7 +3283,6 @@ async function loadExistingEvents(opts = {}) {
     if (!resp.ok) throw 0;
     let events = await resp.json();
 
-    console.log('[loadExistingEvents] Toplam olay sayısı:', events.length);
 
     if (publicMode) {
       const showGood = boolFromConfigValue(APP_CONFIG.showGoodEventsOnLogin);
@@ -3288,7 +3300,6 @@ async function loadExistingEvents(opts = {}) {
         return false;
       });
       
-      console.log('[loadExistingEvents] Filtreleme: ', beforeFilter, '->', events.length, 'olay');
     }
 
     eventIndex.clear();
@@ -3379,7 +3390,6 @@ async function loadExistingEvents(opts = {}) {
       m.on('popupopen', () => populateEventMedia(content, e2));
     });
 
-    console.log('[loadExistingEvents] Haritaya eklenen marker sayısı:', addedMarkers);
 
     try { 
       if (map) ensureMapLegend(map); 
@@ -3548,7 +3558,6 @@ async function submitOlay(){
       const mapEl = document.getElementById('map');
       if (mapEl) {
         mapEl.classList.remove('blur-background');
-        console.log('[SUBMIT] Blur kaldırıldı');
       }
       
       document.querySelectorAll('.header-back-btn, .card-back-btn').forEach(btn => btn.remove());
@@ -4114,14 +4123,11 @@ function pushOverlayState(name){
 }
 
 function restoreMapViewFromOverlay(){
-  console.log('[RESTORE] Başladı');
 
   const mapEl = document.getElementById('map');
   if (mapEl) {
     mapEl.classList.remove('blur-background');
-    console.log('[RESTORE] Blur kaldırıldı');
   } else {
-    console.warn('[RESTORE] Map elementi bulunamadı!');
   }
 
   hide(qs('#login-card'));
@@ -4132,25 +4138,21 @@ function restoreMapViewFromOverlay(){
   if (typeof resetEdit === 'function') {
     try { 
       resetEdit(); 
-      console.log('[RESTORE] resetEdit() çağrıldı');
     } catch(e) {
       console.error('[RESTORE] resetEdit() hatası:', e);
     }
   }
 
   document.querySelectorAll('.header-back-btn, .card-back-btn').forEach(btn => btn.remove());
-  console.log('[RESTORE] Geri butonları kaldırıldı');
   
   try {
     stopLiveLocation();
-    console.log('[RESTORE] Canlı konum durduruldu');
   } catch(e) {
     console.warn('[RESTORE] Canlı konum durdurma hatası:', e);
   }
   
   try { 
     history.back(); 
-    console.log('[RESTORE] history.back() çağrıldı');
   } catch(e) {
     console.warn('[RESTORE] history.back() hatası:', e);
   }
@@ -4280,7 +4282,6 @@ function reflectAuth(){
   if (headerLocBtn) {
     const shouldShow = currentUser && currentUser.role === 'user';
     headerLocBtn.style.display = shouldShow ? 'inline-flex' : 'none';
-    console.log('[HEADER LOCATION BTN] Görünürlük:', shouldShow ? 'GÖSTER' : 'GİZLE');
   }
 
   if (currentUser){
@@ -4454,7 +4455,6 @@ function setSupervisorMode(mode) {
 
   try { 
     ensureMapLegend(map); 
-    console.log('[setSupervisorMode] Lejant güncellendi - mod:', mode);
   } catch(e) {
     console.warn('[setSupervisorMode] Lejant güncelleme hatası:', e);
   }
@@ -4637,7 +4637,6 @@ async function logout(){
   const showBad = boolFromConfigValue(APP_CONFIG.showBadEventsOnLogin);
   const showAny = showGood || showBad;
   
-  console.log('[logout DEBUG] SHOW_GOOD:', showGood, 'SHOW_BAD:', showBad, 'showAny:', showAny);
   
   if (showAny) {
     try {
@@ -4741,12 +4740,10 @@ function ensureBackButton(){
   backBtn.title = 'Geri';
   backBtn.style.cssText = 'flex-shrink: 0;';
   backBtn.onclick = () => {
-    console.log('[BACK BTN] Tıklandı');
     
     const mapEl = document.getElementById('map');
     if (mapEl) {
       mapEl.classList.remove('blur-background');
-      console.log('[BACK BTN] Blur kaldırıldı');
     }
     
     hide(olayCard);
@@ -5035,15 +5032,11 @@ function attachMapClickForLoggedIn(){
   try { map?.off('click'); } catch {}
   if (!map) return;
   
-  console.log('[MAP CLICK ATTACH] allowBlackMarker:', allowBlackMarker(), 'currentUser:', currentUser?.role, 'SUPERVISOR_NO_ADD:', window.SUPERVISOR_NO_ADD);
-  
   map.on('click', (e) => {
     stopLiveLocation(); 
     
-    console.log('[MAP CLICK] Tıklandı - allowBlackMarker:', allowBlackMarker(), 'SUPERVISOR_NO_ADD:', window.SUPERVISOR_NO_ADD);
     
     if (!allowBlackMarker()) {
-      console.log('[MAP CLICK] ❌ allowBlackMarker() false döndü, işlem yapılmıyor');
       return;
     }
     
@@ -5064,7 +5057,6 @@ function attachMapClickForLoggedIn(){
         .bindPopup('Seçili konum');
     }
     
-    console.log('[MAP CLICK] ✅ Konum seçildi:', lat, lng);
     
     if (currentUser && currentUser.role === 'user') {
       const olayCard = qs('#olay-card');
@@ -5075,7 +5067,6 @@ function attachMapClickForLoggedIn(){
         const mapEl = document.getElementById('map');
         if (mapEl) {
           mapEl.classList.add('blur-background');
-          console.log('[MAP CLICK] ✅ Blur eklendi');
         }
         pushOverlayState('olay-card');
         
@@ -5173,19 +5164,15 @@ function detachMapClickForLoggedOut(){
   const showBad = boolFromConfigValue(APP_CONFIG.showBadEventsOnLogin);
   const showAny = showGood || showBad;
   
-  console.log('[INIT DEBUG] SHOW_GOOD_EVENTS_ON_LOGIN:', APP_CONFIG.showGoodEventsOnLogin, '-> bool:', showGood);
-  console.log('[INIT DEBUG] SHOW_BAD_EVENTS_ON_LOGIN:', APP_CONFIG.showBadEventsOnLogin, '-> bool:', showBad);
-  console.log('[INIT] showAny:', showAny);
+
   
   if (!currentUser) {
     await goToDefaultLoginScreen();
     detachMapClickForLoggedOut();
 
     if (showAny) {
-      console.log('[INIT] Public modda olaylar yükleniyor...');
       try { 
         await loadExistingEvents({ publicMode: true });
-        console.log('[INIT] Public olaylar başarıyla yüklendi');
         
         // Haritayı marker'lara fit et
         if (map && markersLayer && markersLayer.getLayers && markersLayer.getLayers().length > 0) {
@@ -5193,18 +5180,16 @@ function detachMapClickForLoggedOut(){
             const group = L.featureGroup(markersLayer.getLayers());
             if (group.getLayers().length > 0) {
               map.fitBounds(group.getBounds().pad(0.15));
-              console.log('[INIT] Harita marker\'lara fit edildi');
             }
           } catch(e) {
-            console.warn('[INIT] Harita fit hatası:', e);
+            console.warn('Harita fit hatası:', e);
           }
         }
       } 
       catch(e){ 
-        console.error('[INIT] Public olay yükleme HATASI:', e); 
+        console.error('Public olay yükleme HATASI:', e); 
       }
     } else {
-      console.log('[INIT] showGood=false ve showBad=false, harita temizleniyor');
       try { if (markersLayer) markersLayer.clearLayers(); } catch {}
     }
     try { ensureMapLegend(map); } catch {}
