@@ -41,14 +41,12 @@ async function loadAppConfig() {
     const resp = await fetch('/api/config');
     if (resp.ok) {
       const config = await resp.json();
-      // Boolean dönüşümleri
       if (typeof config.showGoodEventsOnLogin === 'string') {
         config.showGoodEventsOnLogin = config.showGoodEventsOnLogin.toLowerCase() === 'true';
       }
       if (typeof config.showBadEventsOnLogin === 'string') {
         config.showBadEventsOnLogin = config.showBadEventsOnLogin.toLowerCase() === 'true';
       }
-      // Numeric dönüşümler
       if (config.mapInitialLat) config.mapInitialLat = Number(config.mapInitialLat);
       if (config.mapInitialLng) config.mapInitialLng = Number(config.mapInitialLng);
       if (config.mapInitialZoom) config.mapInitialZoom = Number(config.mapInitialZoom);
@@ -58,12 +56,65 @@ async function loadAppConfig() {
       if (config.pageSizeUsers) config.pageSizeUsers = Number(config.pageSizeUsers);
       
       APP_CONFIG = { ...APP_CONFIG, ...config };
-      createOrUpdateMapFromConfig();
+      
+      if (map) {
+        const minZoom = Number(APP_CONFIG.mapMinZoom) || 2;
+        const lat = Number(APP_CONFIG.mapInitialLat) || 39.9334;
+        const lng = Number(APP_CONFIG.mapInitialLng) || 32.8597;
+        const zoom = Number(APP_CONFIG.mapInitialZoom) || 6;
+        
+        map.setMinZoom(minZoom);
+        map.setMaxZoom(18);
+        map.setView([lat, lng], zoom, { animate: false });
+        map.invalidateSize();
+      } else {
+        createOrUpdateMapFromConfig();
+      }
     }
   } catch (e) {
     console.error('[CONFIG] Yüklenemedi:', e);
     if (!map) createOrUpdateMapFromConfig();
   }
+}
+
+function createOrUpdateMapFromConfig() {
+  const minZoom = Number(APP_CONFIG.mapMinZoom);
+  const lat = Number(APP_CONFIG.mapInitialLat);
+  const lng = Number(APP_CONFIG.mapInitialLng);
+  const zoom = Number(APP_CONFIG.mapInitialZoom);
+
+  if (!map) {
+    map = L.map('map', {
+      zoomControl: false,
+      minZoom: minZoom,
+      maxZoom: 18,
+      maxBounds: WORLD_BOUNDS,
+      maxBoundsViscosity: 1.0,
+      worldCopyJump: false
+    }).setView([lat, lng], zoom);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution:'© OpenStreetMap contributors',
+      noWrap: true,
+      bounds: WORLD_BOUNDS
+    }).addTo(map);
+
+    if (!markersLayer) {
+      markersLayer = makeMarkersLayer().addTo(map);
+    }
+
+    fitMapHeight();
+    window.addEventListener('resize', () => {
+      fitMapHeight();
+      map.invalidateSize();
+    });
+  } else {
+    map.setMinZoom(minZoom);
+    map.setMaxZoom(18);
+    map.setView([lat, lng], zoom, { animate: false });
+    map.invalidateSize();
+  }
+  ensureMapLegend(map);
 }
 
 function loadToken() {
@@ -442,47 +493,6 @@ function boolFromConfigValue(v) {
   if (typeof v === 'number') return v === 1;
   return false;
 }
-
-function createOrUpdateMapFromConfig() {
-  const minZoom = Number(APP_CONFIG.mapMinZoom);
-  const lat = Number(APP_CONFIG.mapInitialLat);
-  const lng = Number(APP_CONFIG.mapInitialLng);
-  const zoom = Number(APP_CONFIG.mapInitialZoom);
-
-  if (!map) {
-    map = L.map('map', {
-      zoomControl: false,
-      minZoom: minZoom,
-      maxZoom: 18,
-      maxBounds: WORLD_BOUNDS,
-      maxBoundsViscosity: 1.0,
-      worldCopyJump: false
-    }).setView([lat, lng], zoom);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution:'© OpenStreetMap contributors',
-      noWrap: true,
-      bounds: WORLD_BOUNDS
-    }).addTo(map);
-
-    if (!markersLayer) {
-      markersLayer = makeMarkersLayer().addTo(map);
-   }
-
-
-    fitMapHeight();
-    window.addEventListener('resize', () => {
-      fitMapHeight();
-      map.invalidateSize();
-    });
-  } else {
-    map.setMinZoom(minZoom);
-    map.setView([lat, lng], zoom, { animate: false });
-    map.invalidateSize();
-  }
-  ensureMapLegend(map);
-}
-
 
 
 function shouldShowLegend() {
