@@ -41,14 +41,12 @@ async function loadAppConfig() {
     const resp = await fetch('/api/config');
     if (resp.ok) {
       const config = await resp.json();
-      // Boolean dönüşümleri
       if (typeof config.showGoodEventsOnLogin === 'string') {
         config.showGoodEventsOnLogin = config.showGoodEventsOnLogin.toLowerCase() === 'true';
       }
       if (typeof config.showBadEventsOnLogin === 'string') {
         config.showBadEventsOnLogin = config.showBadEventsOnLogin.toLowerCase() === 'true';
       }
-      // Numeric dönüşümler
       if (config.mapInitialLat) config.mapInitialLat = Number(config.mapInitialLat);
       if (config.mapInitialLng) config.mapInitialLng = Number(config.mapInitialLng);
       if (config.mapInitialZoom) config.mapInitialZoom = Number(config.mapInitialZoom);
@@ -58,13 +56,65 @@ async function loadAppConfig() {
       if (config.pageSizeUsers) config.pageSizeUsers = Number(config.pageSizeUsers);
       
       APP_CONFIG = { ...APP_CONFIG, ...config };
-      console.log('[CONFIG] Yüklendi:', APP_CONFIG);
-      createOrUpdateMapFromConfig();
+      
+      if (map) {
+        const minZoom = Number(APP_CONFIG.mapMinZoom) || 2;
+        const lat = Number(APP_CONFIG.mapInitialLat) || 39.9334;
+        const lng = Number(APP_CONFIG.mapInitialLng) || 32.8597;
+        const zoom = Number(APP_CONFIG.mapInitialZoom) || 6;
+        
+        map.setMinZoom(minZoom);
+        map.setMaxZoom(18);
+        map.setView([lat, lng], zoom, { animate: false });
+        map.invalidateSize();
+      } else {
+        createOrUpdateMapFromConfig();
+      }
     }
   } catch (e) {
     console.error('[CONFIG] Yüklenemedi:', e);
     if (!map) createOrUpdateMapFromConfig();
   }
+}
+
+function createOrUpdateMapFromConfig() {
+  const minZoom = Number(APP_CONFIG.mapMinZoom);
+  const lat = Number(APP_CONFIG.mapInitialLat);
+  const lng = Number(APP_CONFIG.mapInitialLng);
+  const zoom = Number(APP_CONFIG.mapInitialZoom);
+
+  if (!map) {
+    map = L.map('map', {
+      zoomControl: false,
+      minZoom: minZoom,
+      maxZoom: 18,
+      maxBounds: WORLD_BOUNDS,
+      maxBoundsViscosity: 1.0,
+      worldCopyJump: false
+    }).setView([lat, lng], zoom);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution:'© OpenStreetMap contributors',
+      noWrap: true,
+      bounds: WORLD_BOUNDS
+    }).addTo(map);
+
+    if (!markersLayer) {
+      markersLayer = makeMarkersLayer().addTo(map);
+    }
+
+    fitMapHeight();
+    window.addEventListener('resize', () => {
+      fitMapHeight();
+      map.invalidateSize();
+    });
+  } else {
+    map.setMinZoom(minZoom);
+    map.setMaxZoom(18);
+    map.setView([lat, lng], zoom, { animate: false });
+    map.invalidateSize();
+  }
+  ensureMapLegend(map);
 }
 
 function loadToken() {
@@ -307,13 +357,11 @@ function ensureMapLegend(mapInstance) {
   if (!shouldShowLegend()) {
     const existing = mapInstance.getContainer().querySelector('.map-legend');
     if (existing) existing.remove();
-    console.log('[LEGEND] shouldShowLegend() false döndü, lejant kaldırıldı');
     return;
   }
   
   const existingLegend = mapInstance.getContainer().querySelector('.map-legend');
   if (existingLegend) {
-    console.log('[LEGEND] Lejant zaten mevcut');
     return;
   }
   
@@ -376,13 +424,11 @@ function ensureMapLegend(mapInstance) {
         </div>
       `;
       
-      console.log('[LEGEND] ✅ Lejant oluşturuldu ve haritaya ekleniyor');
       return div;
     }
   });
   
   mapInstance.addControl(new Legend());
-  console.log('[LEGEND] ✅ Lejant kontrolü haritaya eklendi');
 }
 function removeDownloadIfAny(){
   try{
@@ -409,7 +455,6 @@ function downloadFilteredEventsAsGeoJSON() {
   
   const eventIds = filtered.map(e => parseInt(e.olay_id, 10)).filter(id => !isNaN(id));
   
-  console.log('[GeoJSON Export] Gönderilen ID sayısı:', eventIds.length);
   
   fetch('/api/export/geojson', {
     method: 'POST',
@@ -449,47 +494,6 @@ function boolFromConfigValue(v) {
   return false;
 }
 
-function createOrUpdateMapFromConfig() {
-  const minZoom = Number(APP_CONFIG.mapMinZoom);
-  const lat = Number(APP_CONFIG.mapInitialLat);
-  const lng = Number(APP_CONFIG.mapInitialLng);
-  const zoom = Number(APP_CONFIG.mapInitialZoom);
-
-  if (!map) {
-    map = L.map('map', {
-      zoomControl: true,
-      minZoom: minZoom,
-      maxZoom: 18,
-      maxBounds: WORLD_BOUNDS,
-      maxBoundsViscosity: 1.0,
-      worldCopyJump: false
-    }).setView([lat, lng], zoom);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution:'© OpenStreetMap contributors',
-      noWrap: true,
-      bounds: WORLD_BOUNDS
-    }).addTo(map);
-
-    if (!markersLayer) {
-      markersLayer = makeMarkersLayer().addTo(map);
-   }
-
-
-    fitMapHeight();
-    window.addEventListener('resize', () => {
-      fitMapHeight();
-      map.invalidateSize();
-    });
-  } else {
-    map.setMinZoom(minZoom);
-    map.setView([lat, lng], zoom, { animate: false });
-    map.invalidateSize();
-  }
-  ensureMapLegend(map);
-}
-
-
 
 function shouldShowLegend() {
   // 1) GİRİŞ EKRANI (henüz currentUser yok)
@@ -497,34 +501,27 @@ function shouldShowLegend() {
     const showGood = boolFromConfigValue(APP_CONFIG.showGoodEventsOnLogin);
     const showBad  = boolFromConfigValue(APP_CONFIG.showBadEventsOnLogin);
 
-    console.log('[LEGEND DEBUG] showGoodEventsOnLogin:', APP_CONFIG.showGoodEventsOnLogin, '-> bool:', showGood);
-    console.log('[LEGEND DEBUG] showBadEventsOnLogin:', APP_CONFIG.showBadEventsOnLogin, '-> bool:', showBad);
 
     // İkisi de false -> lejant gösterme
     if (!showGood && !showBad) {
-      console.log('[LEGEND] Giriş ekranı: SHOW_GOOD=false, SHOW_BAD=false -> lejant GİZLE');
       return false;
     }
     
-    console.log('[LEGEND] Giriş ekranı: En az biri true -> lejant GÖSTER');
     return true;
   }
 
   // 2) KULLANICI GİRİŞİ -> her zaman göster
   if (currentUser.role === 'user') {
-    console.log('[LEGEND] Kullanıcı girişi: lejant GÖSTER');
     return true;
   }
 
   // 3) SUPERVISOR GİRİŞİ -> her zaman göster (form/admin fark etmez)
   if (currentUser.role === 'supervisor') {
-    console.log('[LEGEND] Supervisor girişi: lejant GÖSTER');
     return true;
   }
 
   // 4) ADMIN GİRİŞİ -> her zaman göster
   if (currentUser.role === 'admin') {
-    console.log('[LEGEND] Admin girişi: lejant GÖSTER');
     return true;
   }
 
@@ -547,7 +544,7 @@ function ensureEventsMap() {
   
   if (!eventsMap) {
     eventsMap = L.map('events-map', {
-      zoomControl:true,
+      zoomControl: false,
       minZoom: minZoom,
       maxZoom: 18,
       worldCopyJump: false
@@ -591,7 +588,6 @@ function ensureEventsExportControl() {
           const filtered = tableStates?.events?.filtered || [];
           const eventIds = filtered.map(ev => parseInt(ev.olay_id, 10)).filter(id => !isNaN(id));
           
-          console.log('[ensureEventsExportControl] Gönderilen ID sayısı:', eventIds.length);
           
           const r = await fetch('/api/export/geojson', {
             method:'POST',
@@ -817,11 +813,29 @@ function parseDateStr(dateStr) {
 
 /* ==================== TARİH FİLTRE DROPDOWN ==================== */
 function buildDateFilterDropdown(data, state) {
+  let selectAllChecked = false;
+  
+  if (!state.filters.date || !Array.isArray(state.filters.date)) {
+    selectAllChecked = true;
+  } else if (state.filters.date.length === 0) {
+    selectAllChecked = false;
+  } else {
+    const valueCounts = {};
+    data.forEach(item => {
+      const value = formatDate(item.created_at || item.eklenme_tarihi);
+      if (value && value !== '-') {
+        valueCounts[value] = (valueCounts[value] || 0) + 1;
+      }
+    });
+    const totalValues = Object.keys(valueCounts).length;
+    selectAllChecked = state.filters.date.length === totalValues;
+  }
+  
   let html = `
     <input type="text" class="filter-search" placeholder="Ara: Mayıs, 2025, 14 Mayıs 2025, 01:00..." />
     <div class="filter-options-container">
       <label class="filter-option">
-        <input type="checkbox" class="filter-select-all" ${!state.filters.date || state.filters.date.length === 0 ? 'checked' : ''} />
+        <input type="checkbox" class="filter-select-all" ${selectAllChecked ? 'checked' : ''} />
         <span>(Tümünü Seç)</span>
       </label>
       <label class="filter-option" style="background:#e3f2fd; border-radius:4px; padding:4px 8px;">
@@ -852,7 +866,16 @@ function buildDateFilterDropdown(data, state) {
   
   sortedValues.forEach(value => {
     const count = valueCounts[value];
-    const checked = !state.filters.date || state.filters.date.length === 0 || state.filters.date.includes(value);
+    
+    let checked = false;
+    if (!state.filters.date || !Array.isArray(state.filters.date)) {
+      checked = true;
+    } else if (state.filters.date.length === 0) {
+      checked = false;
+    } else {
+      checked = state.filters.date.includes(value);
+    }
+    
     html += `
       <label class="filter-option">
         <input type="checkbox" class="filter-checkbox" value="${escapeHtml(value)}" ${checked ? 'checked' : ''} />
@@ -868,38 +891,63 @@ function buildDateFilterDropdown(data, state) {
 /* ==================== E-POSTA FİLTRE DROPDOWN ==================== */
 function buildEmailFilterDropdown(data, state) {
   const uniqueEmails = new Set();
-  data.forEach(item => {
+  state.data.forEach(item => {
     const email = item.email || '';
     if (email) uniqueEmails.add(email);
   });
   
   const sortedEmails = Array.from(uniqueEmails).sort();
   
-  const domainCounts = {};
-  
-  if (APP_CONFIG.allowedEmailDomains && Array.isArray(APP_CONFIG.allowedEmailDomains)) {
-    APP_CONFIG.allowedEmailDomains.forEach(domain => {
-      domainCounts[domain] = 0;
-    });
-  }
-  
+  const emailCounts = {};
   sortedEmails.forEach(email => {
-    const match = email.match(/@(.+)$/);
-    if (match) {
-      const domain = match[1];
-      domainCounts[domain] = (domainCounts[domain] || 0) + 1;
+    emailCounts[email] = 0;
+  });
+  
+  state.filtered.forEach(item => {
+    const email = item.email || '';
+    if (email && emailCounts.hasOwnProperty(email)) {
+      emailCounts[email]++;
     }
   });
   
-  const sortedDomains = Object.keys(domainCounts)
-    .filter(domain => domainCounts[domain] > 0)
-    .sort();
+  const activeDomains = new Set();
+  
+  state.data.forEach(item => {
+    const email = item.email || '';
+    const match = email.match(/@(.+)$/);
+    if (match) {
+      activeDomains.add(match[1]);
+    }
+  });
+  
+  const domainCounts = {};
+  activeDomains.forEach(domain => {
+    domainCounts[domain] = 0;
+  });
+  
+  state.filtered.forEach(item => {
+    const email = item.email || '';
+    const match = email.match(/@(.+)$/);
+    if (match) {
+      const domain = match[1];
+      if (activeDomains.has(domain)) {
+        domainCounts[domain]++;
+      }
+    }
+  });
+  
+  const sortedDomains = Array.from(activeDomains).sort();
+  
+  const specialFilters = state.specialFilters || {};
+  const allEmailsSelected = !state.filters.email || state.filters.email.length === sortedEmails.length;
+  const allDomainsSelected = !specialFilters.emailDomains || specialFilters.emailDomains.length === sortedDomains.length;
+  const selectAllChecked = allEmailsSelected && allDomainsSelected;
   
   let html = `
     <input type="text" class="filter-search" placeholder="Ara: ortak kelime..." />
     <div class="filter-options-container">
       <label class="filter-option">
-        <input type="checkbox" class="filter-select-all" ${!state.filters.email || state.filters.email.length === 0 ? 'checked' : ''} />
+        <input type="checkbox" class="filter-select-all" ${selectAllChecked ? 'checked' : ''} />
         <span>(Tümünü Seç)</span>
       </label>
   `;
@@ -908,10 +956,11 @@ function buildEmailFilterDropdown(data, state) {
     html += '<div style="font-weight:600; font-size:0.85rem; color:var(--primary); margin:8px 0 4px 0;">📧 E-posta Domain\'leri:</div>';
     
     sortedDomains.forEach(domain => {
-      const count = domainCounts[domain];
+      const count = domainCounts[domain] || 0;
+      const checked = !specialFilters.emailDomains || specialFilters.emailDomains.includes(domain);
       html += `
-        <label class="filter-option" style="background:#e3f2fd; border-radius:4px; padding:4px 8px; margin:2px 0;">
-          <input type="checkbox" class="filter-email-domain" data-domain="${escapeHtml(domain)}" />
+        <label class="filter-option special-filter-item" style="background:#e3f2fd; border-radius:4px; padding:4px 8px; margin:2px 0;">
+          <input type="checkbox" class="filter-email-domain" data-domain="${escapeHtml(domain)}" ${checked ? 'checked' : ''} />
           <span style="font-weight:500;">@${escapeHtml(domain)} (${count})</span>
         </label>
       `;
@@ -921,11 +970,24 @@ function buildEmailFilterDropdown(data, state) {
   }
   
   sortedEmails.forEach(email => {
-    const checked = !state.filters.email || state.filters.email.length === 0 || state.filters.email.includes(email);
+    const count = emailCounts[email] || 0;
+    
+    let checked = false;
+    if (state.filters.email && state.filters.email.length > 0) {
+      checked = state.filters.email.includes(email);
+    } else if (specialFilters.emailDomains && specialFilters.emailDomains.length > 0) {
+      const match = email.match(/@(.+)$/);
+      if (match) {
+        checked = specialFilters.emailDomains.includes(match[1]);
+      }
+    } else {
+      checked = true;
+    }
+    
     html += `
       <label class="filter-option">
         <input type="checkbox" class="filter-checkbox" value="${escapeHtml(email)}" ${checked ? 'checked' : ''} />
-        <span>${escapeHtml(email)}</span>
+        <span>${escapeHtml(email)} (${count})</span>
       </label>
     `;
   });
@@ -1084,8 +1146,11 @@ function applyCustomDateFilters(tableKey) {
 function applySortFilter(sortType) {
   const state = tableStates.events;
   
+  // Durumu sakla
+  if (!state.specialFilters) state.specialFilters = {};
+  state.specialFilters.sortOrder = sortType;
+  
   if (!sortType) {
-
     state.filtered = [...state.data];
   } else {
     state.filtered.sort((a, b) => {
@@ -1102,6 +1167,7 @@ function applySortFilter(sortType) {
   
   state.currentPage = 1;
   renderTable('events');
+  updateFilterIcon('events', 'date');
 }
 /* ==================== E-POSTA DOMAIN FİLTRELERİNİ UYGULA ==================== */
 function applyEmailDomainFilters(tableKey) {
@@ -1112,15 +1178,36 @@ function applyEmailDomainFilters(tableKey) {
   const checkedDomains = Array.from(dropdown.querySelectorAll('.filter-email-domain:checked'))
     .map(cb => cb.getAttribute('data-domain'));
   
-  if (checkedDomains.length === 0) {
-    applyFilters(tableKey);
+  if (!state.specialFilters) state.specialFilters = {};
+  state.specialFilters.emailDomains = checkedDomains;
+  
+  const selectedEmails = state.filters.email || [];
+  
+  if (checkedDomains.length === 0 && selectedEmails.length === 0) {
+    state.filtered = [];
+    state.currentPage = 1;
+    renderTable(tableKey);
+    updateFilterIcon(tableKey, 'email');
     return;
   }
-
+  
   state.filtered = state.data.filter(item => {
     const email = item.email || '';
-    return checkedDomains.some(domain => email.endsWith('@' + domain));
+    
+    const inDomain = checkedDomains.length > 0 && checkedDomains.some(domain => email.endsWith('@' + domain));
+    const inSelected = selectedEmails.length > 0 && selectedEmails.includes(email);
+    
+    return inDomain || inSelected;
   });
+  
+  const selectAllBox = dropdown.querySelector('.filter-select-all');
+  if (selectAllBox) {
+    const allDomainBoxes = dropdown.querySelectorAll('.filter-email-domain');
+    const allCheckboxes = dropdown.querySelectorAll('.filter-checkbox');
+    const checkedCheckboxes = dropdown.querySelectorAll('.filter-checkbox:checked');
+    
+    selectAllBox.checked = checkedDomains.length === allDomainBoxes.length && checkedCheckboxes.length === allCheckboxes.length;
+  }
   
   state.currentPage = 1;
   renderTable(tableKey);
@@ -1145,7 +1232,8 @@ const tableStates = {
     currentPage: 1, 
     pageSize: null,
     sortColumn: null,
-    sortDirection: 'asc'
+    sortDirection: 'asc',
+    specialFilters: {}
   },
   events: { 
     data: [], 
@@ -1154,7 +1242,8 @@ const tableStates = {
     currentPage: 1, 
     pageSize: null,
     sortColumn: null,
-    sortDirection: 'asc'
+    sortDirection: 'asc',
+    specialFilters: {}
   }
 };
 
@@ -1162,7 +1251,6 @@ function applyFilters(tableKey) {
   const state = tableStates[tableKey];
   if (!state) return;
   
-  // Hiçbir filtre yoksa tüm veriyi göster
   if (Object.keys(state.filters).length === 0) {
     state.filtered = [...state.data];
     state.currentPage = 1;
@@ -1172,12 +1260,10 @@ function applyFilters(tableKey) {
   
   state.filtered = state.data.filter(item => {
     for (const [column, selectedValues] of Object.entries(state.filters)) {
-      // Eğer selectedValues boş array ise (hiçbir seçenek seçilmemiş), bu item'ı gösterme
       if (Array.isArray(selectedValues) && selectedValues.length === 0) {
         return false;
       }
       
-      // Eğer selectedValues null veya undefined ise devam et (filtre yok sayılır)
       if (!selectedValues) continue;
       
       let itemValue = '';
@@ -1185,7 +1271,7 @@ function applyFilters(tableKey) {
       switch(tableKey) {
         case 'types':
           if (column === 'name') itemValue = item.o_adi || '';
-          if (column === 'good') itemValue = (item.good === true || item.good === 'true' || item.good === 1) ? 'Faydalı' : 'Faydasız';
+          if (column === 'good') itemValue = (item.good === true || item.good === 'true' || item.good === 1) ? 'Faydalı' : 'Faydasız'; // DEĞİŞTİ
           if (column === 'creator') itemValue = item.created_by_name || '-';
           break;
         case 'users':
@@ -1290,7 +1376,7 @@ function buildFilterDropdown(tableKey, column, data) {
     switch(tableKey) {
       case 'types':
         if (column === 'name') value = item.o_adi || '';
-        if (column === 'good') value = (item.good === true || item.good === 'true' || item.good === 1) ? 'Evet' : 'Hayır';
+        if (column === 'good') value = (item.good === true || item.good === 'true' || item.good === 1) ? 'Faydalı' : 'Faydasız';
         if (column === 'creator') value = item.created_by_name || '-';
         break;
       case 'users':
@@ -1330,6 +1416,7 @@ function buildFilterDropdown(tableKey, column, data) {
     switch(tableKey) {
       case 'types':
         if (column === 'name') value = item.o_adi || '';
+        if (column === 'good') value = (item.good === true || item.good === 'true' || item.good === 1) ? 'Faydalı' : 'Faydasız';
         if (column === 'creator') value = item.created_by_name || '-';
         break;
       case 'users':
@@ -1349,17 +1436,28 @@ function buildFilterDropdown(tableKey, column, data) {
     if (value) valueCounts[value] = (valueCounts[value] || 0) + 1;
   });
   
+  let isAllSelected = false;
+  
+  if (!state.filters[column] || !Array.isArray(state.filters[column])) {
+    isAllSelected = true;
+  } else if (state.filters[column].length === 0) {
+    isAllSelected = false;
+  } else if (state.filters[column].length === sortedValues.length) {
+    isAllSelected = true;
+  } else {
+    isAllSelected = false;
+  }
+  
   let html = `
     <input type="text" class="filter-search" placeholder="Ara..." />
     <div class="filter-options-container">
       <label class="filter-option">
-        <input type="checkbox" class="filter-select-all" ${!state.filters[column] || state.filters[column].length === 0 ? 'checked' : ''} />
+        <input type="checkbox" class="filter-select-all" ${isAllSelected ? 'checked' : ''} />
         <span>(Tümünü Seç)</span>
       </label>
   `;
 
-
-sortedValues.forEach(value => {
+  sortedValues.forEach(value => {
     let filteredCount = 0;
     state.filtered.forEach(item => {
       let itemValue = '';
@@ -1367,7 +1465,7 @@ sortedValues.forEach(value => {
       switch(tableKey) {
         case 'types':
           if (column === 'name') itemValue = item.o_adi || '';
-          if (column === 'good') itemValue = (item.good === true || item.good === 'true' || item.good === 1) ? 'Evet' : 'Hayır';
+          if (column === 'good') itemValue = (item.good === true || item.good === 'true' || item.good === 1) ? 'Faydalı' : 'Faydasız'; 
           if (column === 'creator') itemValue = item.created_by_name || '-';
           break;
         case 'users':
@@ -1387,7 +1485,15 @@ sortedValues.forEach(value => {
       if (itemValue === value) filteredCount++;
     });
     
-    const checked = !state.filters[column] || state.filters[column].length === 0 || state.filters[column].includes(value);
+    let checked = false;
+    if (!state.filters[column] || !Array.isArray(state.filters[column])) {
+      checked = true;
+    } else if (state.filters[column].length === 0) {
+      checked = false;
+    } else {
+      checked = state.filters[column].includes(value);
+    }
+    
     html += `
       <label class="filter-option">
         <input type="checkbox" class="filter-checkbox" value="${escapeHtml(value)}" ${checked ? 'checked' : ''} />
@@ -1399,12 +1505,10 @@ sortedValues.forEach(value => {
   html += `</div>`;
   return html;
 }
-
 /* ==================== OLAY TÜRÜ FİLTRE DROPDOWN (İYİ/KÖTÜ) ==================== */
 function buildEventTypeFilterDropdown(data, state) {
-  // Benzersiz türleri topla
   const typeMap = new Map();
-  data.forEach(item => {
+  state.data.forEach(item => {
     const typeName = item.olay_turu_adi || '-';
     const typeId = item.olay_turu_id;
     const isGood = item.olay_turu_good === true || item.olay_turu_good === 'true' || item.olay_turu_good === 1;
@@ -1412,13 +1516,18 @@ function buildEventTypeFilterDropdown(data, state) {
     if (!typeMap.has(typeName)) {
       typeMap.set(typeName, { name: typeName, id: typeId, isGood: isGood, count: 0 });
     }
-    typeMap.get(typeName).count++;
   });
   
-  // İyi/Kötü sayıları
+  state.filtered.forEach(item => {
+    const typeName = item.olay_turu_adi || '-';
+    if (typeMap.has(typeName)) {
+      typeMap.get(typeName).count++;
+    }
+  });
+  
   let goodCount = 0;
   let badCount = 0;
-  data.forEach(item => {
+  state.filtered.forEach(item => {
     const isGood = item.olay_turu_good === true || item.olay_turu_good === 'true' || item.olay_turu_good === 1;
     if (isGood) goodCount++;
     else badCount++;
@@ -1426,32 +1535,51 @@ function buildEventTypeFilterDropdown(data, state) {
   
   const sortedTypes = Array.from(typeMap.values()).sort((a, b) => a.name.localeCompare(b.name));
   
+  const specialFilters = state.specialFilters || {};
+  
+  const allTypesSelected = !state.filters.type || state.filters.type.length === sortedTypes.length;
+  const allGoodBadSelected = specialFilters.typeGood !== false && specialFilters.typeBad !== false;
+  const selectAllChecked = allTypesSelected && allGoodBadSelected;
+  
   let html = `
     <input type="text" class="filter-search" placeholder="Ara..." />
     <div class="filter-options-container">
       <label class="filter-option">
-        <input type="checkbox" class="filter-select-all" ${!state.filters.type || state.filters.type.length === 0 ? 'checked' : ''} />
+        <input type="checkbox" class="filter-select-all" ${selectAllChecked ? 'checked' : ''} />
         <span>(Tümünü Seç)</span>
       </label>
       
       <hr style="margin:8px 0; border:none; border-top:1px solid var(--border);" />
       
-      <label class="filter-option" style="background:#d4edda; border-radius:4px; padding:4px 8px;">
-        <input type="checkbox" class="filter-event-type-good" />
-        <span style="font-weight:500;">✅ İyi Olay Türleri (${goodCount})</span>
+      <label class="filter-option special-filter-item" style="background:#d4edda; border-radius:4px; padding:4px 8px;">
+        <input type="checkbox" class="filter-event-type-good" ${specialFilters.typeGood !== false ? 'checked' : ''} />
+        <span style="font-weight:500;">✅ Vatandaşa Faydalı (${goodCount})</span>
       </label>
       
-      <label class="filter-option" style="background:#f8d7da; border-radius:4px; padding:4px 8px;">
-        <input type="checkbox" class="filter-event-type-bad" />
-        <span style="font-weight:500;">❌ Kötü Olay Türleri (${badCount})</span>
+      <label class="filter-option special-filter-item" style="background:#f8d7da; border-radius:4px; padding:4px 8px;">
+        <input type="checkbox" class="filter-event-type-bad" ${specialFilters.typeBad !== false ? 'checked' : ''} />
+        <span style="font-weight:500;">❌ Vatandaşa Faydasız (${badCount})</span>
       </label>
       
       <hr style="margin:8px 0; border:none; border-top:1px solid var(--border);" />
   `;
   
   sortedTypes.forEach(type => {
-    const checked = !state.filters.type || state.filters.type.length === 0 || state.filters.type.includes(type.name);
     const badge = type.isGood ? '✅' : '❌';
+    
+    let checked = false;
+    if (state.filters.type && state.filters.type.length > 0) {
+      checked = state.filters.type.includes(type.name);
+    } else {
+      if (specialFilters.typeGood === false && type.isGood) {
+        checked = false;
+      } else if (specialFilters.typeBad === false && !type.isGood) {
+        checked = false;
+      } else {
+        checked = true;
+      }
+    }
+    
     html += `
       <label class="filter-option">
         <input type="checkbox" class="filter-checkbox" value="${escapeHtml(type.name)}" ${checked ? 'checked' : ''} />
@@ -1467,36 +1595,53 @@ function buildEventTypeFilterDropdown(data, state) {
 /* ==================== OLAY EKLEYEN FİLTRE DROPDOWN (E-POSTA DOMAİNLERİ) ==================== */
 function buildEventCreatorFilterDropdown(data, state) {
   const uniqueCreators = new Set();
-  data.forEach(item => {
+  state.data.forEach(item => {
     const creator = item.created_by_username || '-';
     if (creator) uniqueCreators.add(creator);
   });
   
   const sortedCreators = Array.from(uniqueCreators).sort();
   
-
-  const domainCounts = {};
+  const creatorCounts = {};
+  sortedCreators.forEach(creator => {
+    creatorCounts[creator] = 0;
+  });
   
-
-  if (APP_CONFIG.allowedEmailDomains && Array.isArray(APP_CONFIG.allowedEmailDomains)) {
-    APP_CONFIG.allowedEmailDomains.forEach(domain => {
-      domainCounts[domain] = 0;
-    });
-  }
+  state.filtered.forEach(item => {
+    const creator = item.created_by_username || '-';
+    if (creator && creatorCounts.hasOwnProperty(creator)) {
+      creatorCounts[creator]++;
+    }
+  });
   
-
+  const activeDomains = new Set();
+  
   if (tableStates.users && tableStates.users.data) {
     tableStates.users.data.forEach(user => {
       const email = user.email || '';
       const match = email.match(/@(.+)$/);
       if (match) {
         const domain = match[1];
-        if (!domainCounts.hasOwnProperty(domain)) {
-          domainCounts[domain] = 0;
-        }
+        activeDomains.add(domain);
+      }
+    });
+  }
+  
+  const domainCounts = {};
+  activeDomains.forEach(domain => {
+    domainCounts[domain] = 0;
+  });
+  
+  if (tableStates.users && tableStates.users.data) {
+    tableStates.users.data.forEach(user => {
+      const email = user.email || '';
+      const match = email.match(/@(.+)$/);
+      if (match) {
+        const domain = match[1];
+        if (!activeDomains.has(domain)) return;
         
         const username = user.username;
-        data.forEach(item => {
+        state.filtered.forEach(item => {
           if (item.created_by_username === username) {
             domainCounts[domain]++;
           }
@@ -1505,15 +1650,18 @@ function buildEventCreatorFilterDropdown(data, state) {
     });
   }
   
-  const sortedDomains = Object.keys(domainCounts)
-    .filter(domain => domainCounts[domain] > 0)
-    .sort();
+  const sortedDomains = Array.from(activeDomains).sort();
+  
+  const specialFilters = state.specialFilters || {};
+  const allCreatorsSelected = !state.filters.creator || state.filters.creator.length === sortedCreators.length;
+  const allDomainsSelected = !specialFilters.creatorDomains || specialFilters.creatorDomains.length === sortedDomains.length;
+  const selectAllChecked = allCreatorsSelected && allDomainsSelected;
   
   let html = `
     <input type="text" class="filter-search" placeholder="Ara..." />
     <div class="filter-options-container">
       <label class="filter-option">
-        <input type="checkbox" class="filter-select-all" ${!state.filters.creator || state.filters.creator.length === 0 ? 'checked' : ''} />
+        <input type="checkbox" class="filter-select-all" ${selectAllChecked ? 'checked' : ''} />
         <span>(Tümünü Seç)</span>
       </label>
   `;
@@ -1522,10 +1670,11 @@ function buildEventCreatorFilterDropdown(data, state) {
     html += '<div style="font-weight:600; font-size:0.85rem; color:var(--primary); margin:8px 0 4px 0;">📧 E-posta Domain\'leri:</div>';
     
     sortedDomains.forEach(domain => {
-      const count = domainCounts[domain];
+      const count = domainCounts[domain] || 0;
+      const checked = !specialFilters.creatorDomains || specialFilters.creatorDomains.includes(domain);
       html += `
-        <label class="filter-option" style="background:#e3f2fd; border-radius:4px; padding:4px 8px; margin:2px 0;">
-          <input type="checkbox" class="filter-creator-domain" data-domain="${escapeHtml(domain)}" />
+        <label class="filter-option special-filter-item" style="background:#e3f2fd; border-radius:4px; padding:4px 8px; margin:2px 0;">
+          <input type="checkbox" class="filter-creator-domain" data-domain="${escapeHtml(domain)}" ${checked ? 'checked' : ''} />
           <span style="font-weight:500;">@${escapeHtml(domain)} (${count})</span>
         </label>
       `;
@@ -1534,13 +1683,30 @@ function buildEventCreatorFilterDropdown(data, state) {
     html += '<hr style="margin:8px 0; border:none; border-top:1px solid var(--border);" />';
   }
   
-  // Her ekleyeni listele
   sortedCreators.forEach(creator => {
-    const checked = !state.filters.creator || state.filters.creator.length === 0 || state.filters.creator.includes(creator);
+    const count = creatorCounts[creator] || 0;
+    
+    let checked = false;
+    if (state.filters.creator && state.filters.creator.length > 0) {
+      checked = state.filters.creator.includes(creator);
+    } else if (specialFilters.creatorDomains && specialFilters.creatorDomains.length < sortedDomains.length) {
+      if (tableStates.users && tableStates.users.data) {
+        const user = tableStates.users.data.find(u => u.username === creator);
+        if (user && user.email) {
+          const match = user.email.match(/@(.+)$/);
+          if (match) {
+            checked = specialFilters.creatorDomains.includes(match[1]);
+          }
+        }
+      }
+    } else {
+      checked = true;
+    }
+    
     html += `
       <label class="filter-option">
         <input type="checkbox" class="filter-checkbox" value="${escapeHtml(creator)}" ${checked ? 'checked' : ''} />
-        <span>${escapeHtml(creator)}</span>
+        <span>${escapeHtml(creator)} (${count})</span>
       </label>
     `;
   });
@@ -1558,7 +1724,10 @@ function applyEventTypeGoodBadFilters(tableKey) {
   const goodChecked = dropdown.querySelector('.filter-event-type-good')?.checked;
   const badChecked = dropdown.querySelector('.filter-event-type-bad')?.checked;
   
-  // Hiçbiri seçili değilse -> hiç olay gösterme
+  if (!state.specialFilters) state.specialFilters = {};
+  state.specialFilters.typeGood = goodChecked;
+  state.specialFilters.typeBad = badChecked;
+  
   if (!goodChecked && !badChecked) {
     state.filtered = [];
     state.currentPage = 1;
@@ -1567,13 +1736,19 @@ function applyEventTypeGoodBadFilters(tableKey) {
     return;
   }
   
-  // Seçili türlere göre filtrele
+  const selectedTypes = state.filters.type || [];
+  
   state.filtered = state.data.filter(item => {
+    const typeName = item.olay_turu_adi || '-';
     const isGood = item.olay_turu_good === true || item.olay_turu_good === 'true' || item.olay_turu_good === 1;
     
-    if (goodChecked && badChecked) return true; // Her ikisi de gösterilecek
-    if (goodChecked && isGood) return true;     // Sadece good olanlar
-    if (badChecked && !isGood) return true;     // Sadece bad olanlar
+    if (selectedTypes.length > 0 && !selectedTypes.includes(typeName)) {
+      return false;
+    }
+    
+    if (goodChecked && badChecked) return true;
+    if (goodChecked && isGood) return true;
+    if (badChecked && !isGood) return true;
     return false;
   });
   
@@ -1591,13 +1766,11 @@ function applyEventCreatorDomainFilters(tableKey) {
   const checkedDomains = Array.from(dropdown.querySelectorAll('.filter-creator-domain:checked'))
     .map(cb => cb.getAttribute('data-domain'));
   
-  if (checkedDomains.length === 0) {
-
-    applyFilters(tableKey);
-    return;
-  }
+  if (!state.specialFilters) state.specialFilters = {};
+  state.specialFilters.creatorDomains = checkedDomains;
   
-
+  const selectedCreators = state.filters.creator || [];
+  
   const usernamesInDomains = [];
   if (tableStates.users && tableStates.users.data) {
     tableStates.users.data.forEach(user => {
@@ -1611,7 +1784,11 @@ function applyEventCreatorDomainFilters(tableKey) {
   
   state.filtered = state.data.filter(item => {
     const creator = item.created_by_username || '';
-    return usernamesInDomains.includes(creator);
+    
+    const inDomain = usernamesInDomains.includes(creator);
+    const inSelected = selectedCreators.length === 0 || selectedCreators.includes(creator);
+    
+    return inDomain || (selectedCreators.length > 0 && inSelected);
   });
   
   state.currentPage = 1;
@@ -1630,7 +1807,6 @@ function attachGlobalClickHandler() {
     }
   });
 }
-
 function attachFilterEvents(tableKey) {
   const table = qs(`#${tableKey}-table`);
   if (!table) return;
@@ -1659,6 +1835,104 @@ function attachFilterEvents(tableKey) {
           dropdown.style.left = `${rect.left}px`;
           
           dropdown.innerHTML = buildFilterDropdown(tableKey, column, tableStates[tableKey].data);
+          
+          const state = tableStates[tableKey];
+          const specialFilters = state.specialFilters || {};
+          
+          if (tableKey === 'events' && column === 'type') {
+            const goodBox = dropdown.querySelector('.filter-event-type-good');
+            const badBox = dropdown.querySelector('.filter-event-type-bad');
+            if (goodBox && specialFilters.typeGood !== undefined) {
+              goodBox.checked = specialFilters.typeGood;
+            }
+            if (badBox && specialFilters.typeBad !== undefined) {
+              badBox.checked = specialFilters.typeBad;
+            }
+            
+            const normalCheckboxes = dropdown.querySelectorAll('.filter-checkbox');
+            const selectedTypes = state.filters.type || [];
+            
+            normalCheckboxes.forEach(cb => {
+              const typeName = cb.value;
+              
+              if (selectedTypes.length > 0) {
+                cb.checked = selectedTypes.includes(typeName);
+              } else {
+                const typeData = state.data.find(item => (item.olay_turu_adi || '-') === typeName);
+                if (typeData) {
+                  const isGood = typeData.olay_turu_good === true || typeData.olay_turu_good === 'true' || typeData.olay_turu_good === 1;
+                  
+                  if (specialFilters.typeGood === false && isGood) {
+                    cb.checked = false;
+                  } else if (specialFilters.typeBad === false && !isGood) {
+                    cb.checked = false;
+                  } else {
+                    cb.checked = true;
+                  }
+                }
+              }
+            });
+          }
+          
+          if (tableKey === 'events' && column === 'creator') {
+            if (specialFilters.creatorDomains !== undefined) {
+              dropdown.querySelectorAll('.filter-creator-domain').forEach(cb => {
+                const domain = cb.getAttribute('data-domain');
+                cb.checked = specialFilters.creatorDomains.includes(domain);
+              });
+              
+              const usernamesInDomains = [];
+              if (tableStates.users && tableStates.users.data) {
+                tableStates.users.data.forEach(user => {
+                  const email = user.email || '';
+                  const match = email.match(/@(.+)$/);
+                  if (match && specialFilters.creatorDomains.includes(match[1])) {
+                    usernamesInDomains.push(user.username);
+                  }
+                });
+              }
+              
+              dropdown.querySelectorAll('.filter-checkbox').forEach(cb => {
+                const username = cb.value;
+                if (usernamesInDomains.includes(username)) {
+                  cb.checked = true;
+                }
+              });
+            }
+          }
+          
+          if (tableKey === 'users' && column === 'email') {
+            if (specialFilters.emailDomains !== undefined) {
+              dropdown.querySelectorAll('.filter-email-domain').forEach(cb => {
+                const domain = cb.getAttribute('data-domain');
+                cb.checked = specialFilters.emailDomains.includes(domain);
+              });
+              
+              const manuallySelectedEmails = state.filters.email || [];
+              
+              dropdown.querySelectorAll('.filter-checkbox').forEach(cb => {
+                const email = cb.value;
+                const match = email.match(/@(.+)$/);
+                
+                const isManuallySelected = manuallySelectedEmails.includes(email);
+                
+                const inSelectedDomain = match && specialFilters.emailDomains.includes(match[1]);
+                
+                cb.checked = isManuallySelected || inSelectedDomain;
+              });
+            }
+          }
+          
+          if (tableKey === 'events' && column === 'date') {
+            const newestBox = dropdown.querySelector('.filter-sort-newest');
+            const oldestBox = dropdown.querySelector('.filter-sort-oldest');
+            if (specialFilters.sortOrder === 'newest' && newestBox) {
+              newestBox.checked = true;
+            } else if (specialFilters.sortOrder === 'oldest' && oldestBox) {
+              oldestBox.checked = true;
+            }
+          }
+          
           const searchInput = dropdown.querySelector('.filter-search');
           searchInput?.addEventListener('input', (e) => {
             const searchTerm = e.target.value.toLowerCase().trim();
@@ -1723,39 +1997,168 @@ function attachFilterEvents(tableKey) {
             });
           });
           
-          // E-POSTA DOMAIN CHECKBOX'LARI (users tablosu)
+          const selectAllBox = dropdown.querySelector('.filter-select-all');
+          selectAllBox?.addEventListener('change', (e) => {
+            const checkboxes = dropdown.querySelectorAll('.filter-checkbox');
+            checkboxes.forEach(cb => cb.checked = e.target.checked);
+            
+            if (tableKey === 'users' && column === 'email') {
+              dropdown.querySelectorAll('.filter-email-domain').forEach(cb => cb.checked = e.target.checked);
+              
+              if (!state.specialFilters) state.specialFilters = {};
+              if (e.target.checked) {
+                const allDomains = Array.from(dropdown.querySelectorAll('.filter-email-domain')).map(cb => cb.getAttribute('data-domain'));
+                state.specialFilters.emailDomains = allDomains;
+              } else {
+                state.specialFilters.emailDomains = [];
+              }
+            }
+            
+            if (tableKey === 'events' && column === 'creator') {
+              dropdown.querySelectorAll('.filter-creator-domain').forEach(cb => cb.checked = e.target.checked);
+              
+              if (!state.specialFilters) state.specialFilters = {};
+              if (e.target.checked) {
+                const allDomains = Array.from(dropdown.querySelectorAll('.filter-creator-domain')).map(cb => cb.getAttribute('data-domain'));
+                state.specialFilters.creatorDomains = allDomains;
+              } else {
+                state.specialFilters.creatorDomains = [];
+              }
+            }
+            
+            if (tableKey === 'events' && column === 'type') {
+              const goodBox = dropdown.querySelector('.filter-event-type-good');
+              const badBox = dropdown.querySelector('.filter-event-type-bad');
+              if (goodBox) goodBox.checked = e.target.checked;
+              if (badBox) badBox.checked = e.target.checked;
+              
+              if (!state.specialFilters) state.specialFilters = {};
+              state.specialFilters.typeGood = e.target.checked;
+              state.specialFilters.typeBad = e.target.checked;
+            }
+            
+            if (e.target.checked) {
+              delete tableStates[tableKey].filters[column];
+            } else {
+              tableStates[tableKey].filters[column] = [];
+            }
+            applyFilters(tableKey);
+            updateFilterIcon(tableKey, column);
+          });
+          
           if (tableKey === 'users' && column === 'email') {
             dropdown.querySelectorAll('.filter-email-domain').forEach(domainBox => {
               domainBox.addEventListener('change', () => {
+                const allDomainBoxes = dropdown.querySelectorAll('.filter-email-domain');
+                const checkedDomains = Array.from(dropdown.querySelectorAll('.filter-email-domain:checked'))
+                  .map(cb => cb.getAttribute('data-domain'));
+                
+                state.filters.email = [];
+                
+                dropdown.querySelectorAll('.filter-checkbox').forEach(cb => {
+                  const email = cb.value;
+                  const match = email.match(/@(.+)$/);
+                  
+                  if (match) {
+                    const emailDomain = match[1];
+                    
+                    if (checkedDomains.includes(emailDomain)) {
+                      cb.checked = true;
+                    } else {
+                      cb.checked = false;
+                    }
+                  }
+                });
+                
                 applyEmailDomainFilters('users');
               });
             });
           }
           
-          // OLAY TÜRÜ İYİ/KÖTÜ CHECKBOX'LARI (events tablosu - type kolonu)
-          if (tableKey === 'events' && column === 'type') {
-            const goodBox = dropdown.querySelector('.filter-event-type-good');
-            const badBox = dropdown.querySelector('.filter-event-type-bad');
-            
-            goodBox?.addEventListener('change', () => {
-              applyEventTypeGoodBadFilters('events');
-            });
-            
-            badBox?.addEventListener('change', () => {
-              applyEventTypeGoodBadFilters('events');
-            });
-          }
-          
-          // OLAY EKLEYEN DOMAİN CHECKBOX'LARI (events tablosu - creator kolonu)
           if (tableKey === 'events' && column === 'creator') {
             dropdown.querySelectorAll('.filter-creator-domain').forEach(domainBox => {
               domainBox.addEventListener('change', () => {
+                const allDomainBoxes = dropdown.querySelectorAll('.filter-creator-domain');
+                const checkedDomains = Array.from(dropdown.querySelectorAll('.filter-creator-domain:checked'))
+                  .map(cb => cb.getAttribute('data-domain'));
+                
+                const selectAllBox = dropdown.querySelector('.filter-select-all');
+                if (selectAllBox) {
+                  const allCheckboxes = dropdown.querySelectorAll('.filter-checkbox');
+                  const checkedCheckboxes = dropdown.querySelectorAll('.filter-checkbox:checked');
+                  selectAllBox.checked = checkedDomains.length === allDomainBoxes.length && checkedCheckboxes.length === allCheckboxes.length;
+                }
+                
+                const usernamesInDomains = [];
+                if (tableStates.users && tableStates.users.data) {
+                  tableStates.users.data.forEach(user => {
+                    const email = user.email || '';
+                    const match = email.match(/@(.+)$/);
+                    if (match && checkedDomains.includes(match[1])) {
+                      usernamesInDomains.push(user.username);
+                    }
+                  });
+                }
+                
+                dropdown.querySelectorAll('.filter-checkbox').forEach(cb => {
+                  const username = cb.value;
+                  
+                  if (usernamesInDomains.includes(username)) {
+                    if (!cb.checked) cb.checked = true;
+                  } else if (checkedDomains.length > 0) {
+                    if (!state.filters.creator || !state.filters.creator.includes(username)) {
+                      cb.checked = false;
+                    }
+                  }
+                });
+                
                 applyEventCreatorDomainFilters('events');
               });
             });
           }
           
-          // SIRALAMA RADIO BUTTON'LARI (TARİH İÇİN)
+          if (tableKey === 'events' && column === 'type') {
+            const goodBox = dropdown.querySelector('.filter-event-type-good');
+            const badBox = dropdown.querySelector('.filter-event-type-bad');
+            const selectAllBox = dropdown.querySelector('.filter-select-all');
+            
+            const updateTypeCheckboxes = () => {
+              const goodChecked = goodBox?.checked;
+              const badChecked = badBox?.checked;
+              
+              if (selectAllBox) {
+                const allCheckboxes = dropdown.querySelectorAll('.filter-checkbox');
+                const checkedCheckboxes = dropdown.querySelectorAll('.filter-checkbox:checked');
+                selectAllBox.checked = goodChecked && badChecked && checkedCheckboxes.length === allCheckboxes.length;
+              }
+              
+              dropdown.querySelectorAll('.filter-checkbox').forEach(cb => {
+                const typeName = cb.value;
+                const typeData = state.data.find(item => (item.olay_turu_adi || '-') === typeName);
+                if (typeData) {
+                  const isGood = typeData.olay_turu_good === true || typeData.olay_turu_good === 'true' || typeData.olay_turu_good === 1;
+                  
+                  if (goodChecked === false && isGood) {
+                    cb.checked = false;
+                  } else if (badChecked === false && !isGood) {
+                    cb.checked = false;
+                  } else if (goodChecked === true && badChecked === true) {
+                    cb.checked = true;
+                  } else if (goodChecked === true && isGood) {
+                    cb.checked = true;
+                  } else if (badChecked === true && !isGood) {
+                    cb.checked = true;
+                  }
+                }
+              });
+              
+              applyEventTypeGoodBadFilters('events');
+            };
+            
+            goodBox?.addEventListener('change', updateTypeCheckboxes);
+            badBox?.addEventListener('change', updateTypeCheckboxes);
+          }
+          
           if (tableKey === 'events' && column === 'date') {
             const newestBox = dropdown.querySelector('.filter-sort-newest');
             const oldestBox = dropdown.querySelector('.filter-sort-oldest');
@@ -1773,24 +2176,6 @@ function attachFilterEvents(tableKey) {
             });
           }
           
-          // "Tümünü Seç" checkbox
-          const selectAll = dropdown.querySelector('.filter-select-all');
-          selectAll?.addEventListener('change', (e) => {
-            const checkboxes = dropdown.querySelectorAll('.filter-checkbox');
-            checkboxes.forEach(cb => cb.checked = e.target.checked);
-            
-            if (e.target.checked) {
-              // Tümü seçiliyse filtreyi kaldır
-              delete tableStates[tableKey].filters[column];
-            } else {
-              // Hiçbiri seçili değilse boş array ata (0 kayıt göster)
-              tableStates[tableKey].filters[column] = [];
-            }
-            applyFilters(tableKey);
-            updateFilterIcon(tableKey, column);
-          });
-          
-          // Bireysel checkbox'lar
           dropdown.querySelectorAll('.filter-checkbox').forEach(cb => {
             cb.addEventListener('change', () => {
               const checkedBoxes = Array.from(dropdown.querySelectorAll('.filter-checkbox:checked'));
@@ -1799,17 +2184,104 @@ function attachFilterEvents(tableKey) {
               const selectAllBox = dropdown.querySelector('.filter-select-all');
               
               if (checkedBoxes.length === 0) {
-                // Hiçbiri seçili değil -> Boş array (0 kayıt göster)
                 tableStates[tableKey].filters[column] = [];
                 if (selectAllBox) selectAllBox.checked = false;
               } else if (checkedBoxes.length === allBoxes.length) {
-                // Hepsi seçili -> Filtreyi kaldır (tümünü göster)
                 delete tableStates[tableKey].filters[column];
                 if (selectAllBox) selectAllBox.checked = true;
               } else {
-                // Bazıları seçili -> Sadece seçilenleri göster
                 tableStates[tableKey].filters[column] = checkedBoxes.map(cb => cb.value);
                 if (selectAllBox) selectAllBox.checked = false;
+              }
+              
+              if (tableKey === 'events' && column === 'type') {
+                const goodBox = dropdown.querySelector('.filter-event-type-good');
+                const badBox = dropdown.querySelector('.filter-event-type-bad');
+                
+                let allGoodChecked = true;
+                let allBadChecked = true;
+                
+                dropdown.querySelectorAll('.filter-checkbox').forEach(cb => {
+                  const typeName = cb.value;
+                  const typeData = state.data.find(item => (item.olay_turu_adi || '-') === typeName);
+                  if (typeData) {
+                    const isGood = typeData.olay_turu_good === true || typeData.olay_turu_good === 'true' || typeData.olay_turu_good === 1;
+                    
+                    if (isGood && !cb.checked) allGoodChecked = false;
+                    if (!isGood && !cb.checked) allBadChecked = false;
+                  }
+                });
+                
+                if (goodBox) goodBox.checked = allGoodChecked;
+                if (badBox) badBox.checked = allBadChecked;
+                
+                if (!state.specialFilters) state.specialFilters = {};
+                state.specialFilters.typeGood = allGoodChecked;
+                state.specialFilters.typeBad = allBadChecked;
+              }
+              
+              if (tableKey === 'events' && column === 'creator') {
+                const selectedUsernames = checkedBoxes.map(cb => cb.value);
+                
+                dropdown.querySelectorAll('.filter-creator-domain').forEach(domainCb => {
+                  const domain = domainCb.getAttribute('data-domain');
+                  
+                  const usersInDomain = [];
+                  if (tableStates.users && tableStates.users.data) {
+                    tableStates.users.data.forEach(user => {
+                      const email = user.email || '';
+                      if (email.endsWith('@' + domain)) {
+                        const hasEvents = state.data.some(item => item.created_by_username === user.username);
+                        if (hasEvents) {
+                          usersInDomain.push(user.username);
+                        }
+                      }
+                    });
+                  }
+                  
+                  const allUsersSelected = usersInDomain.length > 0 && usersInDomain.every(u => selectedUsernames.includes(u));
+                  domainCb.checked = allUsersSelected;
+                });
+                
+                if (!state.specialFilters) state.specialFilters = {};
+                const checkedDomains = Array.from(dropdown.querySelectorAll('.filter-creator-domain:checked'))
+                  .map(cb => cb.getAttribute('data-domain'));
+                state.specialFilters.creatorDomains = checkedDomains;
+              }
+              
+              if (tableKey === 'users' && column === 'email') {
+                const selectedEmails = checkedBoxes.map(cb => cb.value);
+                
+                const allDomains = new Set();
+                state.data.forEach(item => {
+                  const email = item.email || '';
+                  const match = email.match(/@(.+)$/);
+                  if (match) allDomains.add(match[1]);
+                });
+                
+                dropdown.querySelectorAll('.filter-email-domain').forEach(domainCb => {
+                  const domain = domainCb.getAttribute('data-domain');
+                  
+                  const emailsInDomain = [];
+                  state.data.forEach(item => {
+                    const email = item.email;
+                    if (email && email.endsWith('@' + domain)) {
+                      if (!emailsInDomain.includes(email)) {
+                        emailsInDomain.push(email);
+                      }
+                    }
+                  });
+                  
+                  const domainEmailsSelected = emailsInDomain.filter(e => selectedEmails.includes(e));
+                  const allEmailsSelected = emailsInDomain.length > 0 && domainEmailsSelected.length === emailsInDomain.length;
+                  
+                  domainCb.checked = allEmailsSelected;
+                });
+                
+                if (!state.specialFilters) state.specialFilters = {};
+                const checkedDomains = Array.from(dropdown.querySelectorAll('.filter-email-domain:checked'))
+                  .map(cb => cb.getAttribute('data-domain'));
+                state.specialFilters.emailDomains = checkedDomains;
               }
               
               applyFilters(tableKey);
@@ -1821,7 +2293,6 @@ function attachFilterEvents(tableKey) {
     });
   });
 }
-
 function updateFilterIcon(tableKey, column) {
   const table = qs(`#${tableKey}-table`);
   if (!table) return;
@@ -1829,7 +2300,55 @@ function updateFilterIcon(tableKey, column) {
   const icon = table.querySelector(`.filter-icon[data-column="${column}"]`);
   if (!icon) return;
   
-  const hasFilter = tableStates[tableKey].filters[column] && tableStates[tableKey].filters[column].length > 0;
+  const state = tableStates[tableKey];
+  let hasFilter = false;
+  
+  if (state.filters[column]) {
+    if (Array.isArray(state.filters[column])) {
+      hasFilter = state.filters[column].length >= 0;
+    } else {
+      hasFilter = true;
+    }
+  }
+  
+  if (!hasFilter && state.specialFilters) {
+    if (tableKey === 'events') {
+      if (column === 'type') {
+        const typeGood = state.specialFilters.typeGood;
+        const typeBad = state.specialFilters.typeBad;
+        hasFilter = typeGood === false || typeBad === false;
+      }
+      
+      if (column === 'creator' && state.specialFilters.creatorDomains) {
+        const activeDomains = new Set();
+        if (tableStates.users && tableStates.users.data) {
+          tableStates.users.data.forEach(user => {
+            const email = user.email || '';
+            const match = email.match(/@(.+)$/);
+            if (match) activeDomains.add(match[1]);
+          });
+        }
+        
+        hasFilter = state.specialFilters.creatorDomains.length < activeDomains.size;
+      }
+      
+      if (column === 'date' && state.specialFilters.sortOrder) {
+        hasFilter = true;
+      }
+    }
+    
+    if (tableKey === 'users' && column === 'email' && state.specialFilters.emailDomains) {
+      const activeDomains = new Set();
+      state.data.forEach(item => {
+        const email = item.email || '';
+        const match = email.match(/@(.+)$/);
+        if (match) activeDomains.add(match[1]);
+      });
+      
+      hasFilter = state.specialFilters.emailDomains.length < activeDomains.size;
+    }
+  }
+  
   if (hasFilter) {
     icon.classList.add('active');
   } else {
@@ -2154,7 +2673,7 @@ function renderTypeTableRows(data) {
        (t.created_by_id === currentUser.id || t.created_by_name === currentUser.username))
     );
     
-    const goodText = (t.good === true || t.good === 'true' || t.good === 1) ? 'Faydalı' : 'Faydasız';
+    const goodText = (t.good === true || t.good === 'true' || t.good === 1) ? 'Faydalı' : 'Faydasız'; // DEĞİŞTİ
     
     const updateBtn = canUpdate 
       ? `<button class="btn ghost" data-update-type="${t.o_id}" data-type-name="${escapeHtml(t.o_adi)}" data-type-good="${t.good === true || t.good === 'true' || t.good === 1 ? 'true' : 'false'}" style="margin-right:4px;">Güncelle</button>`
@@ -2762,13 +3281,10 @@ async function loadExistingEvents(opts = {}) {
     const showGood = boolFromConfigValue(APP_CONFIG.showGoodEventsOnLogin);
     const showBad = boolFromConfigValue(APP_CONFIG.showBadEventsOnLogin);
     
-    console.log('[loadExistingEvents DEBUG] SHOW_GOOD_EVENTS_ON_LOGIN:', APP_CONFIG.showGoodEventsOnLogin, '-> bool:', showGood);
-    console.log('[loadExistingEvents DEBUG] SHOW_BAD_EVENTS_ON_LOGIN:', APP_CONFIG.showBadEventsOnLogin, '-> bool:', showBad);
-    
+
     if (!showGood && !showBad) {
       eventIndex.clear();
       if (markersLayer) markersLayer.clearLayers();
-      console.log('[loadExistingEvents] SHOW_GOOD=false, SHOW_BAD=false -> harita temizlendi');
       return;
     }
   }
@@ -2777,7 +3293,6 @@ async function loadExistingEvents(opts = {}) {
     if (!resp.ok) throw 0;
     let events = await resp.json();
 
-    console.log('[loadExistingEvents] Toplam olay sayısı:', events.length);
 
     if (publicMode) {
       const showGood = boolFromConfigValue(APP_CONFIG.showGoodEventsOnLogin);
@@ -2795,7 +3310,6 @@ async function loadExistingEvents(opts = {}) {
         return false;
       });
       
-      console.log('[loadExistingEvents] Filtreleme: ', beforeFilter, '->', events.length, 'olay');
     }
 
     eventIndex.clear();
@@ -2886,7 +3400,6 @@ async function loadExistingEvents(opts = {}) {
       m.on('popupopen', () => populateEventMedia(content, e2));
     });
 
-    console.log('[loadExistingEvents] Haritaya eklenen marker sayısı:', addedMarkers);
 
     try { 
       if (map) ensureMapLegend(map); 
@@ -3055,7 +3568,6 @@ async function submitOlay(){
       const mapEl = document.getElementById('map');
       if (mapEl) {
         mapEl.classList.remove('blur-background');
-        console.log('[SUBMIT] Blur kaldırıldı');
       }
       
       document.querySelectorAll('.header-back-btn, .card-back-btn').forEach(btn => btn.remove());
@@ -3450,7 +3962,6 @@ async function openPhotoModal(){
   if (galleryBtn) galleryBtn.onclick = () => qs('#file-photo')?.click();
   if (closeBtn) closeBtn.onclick = () => {
     closeModal(modal, stopPmStream);
-    // Modal z-index'i sıfırla
     if (modal) modal.style.zIndex = '';
   };
 }
@@ -3622,14 +4133,11 @@ function pushOverlayState(name){
 }
 
 function restoreMapViewFromOverlay(){
-  console.log('[RESTORE] Başladı');
 
   const mapEl = document.getElementById('map');
   if (mapEl) {
     mapEl.classList.remove('blur-background');
-    console.log('[RESTORE] Blur kaldırıldı');
   } else {
-    console.warn('[RESTORE] Map elementi bulunamadı!');
   }
 
   hide(qs('#login-card'));
@@ -3640,25 +4148,21 @@ function restoreMapViewFromOverlay(){
   if (typeof resetEdit === 'function') {
     try { 
       resetEdit(); 
-      console.log('[RESTORE] resetEdit() çağrıldı');
     } catch(e) {
       console.error('[RESTORE] resetEdit() hatası:', e);
     }
   }
 
   document.querySelectorAll('.header-back-btn, .card-back-btn').forEach(btn => btn.remove());
-  console.log('[RESTORE] Geri butonları kaldırıldı');
   
   try {
     stopLiveLocation();
-    console.log('[RESTORE] Canlı konum durduruldu');
   } catch(e) {
     console.warn('[RESTORE] Canlı konum durdurma hatası:', e);
   }
   
   try { 
     history.back(); 
-    console.log('[RESTORE] history.back() çağrıldı');
   } catch(e) {
     console.warn('[RESTORE] history.back() hatası:', e);
   }
@@ -3788,7 +4292,6 @@ function reflectAuth(){
   if (headerLocBtn) {
     const shouldShow = currentUser && currentUser.role === 'user';
     headerLocBtn.style.display = shouldShow ? 'inline-flex' : 'none';
-    console.log('[HEADER LOCATION BTN] Görünürlük:', shouldShow ? 'GÖSTER' : 'GİZLE');
   }
 
   if (currentUser){
@@ -3962,7 +4465,6 @@ function setSupervisorMode(mode) {
 
   try { 
     ensureMapLegend(map); 
-    console.log('[setSupervisorMode] Lejant güncellendi - mod:', mode);
   } catch(e) {
     console.warn('[setSupervisorMode] Lejant güncelleme hatası:', e);
   }
@@ -4145,7 +4647,6 @@ async function logout(){
   const showBad = boolFromConfigValue(APP_CONFIG.showBadEventsOnLogin);
   const showAny = showGood || showBad;
   
-  console.log('[logout DEBUG] SHOW_GOOD:', showGood, 'SHOW_BAD:', showBad, 'showAny:', showAny);
   
   if (showAny) {
     try {
@@ -4249,13 +4750,10 @@ function ensureBackButton(){
   backBtn.title = 'Geri';
   backBtn.style.cssText = 'flex-shrink: 0;';
   backBtn.onclick = () => {
-    console.log('[BACK BTN] Tıklandı');
     
-    // BLUR'U HEMEN KALDIR
     const mapEl = document.getElementById('map');
     if (mapEl) {
       mapEl.classList.remove('blur-background');
-      console.log('[BACK BTN] Blur kaldırıldı');
     }
     
     hide(olayCard);
@@ -4544,15 +5042,11 @@ function attachMapClickForLoggedIn(){
   try { map?.off('click'); } catch {}
   if (!map) return;
   
-  console.log('[MAP CLICK ATTACH] allowBlackMarker:', allowBlackMarker(), 'currentUser:', currentUser?.role, 'SUPERVISOR_NO_ADD:', window.SUPERVISOR_NO_ADD);
-  
   map.on('click', (e) => {
     stopLiveLocation(); 
     
-    console.log('[MAP CLICK] Tıklandı - allowBlackMarker:', allowBlackMarker(), 'SUPERVISOR_NO_ADD:', window.SUPERVISOR_NO_ADD);
     
     if (!allowBlackMarker()) {
-      console.log('[MAP CLICK] ❌ allowBlackMarker() false döndü, işlem yapılmıyor');
       return;
     }
     
@@ -4573,7 +5067,6 @@ function attachMapClickForLoggedIn(){
         .bindPopup('Seçili konum');
     }
     
-    console.log('[MAP CLICK] ✅ Konum seçildi:', lat, lng);
     
     if (currentUser && currentUser.role === 'user') {
       const olayCard = qs('#olay-card');
@@ -4584,7 +5077,6 @@ function attachMapClickForLoggedIn(){
         const mapEl = document.getElementById('map');
         if (mapEl) {
           mapEl.classList.add('blur-background');
-          console.log('[MAP CLICK] ✅ Blur eklendi');
         }
         pushOverlayState('olay-card');
         
@@ -4682,19 +5174,15 @@ function detachMapClickForLoggedOut(){
   const showBad = boolFromConfigValue(APP_CONFIG.showBadEventsOnLogin);
   const showAny = showGood || showBad;
   
-  console.log('[INIT DEBUG] SHOW_GOOD_EVENTS_ON_LOGIN:', APP_CONFIG.showGoodEventsOnLogin, '-> bool:', showGood);
-  console.log('[INIT DEBUG] SHOW_BAD_EVENTS_ON_LOGIN:', APP_CONFIG.showBadEventsOnLogin, '-> bool:', showBad);
-  console.log('[INIT] showAny:', showAny);
+
   
   if (!currentUser) {
     await goToDefaultLoginScreen();
     detachMapClickForLoggedOut();
 
     if (showAny) {
-      console.log('[INIT] Public modda olaylar yükleniyor...');
       try { 
         await loadExistingEvents({ publicMode: true });
-        console.log('[INIT] Public olaylar başarıyla yüklendi');
         
         // Haritayı marker'lara fit et
         if (map && markersLayer && markersLayer.getLayers && markersLayer.getLayers().length > 0) {
@@ -4702,18 +5190,16 @@ function detachMapClickForLoggedOut(){
             const group = L.featureGroup(markersLayer.getLayers());
             if (group.getLayers().length > 0) {
               map.fitBounds(group.getBounds().pad(0.15));
-              console.log('[INIT] Harita marker\'lara fit edildi');
             }
           } catch(e) {
-            console.warn('[INIT] Harita fit hatası:', e);
+            console.warn('Harita fit hatası:', e);
           }
         }
       } 
       catch(e){ 
-        console.error('[INIT] Public olay yükleme HATASI:', e); 
+        console.error('Public olay yükleme HATASI:', e); 
       }
     } else {
-      console.log('[INIT] showGood=false ve showBad=false, harita temizleniyor');
       try { if (markersLayer) markersLayer.clearLayers(); } catch {}
     }
     try { ensureMapLegend(map); } catch {}
