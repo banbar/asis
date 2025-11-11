@@ -1,0 +1,4 @@
+1. NPM paketlerinin indirilmesi:
+npm install
+
+2. Çevresel değişkenlerin düzenlenmesi (Readme.md)
