@@ -437,7 +437,7 @@ Don't Resolve type of unrestricted columns (GEOMETRY) kutucuğuna tik işareti k
 
 4. **Tamam** ile kaydedin
 
-![QGIS PostgreSQL Bağlantısı](docs/images/qgis-db-connection.png)
+![QGIS PostgreSQL Bağlantısı](docs/1.jpg)
 
 ##### c) Gerekli Layer'ları Çekin
 
@@ -454,7 +454,7 @@ PostgreSQL
 
 **`olay` tablosunu** ana haritaya sürükleyip bırakın.
 
-![Layer Ekleme](docs/images/qgis-add-layer.png)
+![Layer Ekleme](docs/2.jpg)
 
 ---
 
@@ -465,7 +465,6 @@ PostgreSQL
 3. **QFieldSync** seçin ve **Eklentiyi Yükle** butonuna tıklayın
 4. Yükleme tamamlandığında **Kapat**
 
-![QFieldSync Yükleme](docs/images/qgis-plugin-install.png)
 
 ---
 
@@ -475,22 +474,16 @@ PostgreSQL
 
 **Menü:** `Eklentiler > QFieldSync > Package for QField`
 
-![QFieldSync Menü](docs/images/qfieldsync-menu.png)
+![QFieldSync Menü](docs/3.jpg)
 
 ##### b) Paketleme ayarlarını yapın
 
 1. **Export Directory:** Daha önce oluşturduğunuz boş klasörü seçin
    - Örnek: `C:\Users\USER\Documents\qfield_projeler\asis_proje`
 
-2. **Extent:** `Full Extent` (tüm veri)
+2. **Create** butonuna tıklayın
 
-3. **Layers:**
-   - `olay` layer'ı için: **Offline editing** seçeneğini işaretleyin
-   - Diğer layer'lar için: **No action** veya **Offline editing**
-
-4. **Create** butonuna tıklayın
-
-![Package Ayarları](docs/images/qfieldsync-package.png)
+![Package Ayarları](docs/4.jpg)
 
 
 #### 5️⃣ Olay Layer'ı İçin Özel Stil Dosyası Yükleyin
@@ -516,7 +509,7 @@ Veritabanı bağlantılı projeyi **kapatın**, bunun yerine:
 8. **Load Style** butonuna tıklayın
 9. **OK** ile onaylayın
 
-![Stil Yükleme](docs/images/qgis-load-style.png)
+![Stil Yükleme](docs/5.jpg)
 
 ##### c) Değişiklikleri kaydedin
 
@@ -534,7 +527,7 @@ Web sitesinde eklediğiniz olaylarda fotoğraf veya video varsa:
 4. Open Video at Your Browser a tıklayın
 5. Tarayıcınızda **tam ekran** görüntülenir
 
-![Medya Görüntüleme](docs/images/qgis-view-media.png)
+![Medya Görüntüleme](docs/6.jpg)
 
 ---
 
@@ -560,7 +553,7 @@ Eğer `Imported Projects` klasörü yoksa, QField uygulamasını en az bir kez a
 
 Bilgisayarınızdaki `asis_proje` klasörünün **tamamını** mobil cihazdaki `Imported Projects` klasörüne **kopyalayın**.
 
-![USB Transfer](docs/images/usb-transfer.png)
+![USB Transfer](docs/7.jpg)
 
 
 #### 8️⃣ QField'da Projeyi Açın ve Veri Toplayın
@@ -576,7 +569,6 @@ Mobil cihazınızda **QField** uygulamasını başlatın.
 3. **asis_proje** klasörünü açın
 4. **asis_proje.qgs** dosyasını seçin
 
-![QField Proje Açma](docs/images/qfield-open-project.png)
 
 ##### c) Düzenleme modunu aktif edin
 
@@ -589,7 +581,7 @@ Mobil cihazınızda **QField** uygulamasını başlatın.
    - GPS otomatik olarak konumunuzu alacaktır
 4. **Kaydet** (✓)
 
-![QField Veri Ekleme](docs/images/qfield-add-feature.png)
+![QField Veri Ekleme](docs/qfield-2.jpg)
 
 ##### d) Veri toplamaya devam edin
 
@@ -617,14 +609,12 @@ C:\Users\USER\Desktop\qfield_data\asis_proje_guncel
 1. QGIS Desktop'ta **veritabanına bağlı** orijinal projenizi açın (paketlemeden önceki)
 2. **Menü:** `Eklentiler > QFieldSync > Synchronize from QField`
 
-![QFieldSync Synchronize](docs/images/qfieldsync-synchronize.png)
 
 3. Açılan pencerede:
    - **QField project folder:** **...** (üç nokta) ile bilgisayara kopyaladığınız güncel klasörü seçin
      - Örnek: `C:\Users\USER\Desktop\qfield_data\asis_proje_guncel`
    - **Synchronize** butonuna tıklayın
 
-![Sync Ayarları](docs/images/qfieldsync-sync-settings.png)
 
 ##### c) Senkronizasyon tamamlandı
 
@@ -671,7 +661,7 @@ Sunucu başladığında, `index.js` içindeki özel script:
 
 Artık `http://localhost:3000` adresinden giriş yaptığınızda, QField ile eklenen olayların fotoğraf ve videolarını görebileceksiniz!
 
-![Web Medya Görünümü](docs/images/web-media-view.png)
+![Web Medya Görünümü](docs/qfield-1.png)
 
 ---
 
