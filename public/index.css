@@ -1,5 +1,5 @@
 /* ==========
-   Temel / Değişkenler
+   Basic / Variables
    ========== */
 :root{
   --maxw: 100%;
@@ -60,7 +60,7 @@ body{
 }
 
 /* ==========
-   Giriş Ekranı: Tam Ekran Harita (Responsive)
+   Home Screen: Full Screen Map (Responsive)
    ========== */
 body:not(.role-user):not(.role-supervisor):not(.role-admin) #map,
 body.login-fullmap #map,
@@ -148,7 +148,7 @@ header{
   align-items:center; 
   gap: clamp(6px, 1.2vw, 10px);
   flex: 0 0 auto;
-  flex-wrap: nowrap; /* ✅ Auth içinde de sarmasın */
+  flex-wrap: nowrap; 
 }
 
 .auth .btn{ 
@@ -1909,4 +1909,18 @@ th:has(#btn-add-type){
   height:140px; 
   object-fit:cover; 
   border-radius:8px;
+}
+
+
+.filter-option.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.filter-option.disabled input[type="checkbox"] {
+  cursor: not-allowed;
+}
+
+.filter-option.disabled span {
+  color: var(--muted);
 }
