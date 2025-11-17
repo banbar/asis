@@ -51,7 +51,7 @@ const needSSL = sslEnv === '1' || sslEnv === 'true' || sslEnv === 'require' || s
 const BASE_DB_CFG = DATABASE_URL
   ? {
       connectionString: DATABASE_URL,
-      application_name: 'asis',
+      application_name: 'DiDe',
       max: parseInt(process.env.PGPOOL_MAX, 10),
       ssl: needSSL ? { rejectUnauthorized: false } : undefined,
     }
@@ -61,7 +61,7 @@ const BASE_DB_CFG = DATABASE_URL
       user: process.env.PGUSER,
       password: process.env.PGPASSWORD,
       database: process.env.PGDATABASE,
-      application_name: 'asis',
+      application_name: 'DiDe',
       max: parseInt(process.env.PGPOOL_MAX, 10),
       ssl: needSSL ? { rejectUnauthorized: false } : undefined,
     };
@@ -238,6 +238,10 @@ app.get(/^\/uploads\/(.+)$/, (req, res) => {
   }
   res.setHeader('Content-Length', String(size));
   return fs.createReadStream(abs).pipe(res);
+});
+
+app.get('/i18n.js', (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'i18n.js'));
 });
 
 app.use(express.static(PUBLIC_DIR));
