@@ -120,7 +120,6 @@ if (CAN_SEND_MAIL) {
   });
 }
 const MAIL_FROM = `"${process.env.SMTP_FROM_NAME}" <${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER}>`;
-const FORCE_EMAIL_VERIFY = String(process.env.FORCE_EMAIL_VERIFY) === 'true';
 
 
 /* ===================== ORTA KATMANLAR ===================== */
@@ -247,6 +246,35 @@ app.get('/i18n.js', (req, res) => {
 app.use(express.static(PUBLIC_DIR));
 
 /* ===================== HELPERS ===================== */
+
+function loadI18nTranslations() {
+  try {
+    const i18nPath = path.join(PUBLIC_DIR, 'i18n.js');
+    const i18nContent = fs.readFileSync(i18nPath, 'utf8');
+    const match = i18nContent.match(/const translations = (\{[\s\S]*?\n\};)/);
+    if (!match) return null;
+    
+    const translationsStr = match[1].replace(/;$/, '');
+    const translations = eval('(' + translationsStr + ')');
+    return translations;
+  } catch (e) {
+    console.error('[i18n] Çeviri dosyası yüklenemedi:', e.message);
+    return null;
+  }
+}
+
+const i18nTranslations = loadI18nTranslations();
+
+function getErrorMessage(req, errorKey) {
+  const lang = req.headers['accept-language']?.startsWith('en') ? 'en' : 'tr';
+  
+  if (!i18nTranslations) {
+    return errorKey;
+  }
+  
+  return i18nTranslations[lang]?.errors?.[errorKey] || i18nTranslations.tr?.errors?.[errorKey] || errorKey;
+}
+
 function signToken(user, expires = JWT_EXPIRES) {
   return jwt.sign({ sub: user.id, role: user.role, username: user.username, email: user.email }, JWT_SECRET, { expiresIn: expires });
 }
@@ -286,10 +314,10 @@ function cookieOpts(days = 7, req = null) {
 function cookieOptsSession(req = null) {
   return { ...baseCookieFlags(req) };
 }
-// === QFIELD INGEST: DCIM/files içindeki dosyaları public/uploads'a kopyala ve DB'yi normalize et ===
+
 function _fileExists(p){ try { return fs.existsSync(p) && fs.statSync(p).isFile(); } catch { return false; } }
 
-// QField paketinde adı geçen dosyayı (relatif veya tam ad) bul
+
 function _findFileRecursive(root, relOrName) {
   const name = path.basename(String(relOrName || ''));
   if (!name) return null;
@@ -317,7 +345,7 @@ function _uniqueNameWithExt(srcFullPath, fallbackExt) {
   return `${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`;
 }
 
-// telefon yolu -> uploads’a kopyala -> /uploads/... olarak döndür
+// telefon yolu -> uploads'a kopyala -> /uploads/... olarak döndür
 function _convertOnePathToUploads(absRoot, rawPath, kind /* 'photo'|'video' */) {
   if (!rawPath) return null;
 
@@ -437,7 +465,7 @@ function isEmailAllowed(emailRaw) {
 async function requireAuth(req, res, next) {
   try {
     const t = getTokenFrom(req);
-    if (!t) return res.status(401).json({ error: 'unauthenticated' });
+    if (!t) return res.status(401).json({ error: 'unauthenticated', message: getErrorMessage(req, 'unauthenticated') });
     const payload = jwt.verify(t, JWT_SECRET);
 
     const { rows } = await pool.query(
@@ -447,24 +475,24 @@ async function requireAuth(req, res, next) {
     );
     if (!rows.length) {
       res.clearCookie('token', cookieOpts(0, req));
-      return res.status(401).json({ error: 'unauthenticated' });
+      return res.status(401).json({ error: 'unauthenticated', message: getErrorMessage(req, 'unauthenticated') });
     }
     const u = rows[0];
     if (!u.is_active) {
       res.clearCookie('token', cookieOpts(0, req));
-      return res.status(403).json({ error: 'user_inactive' });
+      return res.status(403).json({ error: 'user_inactive', message: getErrorMessage(req, 'user_inactive') });
     }
     req.user = { id: u.id, username: u.username, role: u.role, email: u.email };
     next();
   } catch {
     res.clearCookie('token', cookieOpts(0, req));
-    return res.status(401).json({ error: 'invalid_token' });
+    return res.status(401).json({ error: 'invalid_token', message: getErrorMessage(req, 'invalid_token') });
   }
 }
 function requireAnyRole(roles) {
   return (req, res, next) => {
-    if (!req.user) return res.status(401).json({ error: 'unauthenticated' });
-    if (!roles.includes(req.user.role)) return res.status(403).json({ error: 'forbidden' });
+    if (!req.user) return res.status(401).json({ error: 'unauthenticated', message: getErrorMessage(req, 'unauthenticated') });
+    if (!roles.includes(req.user.role)) return res.status(403).json({ error: 'forbidden', message: getErrorMessage(req, 'forbidden') });
     next();
   };
 }
@@ -655,7 +683,7 @@ async function seedOlaylarFromEnv(pool) {
 }
 seedOlaylarFromEnv(pool);
 
-/* ===================== Açılışta düz TOTP’leri şifrele ===================== */
+/* ===================== Açılışta düz TOTP'leri şifrele ===================== */
 async function migratePlainTotpOnBoot() {
   const client = await pool.connect();
   try {
@@ -1091,7 +1119,7 @@ async function ensureDbSqlHelpers() {
   await run('drop trg_users_totp_before',        `DROP TRIGGER IF EXISTS trg_users_totp_before ON public.users`);
   await run('drop trg_users_guard_reactivate',   `DROP TRIGGER IF EXISTS trg_users_guard_reactivate ON public.users`);
   await run('drop trg_users_enforce_is_active_update', `DROP TRIGGER IF EXISTS trg_users_enforce_is_active_update ON public.users`);
-  await run('drop trg_users_after_ins_upd',      `DROP TRIGGER IF EXISTS trg_users_after_ins_upd ON public.users`);  // <— EKLENDİ
+  await run('drop trg_users_after_ins_upd',      `DROP TRIGGER IF EXISTS trg_users_after_ins_upd ON public.users`);
   await run('drop trg_olay_fill_deactivated',    `DROP TRIGGER IF EXISTS trg_olay_fill_deactivated ON public.olay`);
 
   await run('trg_users_prevent_global_dup', `
@@ -1304,16 +1332,21 @@ app.post('/api/auth/register', async (req, res) => {
   const email = norm(req.body?.email);
 
   if (!username || !password || !email)
-    return res.status(400).json({ error: 'eksik_bilgi', message: 'Kullanıcı adı, şifre ve e-posta zorunludur.' });
+    return res.status(400).json({ error: 'eksik_bilgi', message: getErrorMessage(req, 'eksik_bilgi') });
   if (!isStrongPassword(password))
-    return res.status(400).json({ error: 'zayif_sifre', message: 'Zayıf şifre: En az 8 karakter, bir büyük, bir küçük harf ve bir sembol içermeli.' });
+    return res.status(400).json({ error: 'zayif_sifre', message: getErrorMessage(req, 'zayif_sifre') });
   if (!isEmailAllowed(email)) {
-    let message = 'Geçerli formatta bir e-posta adresi giriniz.';
+    let message = getErrorMessage(req, 'gecersiz_eposta');
     if (ALLOWED_EMAIL_DOMAINS.length > 0) {
+      const lang = req.headers['accept-language']?.startsWith('en') ? 'en' : 'tr';
       if (ALLOWED_EMAIL_DOMAINS.length === 1) {
-        message = `Yalnızca ${ALLOWED_EMAIL_DOMAINS[0]} alan adına sahip e-posta adresleriyle kayıt olunabilir.`;
+        message = lang === 'en' 
+          ? `Only email addresses with ${ALLOWED_EMAIL_DOMAINS[0]} domain are allowed.`
+          : `Yalnızca ${ALLOWED_EMAIL_DOMAINS[0]} alan adına sahip e-posta adresleriyle kayıt olunabilir.`;
       } else {
-        message = `Yalnızca şu alan adlarına sahip e-posta adresleriyle kayıt olunabilir: ${ALLOWED_EMAIL_DOMAINS.join(', ')}`;
+        message = lang === 'en'
+          ? `Only email addresses with the following domains are allowed: ${ALLOWED_EMAIL_DOMAINS.join(', ')}`
+          : `Yalnızca şu alan adlarına sahip e-posta adresleriyle kayıt olunabilir: ${ALLOWED_EMAIL_DOMAINS.join(', ')}`;
       }
     }
     return res.status(400).json({
@@ -1326,7 +1359,7 @@ app.post('/api/auth/register', async (req, res) => {
     await failIfAnyDuplicate(username, email);
   } catch (e) {
     if (e.code === 'ACTIVE_DUP')
-      return res.status(409).json({ error: 'kullanici_veya_eposta_kayitli', message: 'Kullanıcı adı veya e-posta zaten kayıtlı.' });
+      return res.status(409).json({ error: 'kullanici_veya_eposta_kayitli', message: getErrorMessage(req, 'kullanici_veya_eposta_kayitli') });
     throw e;
   }
 
@@ -1347,41 +1380,39 @@ app.post('/api/auth/register', async (req, res) => {
 
     await client.query('COMMIT');
 
-    if (transporter) {
-      try {
-        const verifyLink = `${req.protocol}://${req.get('host')}/api/auth/verify?token=${verifyToken}`;
-        await transporter.sendMail({
-          from: MAIL_FROM,
-          to: email,
-          subject: 'E-posta doğrulama',
-          html: `<p>Merhaba <b>${username}</b>,</p><p>Hesabını doğrulamak için <a href="${verifyLink}">buraya tıkla</a>.</p><p>Bağlantı 24 saat geçerlidir.</p>`,
-        });
-      } catch (mailErr) {
-        console.error('mail send error:', mailErr);
-        if (!FORCE_EMAIL_VERIFY) {
-          await pool.query('UPDATE users SET email_verified=true, is_verified=true, verify_token=null, verify_expires=null WHERE id=$1', [
-            ins.rows[0].id,
-          ]);
-        } else {
-          return res.status(500).json({ error: 'eposta_gonderilemedi', message: 'Doğrulama e-postası gönderilemedi.' });
-        }
-      }
-    } else if (!FORCE_EMAIL_VERIFY) {
-      await pool.query('UPDATE users SET email_verified=true, is_verified=true, verify_token=null, verify_expires=null WHERE id=$1', [
-        ins.rows[0].id,
-      ]);
+    if (!transporter) {
+      return res.status(500).json({
+        error: 'eposta_gonderilemedi',
+        message: getErrorMessage(req, 'eposta_gonderilemedi'),
+      });
     }
 
-    res.json({
+    try {
+      const verifyLink = `${req.protocol}://${req.get('host')}/api/auth/verify?token=${verifyToken}`;
+      await transporter.sendMail({
+        from: MAIL_FROM,
+        to: email,
+        subject: 'E-posta doğrulama',
+        html: `<p>Merhaba <b>${username}</b>,</p><p>Hesabını doğrulamak için <a href="${verifyLink}">buraya tıkla</a>.</p><p>Bağlantı 24 saat geçerlidir.</p>`,
+      });
+    } catch (mailErr) {
+      console.error('[register] mail send error:', mailErr);
+      return res.status(500).json({
+        error: 'eposta_gonderilemedi',
+        message: getErrorMessage(req, 'eposta_gonderilemedi'),
+      });
+    }
+
+    return res.json({
       ok: true,
-      message: transporter || FORCE_EMAIL_VERIFY ? 'dogrulama_epostasi_gonderildi' : 'eposta_dogrulama_gerekmiyor',
+      message: 'dogrulama_epostasi_gonderildi',
       user: { id: ins.rows[0].id, username },
     });
   } catch (e) {
     try { await client.query('ROLLBACK'); } catch {}
     console.error('register error:', e);
     if (e.code === 'P0001' || e.code === 'P0002') return res.status(400).json({ error: 'gecersiz', message: e.message });
-    res.status(500).json({ error: 'sunucu_hatasi', message: 'Sunucu hatası' });
+    res.status(500).json({ error: 'sunucu_hatasi', message: getErrorMessage(req, 'sunucu_hatasi') });
   } finally {
     try { await client.query(`SELECT set_config('app.password_plain', NULL, true)`); } catch {}
     client.release();
@@ -1409,7 +1440,7 @@ app.get('/api/auth/verify', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   const { usernameOrEmail, password, totp } = req.body || {};
   if (!usernameOrEmail || !password)
-    return res.status(400).json({ error: 'eksik_bilgi', message: 'Kullanıcı adı/e-posta ve şifre zorunludur.' });
+    return res.status(400).json({ error: 'eksik_bilgi', message: getErrorMessage(req, 'eksik_bilgi') });
 
   try {
     const input = norm(usernameOrEmail);
@@ -1425,19 +1456,19 @@ app.post('/api/auth/login', async (req, res) => {
     );
 
     if (!rows.length) {
-      return res.status(404).json({ error: 'hesap_bulunamadi', message: 'Hesabınız bulunamadı.' });
+      return res.status(404).json({ error: 'hesap_bulunamadi', message: getErrorMessage(req, 'hesap_bulunamadi') });
     }
 
     const u = rows[0];
-    if (!u.is_active) return res.status(403).json({ error: 'kullanici_pasif', message: 'Kullanıcı pasif durumdadır.' });
+    if (!u.is_active) return res.status(403).json({ error: 'kullanici_pasif', message: getErrorMessage(req, 'kullanici_pasif') });
 
     const ok = await bcrypt.compare(password, u.password_hash || '');
-    if (!ok) return res.status(401).json({ error: 'sifre_hatali', message: 'Şifreyi yanlış girdiniz.' });
-    if (!u.email_verified) return res.status(403).json({ error: 'email_dogrulanmamış', message: 'E-posta doğrulanmamış. Lütfen e-postanızı doğrulayın.' });
+    if (!ok) return res.status(401).json({ error: 'sifre_hatali', message: getErrorMessage(req, 'sifre_hatali') });
+    if (!u.email_verified) return res.status(403).json({ error: 'email_dogrulanmamış', message: getErrorMessage(req, 'email_dogrulanmamış') });
 
     if (u.two_factor_enabled) {
-      if (!u.two_factor_secret) return res.status(401).json({ error: 'totp_gerekli', message: 'TOTP kurulumu gerekiyor.' });
-      if (!totp) return res.status(401).json({ error: 'totp_gerekli', message: 'Doğrulama kodu gerekli.' });
+      if (!u.two_factor_secret) return res.status(401).json({ error: 'totp_gerekli', message: getErrorMessage(req, 'totp_gerekli') });
+      if (!totp) return res.status(401).json({ error: 'totp_gerekli', message: getErrorMessage(req, 'totp_gerekli') });
 
       const secretPlain = decSecret(String(u.two_factor_secret));
       const secretNorm = normalizeBase32(secretPlain);
@@ -1453,7 +1484,7 @@ app.post('/api/auth/login', async (req, res) => {
         window: 2,
       });
 
-      if (!verified) return res.status(401).json({ error: 'totp_gecersiz', message: 'Doğrulama kodu geçersiz.' });
+      if (!verified) return res.status(401).json({ error: 'totp_gecersiz', message: getErrorMessage(req, 'totp_gecersiz') });
 
       if (u.two_factor_secret && !String(u.two_factor_secret).startsWith('enc:v1:')) {
         const enc = encSecret(secretNorm);
@@ -1484,7 +1515,7 @@ app.post('/api/auth/login', async (req, res) => {
     });
   } catch (e) {
     console.error('login error:', e);
-    res.status(500).json({ error: 'sunucu_hatasi', message: 'Sunucu hatası' });
+    res.status(500).json({ error: 'sunucu_hatasi', message: getErrorMessage(req, 'sunucu_hatasi') });
   }
 });
 
@@ -1507,7 +1538,7 @@ function generateResetCode() {
 
 app.post('/api/auth/forgot/start', async (req, res) => {
   const email = norm(req.body?.email);
-  if (!email) return res.status(400).json({ error: 'eksik_bilgi', message: 'E-posta zorunludur.' });
+  if (!email) return res.status(400).json({ error: 'eksik_bilgi', message: getErrorMessage(req, 'eksik_bilgi') });
 
   try {
     const { rows } = await pool.query(
@@ -1518,7 +1549,7 @@ app.post('/api/auth/forgot/start', async (req, res) => {
     if (!rows.length) {
       return res.status(404).json({
         error: 'kayitli_hesap_yok',
-        message: 'Lütfen kayıtlı bir hesabın mail adresini giriniz.',
+        message: getErrorMessage(req, 'kayitli_hesap_yok'),
       });
     }
 
@@ -1527,7 +1558,7 @@ app.post('/api/auth/forgot/start', async (req, res) => {
     if (!u.is_active) {
       return res.status(403).json({
         error: 'kullanici_pasif',
-        message: 'Aktif bir kullanıcı giriniz.',
+        message: getErrorMessage(req, 'kullanici_pasif'),
       });
     }
 
@@ -1548,36 +1579,36 @@ app.post('/api/auth/forgot/start', async (req, res) => {
         });
       } catch (e) {
         console.error('reset mail error:', e);
-        return res.status(500).json({ error: 'eposta_gonderilemedi', message: 'E-posta gönderilemedi.' });
+        return res.status(500).json({ error: 'eposta_gonderilemedi', message: getErrorMessage(req, 'eposta_gonderilemedi') });
       }
     }
 
     res.json({ ok: true, message: 'Kod gönderildi.' });
   } catch (e) {
     console.error('forgot/start error:', e);
-    res.status(500).json({ error: 'sunucu_hatasi', message: 'Sunucu hatası' });
+    res.status(500).json({ error: 'sunucu_hatasi', message: getErrorMessage(req, 'sunucu_hatasi') });
   }
 });
 
 app.post('/api/auth/forgot/verify', async (req, res) => {
   const email = norm(req.body?.email);
   const code = norm(req.body?.code);
-  if (!email || !code) return res.status(400).json({ error: 'eksik_bilgi', message: 'E-posta ve kod zorunludur.' });
+  if (!email || !code) return res.status(400).json({ error: 'eksik_bilgi', message: getErrorMessage(req, 'eksik_bilgi') });
   try {
     const { rows } = await pool.query('SELECT id, reset_code, reset_expires FROM users WHERE lower(btrim(email))=lower($1) LIMIT 1', [email]);
-    if (!rows.length) return res.status(404).json({ error: 'hesap_bulunamadi', message: 'Hesabınız bulunamadı.' });
+    if (!rows.length) return res.status(404).json({ error: 'hesap_bulunamadi', message: getErrorMessage(req, 'hesap_bulunamadi') });
 
     const u = rows[0];
     if (!u.reset_code || !u.reset_expires || new Date(u.reset_expires) < new Date()) {
-      return res.status(400).json({ error: 'kod_suresi_doldu', message: 'Kodun süresi dolmuş. Yeniden kod talep ediniz.' });
+      return res.status(400).json({ error: 'kod_suresi_doldu', message: getErrorMessage(req, 'kod_suresi_doldu') });
     }
     if (String(u.reset_code) !== String(code)) {
-      return res.status(400).json({ error: 'kod_gecersiz', message: 'Doğrulama kodu hatalı.' });
+      return res.status(400).json({ error: 'kod_gecersiz', message: getErrorMessage(req, 'kod_gecersiz') });
     }
     res.json({ ok: true, verified: true });
   } catch (e) {
     console.error('forgot/verify error:', e);
-    res.status(500).json({ error: 'sunucu_hatasi', message: 'Sunucu hatası' });
+    res.status(500).json({ error: 'sunucu_hatasi', message: getErrorMessage(req, 'sunucu_hatasi') });
   }
 });
 
@@ -1588,15 +1619,15 @@ app.post('/api/auth/forgot/reset', async (req, res) => {
   const newPw2 = req.body?.new_password_confirm;
 
   if (!email || !code || !newPw || !newPw2) {
-    return res.status(400).json({ error: 'eksik_bilgi', message: 'E-posta, kod ve yeni şifre alanları zorunludur.' });
+    return res.status(400).json({ error: 'eksik_bilgi', message: getErrorMessage(req, 'eksik_bilgi') });
   }
   if (newPw !== newPw2) {
-    return res.status(400).json({ error: 'sifre_eslesmiyor', message: 'Yeni şifreler eşleşmiyor.' });
+    return res.status(400).json({ error: 'sifre_eslesmiyor', message: getErrorMessage(req, 'sifre_eslesmiyor') });
   }
   if (!isStrongPassword(newPw)) {
     return res.status(400).json({
       error: 'zayif_sifre',
-      message: 'Zayıf şifre: En az 8 karakter, bir büyük, bir küçük harf ve bir sembol içermeli.'
+      message: getErrorMessage(req, 'zayif_sifre')
     });
   }
 
@@ -1607,22 +1638,20 @@ app.post('/api/auth/forgot/reset', async (req, res) => {
       [email]
     );
     if (!rows.length) {
-      return res.status(404).json({ error: 'hesap_bulunamadi', message: 'Hesabınız bulunamadı.' });
+      return res.status(404).json({ error: 'hesap_bulunamadi', message: getErrorMessage(req, 'hesap_bulunamadi') });
     }
 
     const u = rows[0];
     if (!u.reset_code || !u.reset_expires || new Date(u.reset_expires) < new Date()) {
-      return res.status(400).json({ error: 'kod_suresi_doldu', message: 'Kodun süresi dolmuş. Yeniden kod talep ediniz.' });
+      return res.status(400).json({ error: 'kod_suresi_doldu', message: getErrorMessage(req, 'kod_suresi_doldu') });
     }
     if (String(u.reset_code) !== String(code)) {
-      return res.status(400).json({ error: 'kod_gecersiz', message: 'Doğrulama kodu hatalı.' });
+      return res.status(400).json({ error: 'kod_gecersiz', message: getErrorMessage(req, 'kod_gecersiz') });
     }
 
     await client.query('BEGIN');
 
-
     await client.query(`SELECT set_config('app.password_plain', $1, true)`, [newPw]);
-
 
     await client.query(
       `DO $blk$
@@ -1650,7 +1679,7 @@ app.post('/api/auth/forgot/reset', async (req, res) => {
       return res.status(400).json({ error: 'gecersiz', message: e.message });
     }
     console.error('forgot/reset error:', e);
-    return res.status(500).json({ error: 'sunucu_hatasi', message: 'Sunucu hatası' });
+    return res.status(500).json({ error: 'sunucu_hatasi', message: getErrorMessage(req, 'sunucu_hatasi') });
   } finally {
     try { await client.query(`SELECT set_config('app.password_plain', NULL, true)`); } catch {}
     client.release();
@@ -1659,7 +1688,7 @@ app.post('/api/auth/forgot/reset', async (req, res) => {
 
 
 /* ===================== Public  ===================== */
-app.get('/api/olaylar', requireAuth, async (_req, res) => {
+app.get('/api/olaylar', requireAuth, async (req, res) => {
   try {
     const r = await pool.query(`
       SELECT o_id, o_adi, good, created_by_id, created_by_name 
@@ -1670,7 +1699,7 @@ app.get('/api/olaylar', requireAuth, async (_req, res) => {
     res.json(r.rows);
   } catch (e) {
     console.error('GET /api/olaylar error:', e);
-    res.status(500).json({ error: 'sunucu_hatasi', message: 'Olay türleri çekilemedi.' });
+    res.status(500).json({ error: 'sunucu_hatasi', message: getErrorMessage(req, 'sunucu_hatasi') });
   }
 });
 
@@ -1684,7 +1713,7 @@ app.get('/api/olaylar_tum', tryAuth, async (req, res) => {
     console.log('[/api/olaylar_tum] Anonim istek - showGood:', showGood, 'showBad:', showBad);
     
     if (!showGood && !showBad) {
-      return res.status(401).json({ error: 'unauthenticated' });
+      return res.status(401).json({ error: 'unauthenticated', message: getErrorMessage(req, 'unauthenticated') });
     }
   }
 
@@ -1748,7 +1777,7 @@ app.get('/api/olaylar_tum', tryAuth, async (req, res) => {
     res.json(rows);
   } catch (e) {
     console.error('GET /api/olaylar_tum error:', e);
-    res.status(500).json({ error: 'sunucu_hatasi', message: 'Sunucu hatası' });
+    res.status(500).json({ error: 'sunucu_hatasi', message: getErrorMessage(req, 'sunucu_hatasi') });
   }
 });
 
@@ -1758,7 +1787,7 @@ app.get('/api/qfield/olaylar', tryAuth, async (req, res) => {
   const ALLOW_PUBLIC_EVENTS = String(process.env.SHOW_EVENTS_ON_LOGIN || 'false') === 'true';
   const isAnon = !req.user;
   if (isAnon && !ALLOW_PUBLIC_EVENTS) {
-    return res.status(401).json({ error: 'unauthenticated' });
+    return res.status(401).json({ error: 'unauthenticated', message: getErrorMessage(req, 'unauthenticated') });
   }
 
   try {
@@ -1805,7 +1834,7 @@ app.get('/api/qfield/olaylar', tryAuth, async (req, res) => {
     res.json({ type: 'FeatureCollection', features });
   } catch (e) {
     console.error('GET /api/qfield/olaylar error:', e);
-    res.status(500).json({ error: 'sunucu_hatasi', message: 'GeoJSON oluşturulamadı.' });
+    res.status(500).json({ error: 'sunucu_hatasi', message: getErrorMessage(req, 'sunucu_hatasi') });
   }
 });
 
@@ -1816,18 +1845,18 @@ app.post('/api/submit_olay', requireAuth, async (req, res) => {
     const { p_id, olay_turu, aciklama, enlem, boylam } = req.body || {};
     const lat = parseFloat(enlem), lng = parseFloat(boylam);
     if (!Number.isFinite(lat) || !Number.isFinite(lng))
-      return res.status(400).json({ error: 'gecersiz_koordinat', message: 'Koordinatlar eksik ya da hatalı' });
+      return res.status(400).json({ error: 'gecersiz_koordinat', message: getErrorMessage(req, 'gecersiz_koordinat') });
 
     let olayTuruId = null;
     if (olay_turu !== '' && olay_turu != null) {
       const asNum = parseInt(olay_turu, 10);
       if (!Number.isNaN(asNum)) {
         const t = await pool.query('SELECT 1 FROM olaylar WHERE o_id=$1 AND COALESCE(active,true)=true', [asNum]);
-        if (!t.rowCount) return res.status(400).json({ error: 'gecersiz_olay_turu', message: 'Geçersiz/kapalı olay türü' });
+        if (!t.rowCount) return res.status(400).json({ error: 'gecersiz_olay_turu', message: getErrorMessage(req, 'gecersiz_olay_turu') });
         olayTuruId = asNum;
       } else {
         const q = await pool.query('SELECT o_id FROM olaylar WHERE o_adi=$1 AND COALESCE(active,true)=true', [String(olay_turu)]);
-        if (!q.rowCount) return res.status(400).json({ error: 'gecersiz_olay_turu', message: 'Geçersiz olay türü' });
+        if (!q.rowCount) return res.status(400).json({ error: 'gecersiz_olay_turu', message: getErrorMessage(req, 'gecersiz_olay_turu') });
         olayTuruId = q.rows[0].o_id;
       }
     }
@@ -1856,16 +1885,16 @@ app.post('/api/submit_olay', requireAuth, async (req, res) => {
     res.json({ success: true, olay_id, photo_urls: photoUrls, video_urls: videoUrls });
   } catch (e) {
     console.error('submit_olay error:', e);
-    res.status(500).json({ error: 'veritabani_hatasi', message: 'Veritabanı hatası' });
+    res.status(500).json({ error: 'veritabani_hatasi', message: getErrorMessage(req, 'veritabani_hatasi') });
   }
 });
 
 app.patch('/api/olay/:id', requireAuth, async (req, res) => {
   const id = +req.params.id;
-  if (!Number.isInteger(id)) return res.status(400).json({ error: 'gecersiz_id', message: 'Geçersiz ID' });
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'gecersiz_id', message: getErrorMessage(req, 'gecersiz_id') });
 
   if (req.user.role === 'supervisor') {
-    return res.status(403).json({ error: 'yetkisiz', message: 'Supervisor güncelleme yapamaz.' });
+    return res.status(403).json({ error: 'yetkisiz', message: getErrorMessage(req, 'yetkisiz') });
   }
 
   const { enlem, boylam, olay_turu, aciklama } = req.body || {};
@@ -1892,9 +1921,9 @@ app.patch('/api/olay/:id', requireAuth, async (req, res) => {
       fields.push(`olay_turu=NULL`);
     } else {
       const asNum = parseInt(olay_turu, 10);
-      if (Number.isNaN(asNum)) return res.status(400).json({ error: 'gecersiz_olay_turu', message: 'Geçersiz olay_turu' });
+      if (Number.isNaN(asNum)) return res.status(400).json({ error: 'gecersiz_olay_turu', message: getErrorMessage(req, 'gecersiz_olay_turu') });
       const t = await pool.query('SELECT 1 FROM olaylar WHERE o_id=$1 AND COALESCE(active,true)=true', [asNum]);
-      if (!t.rowCount) return res.status(400).json({ error: 'gecersiz_olay_turu', message: 'Geçersiz/kapalı olay_turu' });
+      if (!t.rowCount) return res.status(400).json({ error: 'gecersiz_olay_turu', message: getErrorMessage(req, 'gecersiz_olay_turu') });
       fields.push(`olay_turu=$${idx++}`);
       vals.push(asNum);
     }
@@ -1903,7 +1932,7 @@ app.patch('/api/olay/:id', requireAuth, async (req, res) => {
     fields.push(`aciklama=$${idx++}`);
     vals.push(aciklama ?? null);
   }
-  if (fields.length === 0) return res.status(400).json({ error: 'alan_yok', message: 'Güncellenecek alan yok.' });
+  if (fields.length === 0) return res.status(400).json({ error: 'alan_yok', message: getErrorMessage(req, 'alan_yok') });
 
   if (enlem != null || boylam != null) {
     const lat = enlem != null ? parseFloat(enlem) : null;
@@ -1919,7 +1948,7 @@ app.patch('/api/olay/:id', requireAuth, async (req, res) => {
 
     const q = `UPDATE olay SET ${fields.join(', ')} WHERE ${where} RETURNING olay_id, photo_urls, video_urls`;
     const r = await pool.query(q, vals);
-    if (!r.rowCount) return res.status(404).json({ error: 'bulunamadi', message: 'Kayıt bulunamadı veya yetkiniz yok.' });
+    if (!r.rowCount) return res.status(404).json({ error: 'bulunamadi', message: getErrorMessage(req, 'bulunamadi') });
 
     res.json({
       ok: true,
@@ -1929,13 +1958,13 @@ app.patch('/api/olay/:id', requireAuth, async (req, res) => {
     });
   } catch (e) {
     console.error('update olay error:', e);
-    res.status(500).json({ error: 'veritabani_hatasi', message: 'Veritabanı hatası' });
+    res.status(500).json({ error: 'veritabani_hatasi', message: getErrorMessage(req, 'veritabani_hatasi') });
   }
 });
 
 app.delete('/api/olay/:id', requireAuth, async (req, res) => {
   const id = +req.params.id;
-  if (!Number.isInteger(id)) return res.status(400).json({ error: 'gecersiz_id', message: 'Geçersiz ID' });
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'gecersiz_id', message: getErrorMessage(req, 'gecersiz_id') });
 
   const client = await pool.connect();
   try {
@@ -1960,13 +1989,13 @@ app.delete('/api/olay/:id', requireAuth, async (req, res) => {
     );
     await client.query('COMMIT');
 
-    if (!r.rowCount) return res.status(404).json({ error: 'bulunamadi', message: 'Kayıt bulunamadı.' });
+    if (!r.rowCount) return res.status(404).json({ error: 'bulunamadi', message: getErrorMessage(req, 'bulunamadi') });
     res.set('X-UI-Remove', '1');
     res.json({ ok: true, olay_id: r.rows[0].olay_id, ui_remove: true });
   } catch (e) {
     try { await client.query('ROLLBACK'); } catch {}
     console.error('delete olay error:', e);
-    res.status(500).json({ error: 'veritabani_hatasi', message: 'Veritabanı hatası' });
+    res.status(500).json({ error: 'veritabani_hatasi', message: getErrorMessage(req, 'veritabani_hatasi') });
   } finally {
     client.release();
   }
@@ -1978,7 +2007,7 @@ app.post('/api/admin/olaylar', adminOnly, async (req, res) => {
   const o_adi = norm(req.body?.o_adi);
   const good = req.body?.good === true || req.body?.good === 'true';
   
-  if (!o_adi) return res.status(400).json({ error: 'o_adi_gerekli', message: 'Olay türü adı zorunludur.' });
+  if (!o_adi) return res.status(400).json({ error: 'o_adi_gerekli', message: getErrorMessage(req, 'o_adi_gerekli') });
   try {
     const existing = await pool.query(
       `SELECT o_id, active FROM olaylar WHERE LOWER(o_adi) = LOWER($1)`,
@@ -1986,10 +2015,9 @@ app.post('/api/admin/olaylar', adminOnly, async (req, res) => {
     );
     
     if (existing.rowCount > 0) {
-      const status = existing.rows[0].active ? 'aktif' : 'pasif';
       return res.status(409).json({ 
         error: 'duplicate_olay_turu',
-        message: `Aynı ad ile olay türü ekleyemezsiniz (${status} bir kayıt mevcut)`
+        message: getErrorMessage(req, 'duplicate_olay_turu')
       });
     }
     
@@ -2002,7 +2030,7 @@ app.post('/api/admin/olaylar', adminOnly, async (req, res) => {
     res.json({ ok: true, created: r.rows[0] });
   } catch (e) {
     console.error('admin add olaylar error:', e);
-    res.status(500).json({ error: 'veritabani_hatasi', message: 'Veritabanı hatası' });
+    res.status(500).json({ error: 'veritabani_hatasi', message: getErrorMessage(req, 'veritabani_hatasi') });
   }
 });
 
@@ -2012,18 +2040,18 @@ app.patch('/api/admin/olaylar/:id', adminOnly, async (req, res) => {
   const good = req.body?.good;
   
   if (!Number.isInteger(id) || (!o_adi && good === undefined)) {
-    return res.status(400).json({ error: 'gecersiz_istek', message: 'Geçersiz istek' });
+    return res.status(400).json({ error: 'gecersiz_istek', message: getErrorMessage(req, 'gecersiz_istek') });
   }
   
   try {
     const existing = await pool.query('SELECT * FROM olaylar WHERE o_id = $1', [id]);
     
     if (!existing.rowCount) {
-      return res.status(404).json({ error: 'bulunamadi', message: 'Olay türü bulunamadı' });
+      return res.status(404).json({ error: 'bulunamadi', message: getErrorMessage(req, 'bulunamadi') });
     }
     
     if (req.user.role === 'supervisor' && existing.rows[0].created_by_id !== req.user.id) {
-      return res.status(403).json({ error: 'yetkisiz', message: 'Bu olay türünü güncelleme yetkiniz yok' });
+      return res.status(403).json({ error: 'yetkisiz', message: getErrorMessage(req, 'yetkisiz') });
     }
     
     if (o_adi) {
@@ -2033,7 +2061,7 @@ app.patch('/api/admin/olaylar/:id', adminOnly, async (req, res) => {
       );
       
       if (duplicate.rowCount) {
-        return res.status(400).json({ error: 'isim_mevcut', message: 'Bu isimde bir olay türü zaten mevcut' });
+        return res.status(400).json({ error: 'isim_mevcut', message: getErrorMessage(req, 'isim_mevcut') });
       }
     }
     
@@ -2052,7 +2080,7 @@ app.patch('/api/admin/olaylar/:id', adminOnly, async (req, res) => {
     }
     
     if (updates.length === 0) {
-      return res.status(400).json({ error: 'alan_yok', message: 'Güncellenecek alan yok' });
+      return res.status(400).json({ error: 'alan_yok', message: getErrorMessage(req, 'alan_yok') });
     }
     
     updates.push(`created_at = NOW()`);
@@ -2064,12 +2092,13 @@ app.patch('/api/admin/olaylar/:id', adminOnly, async (req, res) => {
     res.json({ ok: true, message: 'Olay türü güncellendi', updated: r.rows[0] });
   } catch (e) {
     console.error('admin patch olaylar error:', e);
-    res.status(500).json({ error: 'veritabani_hatasi', message: 'Veritabanı hatası' });
+    res.status(500).json({ error: 'veritabani_hatasi', message: getErrorMessage(req, 'veritabani_hatasi') });
   }
 });
+
 app.delete('/api/admin/olaylar/:id', adminOnly, async (req, res) => {
   const id = +req.params.id;
-  if (!Number.isInteger(id)) return res.status(400).json({ error: 'gecersiz_id', message: 'Geçersiz ID' });
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'gecersiz_id', message: getErrorMessage(req, 'gecersiz_id') });
   try {
     const client = await pool.connect();
     try {
@@ -2104,10 +2133,7 @@ app.delete('/api/admin/olaylar/:id', adminOnly, async (req, res) => {
       
       if (!rType.rowCount) {
         await client.query('ROLLBACK');
-        const msg = req.user.role === 'supervisor' 
-          ? 'Kayıt bulunamadı, pasif veya size ait değil.' 
-          : 'Kayıt bulunamadı veya zaten pasif.';
-        return res.status(404).json({ error: 'bulunamadi_veya_pasif', message: msg });
+        return res.status(404).json({ error: 'bulunamadi_veya_pasif', message: getErrorMessage(req, 'bulunamadi_veya_pasif') });
       }
 
       const rOlay = await client.query(
@@ -2132,13 +2158,13 @@ app.delete('/api/admin/olaylar/:id', adminOnly, async (req, res) => {
     }
   } catch (e) {
     console.error('admin delete olaylar error:', e);
-    res.status(500).json({ error: 'veritabani_hatasi', message: 'Veritabanı hatası' });
+    res.status(500).json({ error: 'veritabani_hatasi', message: getErrorMessage(req, 'veritabani_hatasi') });
   }
 });
 
 app.delete('/api/admin/olay/:id', adminOnly, async (req, res) => {
   const id = +req.params.id;
-  if (!Number.isInteger(id)) return res.status(400).json({ error: 'gecersiz_id', message: 'Geçersiz ID' });
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'gecersiz_id', message: getErrorMessage(req, 'gecersiz_id') });
   try {
     const client = await pool.connect();
     try {
@@ -2163,7 +2189,7 @@ app.delete('/api/admin/olay/:id', adminOnly, async (req, res) => {
       );
       await client.query('COMMIT');
 
-      if (!r.rowCount) return res.status(404).json({ error: 'bulunamadi', message: 'Kayıt bulunamadı.' });
+      if (!r.rowCount) return res.status(404).json({ error: 'bulunamadi', message: getErrorMessage(req, 'bulunamadi') });
       res.set('X-UI-Remove', '1');
       res.json({ ok: true, deletedId: id, ui_remove: true });
     } catch (e) {
@@ -2174,7 +2200,7 @@ app.delete('/api/admin/olay/:id', adminOnly, async (req, res) => {
     }
   } catch (e) {
     console.error('admin delete olay error:', e);
-    res.status(500).json({ error: 'veritabani_hatasi', message: 'Veritabanı hatası' });
+    res.status(500).json({ error: 'veritabani_hatasi', message: getErrorMessage(req, 'veritabani_hatasi') });
   }
 });
 
@@ -2194,7 +2220,7 @@ app.get('/api/admin/users', adminOnly, async (req, res) => {
     res.json(rows);
   } catch (e) {
     console.error('GET /api/admin/users error:', e);
-    res.status(500).json({ error: 'veritabani_hatasi', message: 'Veritabanı hatası' });
+    res.status(500).json({ error: 'veritabani_hatasi', message: getErrorMessage(req, 'veritabani_hatasi') });
   }
 });
 
@@ -2207,16 +2233,21 @@ app.post('/api/admin/users', adminOnly, async (req, res) => {
   const email = norm(req.body?.email);
   const base32Raw = norm(req.body?.BASE32Code || req.body?.base32 || req.body?.base32Code || req.body?.totp || '');
 
-  if (!username || !password || !role || !email) return res.status(400).json({ error: 'gecersiz_istek', message: 'Zorunlu alanlar eksik.' });
-  if (!['supervisor', 'admin', 'user'].includes(role)) return res.status(400).json({ error: 'gecersiz_rol', message: 'Geçersiz rol.' });
-  if (!isStrongPassword(password)) return res.status(400).json({ error: 'zayif_sifre', message: 'Zayıf şifre.' });
+  if (!username || !password || !role || !email) return res.status(400).json({ error: 'gecersiz_istek', message: getErrorMessage(req, 'gecersiz_istek') });
+  if (!['supervisor', 'admin', 'user'].includes(role)) return res.status(400).json({ error: 'gecersiz_rol', message: getErrorMessage(req, 'gecersiz_rol') });
+  if (!isStrongPassword(password)) return res.status(400).json({ error: 'zayif_sifre', message: getErrorMessage(req, 'zayif_sifre') });
   if (!isEmailAllowed(email)) {
-    let message = 'Geçerli formatta bir e-posta adresi giriniz.';
+    let message = getErrorMessage(req, 'gecersiz_eposta');
     if (ALLOWED_EMAIL_DOMAINS.length > 0) {
+      const lang = req.headers['accept-language']?.startsWith('en') ? 'en' : 'tr';
       if (ALLOWED_EMAIL_DOMAINS.length === 1) {
-        message = `Yalnızca ${ALLOWED_EMAIL_DOMAINS[0]} alan adına sahip e-posta adresleriyle kayıt olunabilir.`;
+        message = lang === 'en'
+          ? `Only email addresses with ${ALLOWED_EMAIL_DOMAINS[0]} domain are allowed.`
+          : `Yalnızca ${ALLOWED_EMAIL_DOMAINS[0]} alan adına sahip e-posta adresleriyle kayıt olunabilir.`;
       } else {
-        message = `Yalnızca şu alan adlarına sahip e-posta adresleriyle kayıt olunabilir: ${ALLOWED_EMAIL_DOMAINS.join(', ')}`;
+        message = lang === 'en'
+          ? `Only email addresses with the following domains are allowed: ${ALLOWED_EMAIL_DOMAINS.join(', ')}`
+          : `Yalnızca şu alan adlarına sahip e-posta adresleriyle kayıt olunabilir: ${ALLOWED_EMAIL_DOMAINS.join(', ')}`;
       }
     }
     return res.status(400).json({
@@ -2229,7 +2260,7 @@ app.post('/api/admin/users', adminOnly, async (req, res) => {
     await failIfAnyDuplicate(username, email);
   } catch (e) {
     if (e.code === 'ACTIVE_DUP')
-      return res.status(409).json({ error: 'kullanici_veya_eposta_kayitli', message: 'Kullanıcı adı veya e-posta zaten kayıtlı.' });
+      return res.status(409).json({ error: 'kullanici_veya_eposta_kayitli', message: getErrorMessage(req, 'kullanici_veya_eposta_kayitli') });
     throw e;
   }
 
@@ -2263,10 +2294,10 @@ app.post('/api/admin/users', adminOnly, async (req, res) => {
       return res.status(400).json({ error: 'gecersiz', message: e.message });
     }
     if (e.code === '23505') {
-      return res.status(409).json({ error: 'base32_cakisma', message: 'BASE32 CODE aynı. Lütfen BASE32CODE unu değiştirin.' });
+      return res.status(409).json({ error: 'base32_cakisma', message: getErrorMessage(req, 'base32_cakisma') });
     }
     console.error('admin create user error:', e);
-    res.status(500).json({ error: 'veritabani_hatasi', message: 'Veritabanı hatası' });
+    res.status(500).json({ error: 'veritabani_hatasi', message: getErrorMessage(req, 'veritabani_hatasi') });
   } finally {
     try { await client.query(`SELECT set_config('app.password_plain', NULL, true)`); } catch {}
     client.release();
@@ -2275,7 +2306,7 @@ app.post('/api/admin/users', adminOnly, async (req, res) => {
 
 app.delete('/api/admin/users/:id', adminOnly, async (req, res) => {
   const id = +req.params.id;
-  if (!Number.isInteger(id)) return res.status(400).json({ error: 'gecersiz_id', message: 'Geçersiz ID' });
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'gecersiz_id', message: getErrorMessage(req, 'gecersiz_id') });
 
   const client = await pool.connect();
   try {
@@ -2284,7 +2315,7 @@ app.delete('/api/admin/users/:id', adminOnly, async (req, res) => {
     const u = await client.query('SELECT id, username, role FROM users WHERE id=$1', [id]);
     if (!u.rowCount) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'bulunamadi', message: 'Kullanıcı bulunamadı.' });
+      return res.status(404).json({ error: 'bulunamadi', message: getErrorMessage(req, 'bulunamadi') });
     }
     const victimId = u.rows[0].id;
     const victimUsername = u.rows[0].username;
@@ -2296,7 +2327,7 @@ app.delete('/api/admin/users/:id', adminOnly, async (req, res) => {
         await client.query('ROLLBACK');
         return res.status(403).json({ 
           error: 'yetkisiz', 
-          message: 'Supervisor sadece kendisini veya user rolündeki kullanıcıları silebilir.' 
+          message: getErrorMessage(req, 'yetkisiz')
         });
       }
     }
@@ -2321,7 +2352,7 @@ app.delete('/api/admin/users/:id', adminOnly, async (req, res) => {
     );
     if (!r.rowCount) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'bulunamadi_veya_pasif', message: 'Kullanıcı bulunamadı veya zaten pasif.' });
+      return res.status(404).json({ error: 'bulunamadi_veya_pasif', message: getErrorMessage(req, 'bulunamadi_veya_pasif') });
     }
 
 
@@ -2426,7 +2457,7 @@ app.delete('/api/admin/users/:id', adminOnly, async (req, res) => {
   } catch (e) {
     try { await client.query('ROLLBACK'); } catch {}
     console.error('admin delete user error:', e);
-    res.status(500).json({ error: 'veritabani_hatasi', message: 'Veritabanı hatası' });
+    res.status(500).json({ error: 'veritabani_hatasi', message: getErrorMessage(req, 'veritabani_hatasi') });
   } finally {
     try {
       await pool.query(
@@ -2439,7 +2470,7 @@ app.delete('/api/admin/users/:id', adminOnly, async (req, res) => {
 
 app.post('/api/admin/users/:id/activate', adminOnly, async (req, res) => {
   const id = +req.params.id;
-  if (!Number.isInteger(id)) return res.status(400).json({ error: 'gecersiz_id', message: 'Geçersiz ID' });
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'gecersiz_id', message: getErrorMessage(req, 'gecersiz_id') });
 
   const client = await pool.connect();
   try {
@@ -2451,10 +2482,10 @@ app.post('/api/admin/users/:id/activate', adminOnly, async (req, res) => {
       activated = r.rows[0];
     } catch (e) {
       await client.query('ROLLBACK');
-      if (e.code === 'P0005') return res.status(404).json({ error: 'bulunamadi', message: 'Kullanıcı bulunamadı.' });
+      if (e.code === 'P0005') return res.status(404).json({ error: 'bulunamadi', message: getErrorMessage(req, 'bulunamadi') });
       if (e.code === 'P0004')
-        return res.status(409).json({ error: 'zaten_aktif', message: 'active liği true olan bir kullanıcının active liği true olamaz' });
-      if (e.code === 'P0006') return res.status(404).json({ error: 'bulunamadi_veya_zaten_aktif', message: 'Kullanıcı bulunamadı veya zaten aktif.' });
+        return res.status(409).json({ error: 'zaten_aktif', message: getErrorMessage(req, 'zaten_aktif') });
+      if (e.code === 'P0006') return res.status(404).json({ error: 'bulunamadi_veya_zaten_aktif', message: getErrorMessage(req, 'bulunamadi_veya_zaten_aktif') });
       throw e;
     }
 
@@ -2495,7 +2526,7 @@ app.post('/api/admin/users/:id/activate', adminOnly, async (req, res) => {
   } catch (e) {
     try { await client.query('ROLLBACK'); } catch {}
     console.error('admin activate user error:', e);
-    res.status(500).json({ error: 'veritabani_hatasi', message: 'Veritabanı hatası' });
+    res.status(500).json({ error: 'veritabani_hatasi', message: getErrorMessage(req, 'veritabani_hatasi') });
   } finally {
     client.release();
   }
@@ -2504,7 +2535,7 @@ app.post('/api/admin/users/:id/activate', adminOnly, async (req, res) => {
 app.post('/api/admin/users/:id/totp', adminOnly, async (req, res) => {
   const id = +req.params.id;
   const base32 = norm(req.body?.base32 || req.body?.BASE32Code || req.body?.base32Code || req.body?.totp);
-  if (!Number.isInteger(id) || !base32) return res.status(400).json({ error: 'gecersiz_istek', message: 'Geçersiz istek' });
+  if (!Number.isInteger(id) || !base32) return res.status(400).json({ error: 'gecersiz_istek', message: getErrorMessage(req, 'gecersiz_istek') });
   try {
     const base32Norm = normalizeBase32(base32);
     await pool.query('UPDATE users SET two_factor_secret=$1, two_factor_enabled=TRUE WHERE id=$2', [base32Norm, id]);
@@ -2513,43 +2544,27 @@ app.post('/api/admin/users/:id/totp', adminOnly, async (req, res) => {
     if (e.code === '23505' || e.code === 'P0003') {
       return res.status(409).json({
         error: 'base32_cakisma',
-        message: 'BASE32 CODE aynı. Lütfen BASE32CODE’unu değiştirin.',
+        message: getErrorMessage(req, 'base32_cakisma'),
       });
     }
     console.error('admin set totp error:', e);
-    res.status(500).json({ error: 'veritabani_hatasi', message: 'Veritabanı hatası' });
+    res.status(500).json({ error: 'veritabani_hatasi', message: getErrorMessage(req, 'veritabani_hatasi') });
   }
 });
 
 app.delete('/api/admin/users/:id/hard', adminOnly, async (req, res) => {
   const id = +req.params.id;
-  if (!Number.isInteger(id)) return res.status(400).json({ error: 'gecersiz_id', message: 'Geçersiz ID' });
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'gecersiz_id', message: getErrorMessage(req, 'gecersiz_id') });
 
   try {
     await pool.query('SELECT app_api.hard_delete_user($1)', [id]);
     return res.json({ ok: true, hardDeletedId: id });
   } catch (e) {
     if (e.code === 'P0005') {
-      return res.status(404).json({ error: 'bulunamadi', message: 'Kullanıcı bulunamadı, silme yapılmadı.' });
+      return res.status(404).json({ error: 'bulunamadi', message: getErrorMessage(req, 'bulunamadi') });
     }
     console.error('hard delete user error:', e);
-    return res.status(500).json({ error: 'veritabani_hatasi', message: 'Veritabanı hatası' });
-  }
-});
-
-app.delete('/api/admin/users/:id/hard', adminOnly, async (req, res) => {
-  const id = +req.params.id;
-  if (!Number.isInteger(id)) return res.status(400).json({ error: 'gecersiz_id', message: 'Geçersiz ID' });
-
-  try {
-    await pool.query('SELECT app_api.hard_delete_user($1)', [id]);
-    return res.json({ ok: true, hardDeletedId: id });
-  } catch (e) {
-    if (e.code === 'P0005') {
-      return res.status(404).json({ error: 'bulunamadi', message: 'Kullanıcı bulunamadı, silme yapılmadı.' });
-    }
-    console.error('hard delete user error:', e);
-    return res.status(500).json({ error: 'veritabani_hatasi', message: 'Veritabanı hatası' });
+    return res.status(500).json({ error: 'veritabani_hatasi', message: getErrorMessage(req, 'veritabani_hatasi') });
   }
 });
 
@@ -2562,7 +2577,7 @@ app.post('/api/export/geojson', requireAuth, async (req, res) => {
     console.log('[GeoJSON Export] eventIds tipi:', typeof eventIds, 'Array mi?', Array.isArray(eventIds));
     
     if (!Array.isArray(eventIds) || eventIds.length === 0) {
-      return res.status(400).json({ error: 'bos_liste', message: 'İndirilecek olay yok' });
+      return res.status(400).json({ error: 'bos_liste', message: getErrorMessage(req, 'bos_liste') });
     }
     
     const validIds = eventIds
@@ -2577,7 +2592,7 @@ app.post('/api/export/geojson', requireAuth, async (req, res) => {
     console.log('[GeoJSON Export] Geçerli ID sayısı:', validIds.length);
     
     if (validIds.length === 0) {
-      return res.status(400).json({ error: 'gecersiz_idler', message: 'Geçerli olay ID\'si bulunamadı' });
+      return res.status(400).json({ error: 'gecersiz_idler', message: getErrorMessage(req, 'gecersiz_idler') });
     }
     
     const placeholders = validIds.map((_, i) => `$${i + 1}`).join(',');
@@ -2606,7 +2621,7 @@ app.post('/api/export/geojson', requireAuth, async (req, res) => {
     const { rows } = await pool.query(query, validIds);
     
     if (rows.length === 0) {
-      return res.status(404).json({ error: 'olay_yok', message: 'Filtreye uygun olay bulunamadı' });
+      return res.status(404).json({ error: 'olay_yok', message: getErrorMessage(req, 'olay_yok') });
     }
     
     console.log('[GeoJSON Export] Bulunan olay sayısı:', rows.length);
@@ -2646,9 +2661,10 @@ app.post('/api/export/geojson', requireAuth, async (req, res) => {
     
   } catch (e) {
     console.error('GeoJSON export error:', e);
-    res.status(500).json({ error: 'sunucu_hatasi', message: 'Export hatası: ' + e.message });
+    res.status(500).json({ error: 'sunucu_hatasi', message: getErrorMessage(req, 'sunucu_hatasi') + ': ' + e.message });
   }
 });
+
 /* ===================== Upload Uçları ===================== */
 app.post('/api/upload/photo', requireAuth, upload.array('files', 10), (req, res) => {
   try {
@@ -2660,10 +2676,10 @@ app.post('/api/upload/photo', requireAuth, upload.array('files', 10), (req, res)
       const url = saveDataUrlToUploads(req.body.dataUrl, 'photo');
       return res.json({ ok: true, urls: [url], url });
     }
-    return res.status(400).json({ error: 'yukleme_hatasi', message: 'Geçersiz içerik.' });
+    return res.status(400).json({ error: 'yukleme_hatasi', message: getErrorMessage(req, 'yukleme_hatasi') });
   } catch (e) {
     console.error('upload photo error:', e);
-    res.status(400).json({ error: 'yukleme_hatasi', message: 'Fotoğraf yüklenemedi.' });
+    res.status(400).json({ error: 'yukleme_hatasi', message: getErrorMessage(req, 'yukleme_hatasi') });
   }
 });
 
@@ -2677,10 +2693,10 @@ app.post('/api/upload/video', requireAuth, upload.array('files', 10), (req, res)
       const url = saveDataUrlToUploads(req.body.dataUrl, 'video');
       return res.json({ ok: true, urls: [url], url });
     }
-    return res.status(400).json({ error: 'yukleme_hatasi', message: 'Geçersiz içerik.' });
+    return res.status(400).json({ error: 'yukleme_hatasi', message: getErrorMessage(req, 'yukleme_hatasi') });
   } catch (e) {
     console.error('upload video error:', e);
-    res.status(400).json({ error: 'yukleme_hatasi', message: 'Video yüklenemedi.' });
+    res.status(400).json({ error: 'yukleme_hatasi', message: getErrorMessage(req, 'yukleme_hatasi') });
   }
 });
 
@@ -2712,3 +2728,4 @@ const shutdown = async () => {
 
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
+
