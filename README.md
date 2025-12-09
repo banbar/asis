@@ -824,8 +824,6 @@ Bu proje aşağıdaki açık kaynak projeleri kullanmaktadır:
 
 <div align="center">
 
-**⭐ Bu projeyi beğendiyseniz yıldız vermeyi unutmayın!**
 
-Made with ❤️ for disaster management and community safety
 
 </div>
