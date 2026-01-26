@@ -5,6 +5,7 @@
 ![ASİS Logo](https://img.shields.io/badge/ASİS-Afet%20Sonrası%20İzleme%20Sistemi-red?style=for-the-badge)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=for-the-badge)](https://www.gnu.org/licenses/gpl-3.0)
+[![AWS](https://img.shields.io/badge/AWS-EC2-orange?style=for-the-badge&logo=amazonaws&logoColor=white)](https://aws.amazon.com/ec2/)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-13+-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![QGIS](https://img.shields.io/badge/QGIS-3.x-589632?style=for-the-badge&logo=qgis&logoColor=white)](https://qgis.org/)
@@ -30,6 +31,7 @@
 - [Kurulum](#-kurulum)
   - [Web Uygulaması Kurulumu](#1-web-uygulaması-kurulumu)
   - [.env Dosyası Yapılandırması](#2-env-dosyası-yapılandırması)
+  - [AWS (EC2) Üzerine Yayınlama](#-aws-ec2-üzerine-yayınlama)
 - [QField Entegrasyonu](#-qfield-entegrasyonu-offline-veri-toplama)
 - [Kullanım](#-kullanım)
 - [Proje Yapısı](#-proje-yapısı)
@@ -246,7 +248,7 @@ PGPOOL_MAX=10
 # =================================
 
 # JWT token için gizli anahtar
-JWT_SECRET=burayı_boş_bırakabilirsiniz
+JWT_SECRET=dev-secret
 
 JWT_EXPIRES=7d
 
@@ -383,6 +385,103 @@ SHOW_BAD_EVENTS_ON_LOGIN=false
 5. Oluşan 16 haneli şifreyi `SMTP_PASS` olarak kullanın
 
 
+---
+
+##  AWS (EC2) Üzerine Yayınlama
+
+Bu proje **AWS EC2 (Ubuntu 22.04)** üzerinde yayınlanmıştır ve Nginx + PM2 ile production ortamında çalıştırılmaktadır.
+
+###  Canlı Sistem Linki
+> **ASİS (AWS):** `http://EC2_PUBLIC_IP`  
+
+
+---
+
+### 1) EC2 Instance Oluşturma 
+
+AWS Console → EC2 → Launch instance:
+- **Name:** `asis-server`
+- **AMI:** Ubuntu Server 22.04 LTS (x86_64)
+- **Instance type:** t2.micro
+- **Key pair:** `.pem` dosyasını indir
+- **Security group:**
+  - SSH (22) → Source: **My IP**
+  - HTTP (80) → Source: **0.0.0.0/0**
+- Launch instance → Sunucu çalışır hale gelir.
+
+---
+
+### 2) SSH ile Sunucuya Bağlanma
+
+Windows PowerShell üzerinden:
+```powershell
+ssh -i .\asis1.pem ubuntu@EC2_PUBLIC_DNS
+```
+
+---
+
+### 3) Otomatik Kurulum (install_asis.sh)
+
+ Bu repoya **install_asis.sh** dosyası eklendi.
+
+Projeyi GitHub’dan çektikten sonra **proje kök dizininde** zaten hazır olacak.
+
+#### Adım 1: Repo’yu çek
+```bash
+sudo mkdir -p /var/www/asis
+sudo chown -R ubuntu:ubuntu /var/www/asis
+cd /var/www/asis
+git clone https://github.com/banbar/asis
+cd asis
+```
+
+#### Adım 2: .env dosyasını oluştur
+```bash
+nano .env
+```
+
+ `.env` dosyasını kaydet (Ctrl+O, Enter) ve çık (Ctrl+X).
+
+#### Adım 3: Script’i çalıştır
+```bash
+chmod +x install_asis.sh
+./install_asis.sh
+```
+
+Bu script sırasıyla:
+- Sistem güncellemesi yapar (`apt update/upgrade`)
+- Node.js, PostgreSQL, PostGIS, Nginx ve UFW kurar
+- `.env` içinden veritabanı ayarlarını okuyup DB oluşturur
+- `1_veritabani_tablolari.sql` dosyasını otomatik import eder
+- `pm2` ile Node uygulamasını başlatır
+- `nginx` reverse proxy ayarlar (`80 → 3000`)
+
+---
+
+### 4) Kurulum Sonrası Kontrol
+
+PM2 durumu:
+```bash
+pm2 status
+```
+
+Nginx durumu:
+```bash
+sudo systemctl status nginx --no-pager
+```
+
+Veritabanına giriş:
+```bash
+sudo -u postgres psql -d asis
+```
+
+PostgreSQL’den çıkış:
+```sql
+\q
+```
+
+---
+
 ## 🗺️ QField Entegrasyonu (Offline Veri Toplama)
 
 QField entegrasyonu sayesinde internet bağlantısı olmadan mobil cihazlarla coğrafi veri toplayabilir ve sonradan PostgreSQL veritabanına aktarabilirsiniz.
@@ -393,7 +492,7 @@ QField entegrasyonu sayesinde internet bağlantısı olmadan mobil cihazlarla co
 2. **QField Mobil Uygulama**: 
    - [Google Play](https://play.google.com/store/apps/details?id=ch.opengis.qfield)
    - [App Store](https://apps.apple.com/app/qfield-for-qgis/id1531726814)
-3. **QFieldSync Plugin**: QGIS içinden yüklenecek
+3. **QFieldSync Plugin**: QGIS için
 
 ---
 
@@ -696,7 +795,7 @@ Artık `http://localhost:3000` adresinden giriş yaptığınızda, QField ile ek
 ┌─────────────────────────────────────────────────────────────┐
 │                  5. WEB UYGULAMASI                         │
 │        (Otomatik Format Dönüşümü + Medya Görünümü)         │
-└─────────────────────────────────────────────────────────────┘
+└──────────────────────┬──────────────────────────────────────┘
 ```
 
 ---
@@ -766,17 +865,17 @@ Admin ve Supervisor kullanıcıları için 2FA aktifleştirme
 
 ---
 
-## 🔒 Güvenlik
+##  Güvenlik
 
 ASİS, aşağıdaki güvenlik önlemlerini içerir:
 
-- ✅ **bcrypt** ile şifre hashleme (10 salt rounds)
-- ✅ **JWT** token bazlı kimlik doğrulama
-- ✅ **2FA/TOTP** desteği (speakeasy)
-- ✅ **E-posta doğrulama** sistemi
-- ✅ **SQL injection koruması** (parameterized queries)
-- ✅ **CORS** ayarları
-- ✅ **Dosya yükleme** güvenlik kontrolleri
+-  **bcrypt** ile şifre hashleme (10 salt rounds)
+-  **JWT** token bazlı kimlik doğrulama
+-  **2FA/TOTP** desteği (speakeasy)
+-  **E-posta doğrulama** sistemi
+-  **SQL injection koruması** (parameterized queries)
+-  **CORS** ayarları
+-  **Dosya yükleme** güvenlik kontrolleri
 
 **Öneriler:**
 - Production'da `JWT_SECRET` değerini mutlaka değiştirin
