@@ -116,7 +116,7 @@ configure_postgres() {
   # postgres kullanıcısının parolası
   sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD '${PGPASSWORD}';"
 
-  # DB var mı kontrol
+  # DB var mı kontrolü
   DB_EXISTS=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='${PGDATABASE}'" || true)
   if [ "$DB_EXISTS" = "1" ]; then
     log "Veritabanı zaten var: $PGDATABASE"
