@@ -1,7 +1,6 @@
 set -euo pipefail
 
 PROJECT_NAME="asis"
-REPO_URL="https://github.com/banbar/asis"
 BASE_DIR="/var/www/${PROJECT_NAME}"
 PROJECT_DIR="${BASE_DIR}/${PROJECT_NAME}"
 
@@ -66,21 +65,7 @@ install_node22() {
   npm -v
 }
 
-clone_repo() {
-  log "Proje klasörü hazırlanıyor..."
-  sudo mkdir -p "$BASE_DIR"
-  sudo chown -R ubuntu:ubuntu "$BASE_DIR"
 
-  if [ -d "$PROJECT_DIR/.git" ]; then
-    log "Repo zaten var -> güncelleniyor (git pull)"
-    cd "$PROJECT_DIR"
-    git pull
-  else
-    log "Repo klonlanıyor: $REPO_URL"
-    cd "$BASE_DIR"
-    git clone "$REPO_URL"
-  fi
-}
 
 check_env_file() {
   log ".env kontrol ediliyor..."
@@ -233,7 +218,6 @@ main() {
   install_nginx
   setup_firewall
   install_node22
-  clone_repo
   check_env_file
   read_env_vars
   configure_postgres
