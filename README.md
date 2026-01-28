@@ -78,7 +78,7 @@
 - JWT token bazlı kimlik doğrulama
 - İki faktörlü kimlik doğrulama (2FA/TOTP)
 - E-posta doğrulama sistemi
-- bcrypt ile şifre hashleme
+- bcrypt ile parola hashleme
 - XSS ve SQL injection koruması
 
 #### Kullanıcı Deneyimi
@@ -125,7 +125,7 @@
 | | ![Leaflet](https://img.shields.io/badge/Leaflet-199900?style=flat&logo=leaflet&logoColor=white) | Harita kütüphanesi |
 | **GIS** | ![QGIS](https://img.shields.io/badge/QGIS-589632?style=flat&logo=qgis&logoColor=white) | Desktop GIS yazılımı |
 | | ![QField](https://img.shields.io/badge/QField-589632?style=flat) | Mobil GIS uygulaması |
-| **Güvenlik** | ![bcrypt](https://img.shields.io/badge/bcrypt-003A70?style=flat) | Şifre hashleme |
+| **Güvenlik** | ![bcrypt](https://img.shields.io/badge/bcrypt-003A70?style=flat) | Parola hashleme |
 | | ![Speakeasy](https://img.shields.io/badge/Speakeasy-FF6C37?style=flat) | TOTP (2FA) |
 | **E-posta** | ![Nodemailer](https://img.shields.io/badge/Nodemailer-339933?style=flat) | E-posta gönderimi |
 | **Dosya İşleme** | ![Multer](https://img.shields.io/badge/Multer-FF6C37?style=flat) | Dosya yükleme |
@@ -171,7 +171,7 @@ npm install
 ##### PostgreSQL Kurulumu (Eğer yoksa)
 **Windows:**
 - [PostgreSQL resmi sitesinden](https://www.postgresql.org/download/windows/) indirip kurun
-- Kurulum sırasında şifre belirleyin (örn: `postgres`)
+- Kurulum sırasında parola belirleyin (örn: `postgres`)
 
 **Linux (Ubuntu/Debian):**
 ```bash
@@ -233,7 +233,7 @@ PGPORT=5432
 # PostgreSQL kullanıcı adı
 PGUSER=postgres
 
-# PostgreSQL kullanıcı şifresi
+# PostgreSQL kullanıcı parolası
 
 PGPASSWORD=porolanız_buraya
 
@@ -288,9 +288,9 @@ SMTP_SECURE=false
 # SMTP kullanıcı adı (genellikle e-posta adresiniz)
 SMTP_USER=...@gmail.com
 
-# SMTP şifresi veya uygulama şifresi
+# SMTP parolası veya uygulama parolası
 # Gmail için: https://myaccount.google.com/apppasswords
-SMTP_PASS=oluşturdupunuz_uygulama_şifresi
+SMTP_PASS=oluşturdupunuz_uygulama_parolası
 
 # Gönderen adı
 SMTP_FROM_NAME=ASİS
@@ -377,12 +377,12 @@ SHOW_BAD_EVENTS_ON_LOGIN=false
 
 
 
-**Gmail Uygulama Şifresi Alma:**
+**Gmail Uygulama Parolası Alma:**
 1. Google Hesabınıza gidin
 2. Güvenlik > İki Adımlı Doğrulama'yı aktif edin
-3. "Uygulama Şifreleri" seçeneğine tıklayın
+3. "Uygulama Parolaları" seçeneğine tıklayın
 4. "Diğer (Özel ad)" seçin, "ASİS" yazın
-5. Oluşan 16 haneli şifreyi `SMTP_PASS` olarak kullanın
+5. Oluşan 16 haneli parolayı `SMTP_PASS` olarak kullanın
 
 
 ---
@@ -627,7 +627,7 @@ Host: 127.0.0.1
 Port: 5432
 Veritabanı: oluşturduğunuz_veritabanı_adı
 Kullanıcı Adı: postgres
-Şifre: Postgres kurulumunda oluşturduğunuz şifre
+Parola: Postgres kurulumunda oluşturduğunuz parola
 Don't Resolve type of unrestricted columns (GEOMETRY) kutucuğuna tik işareti koyun
 
 ```
@@ -914,9 +914,9 @@ Artık `http://localhost:3000` adresinden giriş yaptığınızda, QField ile ek
 2. **"Giriş Yap"** butonuna tıklayın
 3. İlk admin hesabı ile giriş yapın:
    - **Kullanıcı Adı:** `admin`
-   - **Şifre:** `Admin@123`
+   - **Parola:** `Admin@123`
 
-İlk girişten sonra **Profil > Şifre Değiştir** menüsünden admin şifresini mutlaka değiştirin!
+İlk girişten sonra **Profil > parola Değiştir** menüsünden admin parolasını mutlaka değiştirin!
 
 ---
 
@@ -924,7 +924,7 @@ Artık `http://localhost:3000` adresinden giriş yaptığınızda, QField ile ek
 
 1. Ana sayfada **"Kayıt Ol"** butonuna tıklayın
 2. Formu doldurun:
-   - Kullanıcı adı, e-posta, şifre
+   - Kullanıcı adı, e-posta, parola
    - İsim, soyisim (opsiyonel)
 3. E-posta doğrulama aktifse, gelen e-postadaki linke tıklayın
 4. Giriş yapın
@@ -975,7 +975,7 @@ Admin ve Supervisor kullanıcıları için 2FA aktifleştirme
 
 ASİS, aşağıdaki güvenlik önlemlerini içerir:
 
--  **bcrypt** ile şifre hashleme (10 salt rounds)
+-  **bcrypt** ile parola hashleme (10 salt rounds)
 -  **JWT** token bazlı kimlik doğrulama
 -  **2FA/TOTP** desteği (speakeasy)
 -  **E-posta doğrulama** sistemi
@@ -987,7 +987,7 @@ ASİS, aşağıdaki güvenlik önlemlerini içerir:
 - Production'da `JWT_SECRET` değerini mutlaka değiştirin
 - HTTPS kullanın
 - `.env` dosyasını asla Git'e eklemeyin
-- PostgreSQL şifresini güçlü tutun
+- PostgreSQL parolasını güçlü tutun
 
 ---
 
