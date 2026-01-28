@@ -64,7 +64,7 @@
 
 #### Rol Tabanlı Yetkilendirme
 - **User (Vatandaş)**: Olay bildirimi, kendi olaylarını düzenleme
-- **Supervisor (Gözlemci)**: Tüm olayları görüntüleme, kendi eklediği türleri yönetetme, kullanıcı yönetimi
+- **Supervisor (Gözlemci)**: Tüm olayları görüntüleme, kendi eklediği türleri yönetme, kullanıcı yönetimi
 - **Admin (Yönetici)**: Tam sistem kontrolü, tüm yönetim yetkileri
 
 ####  Gelişmiş Filtreleme ve Analiz
@@ -687,7 +687,7 @@ PostgreSQL
 
 #### 5️⃣ Olay Layer'ı İçin Özel Stil Dosyası Yükleyin
 
-Projedeki `qfield-style` klasöründe hazır stil dosyası bulunmaktadır. Bu stil, web uygulamasındaki fotoğraf ve videoların QField'da görüntüleyebilmesini sağlar.
+Projedeki `qfield-style` klasöründe hazır stil dosyası bulunmaktadır. Bu stil, web uygulamasındaki fotoğraf ve videoların QField'da görüntülenebilmesini sağlar.
 
 ##### a) Paketlenmiş QGIS projesini açın
 
