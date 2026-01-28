@@ -64,7 +64,7 @@
 
 #### Rol Tabanlı Yetkilendirme
 - **User (Vatandaş)**: Olay bildirimi, kendi olaylarını düzenleme
-- **Supervisor (Gözlemci)**: Tüm olayları görüntüleme, kendi eklediği türleri yönetme, kullanıcı yönetimi
+- **Supervisor (Gözlemci)**: Tüm olayları görüntüleme, kendi eklediği türleri yönetetme, kullanıcı yönetimi
 - **Admin (Yönetici)**: Tam sistem kontrolü, tüm yönetim yetkileri
 
 ####  Gelişmiş Filtreleme ve Analiz
@@ -482,6 +482,100 @@ PostgreSQL’den çıkış:
 
 ---
 
+### 5) QGIS ile AWS’deki PostgreSQL/PostGIS Veritabanına Bağlanma
+
+#### 1) AWS Tarafı (Security Group)
+QGIS dışarıdan bağlanacağı için EC2 instance’ının Security Group (Inbound rules) kısmında PostgreSQL portu (5432) açılmalıdır.  
+Öneri: 5432 portunu sadece kendi IP adresine (My IP) aç. 0.0.0.0/0 (herkese açık) bırakma.
+
+**Yapılacaklar:**
+1. AWS Console → EC2 → Instances → (instance’ı seç) → Security sekmesi → Security groups.
+2. İlgili Security Group → Inbound rules → Edit inbound rules.
+3. Yeni kural ekle: Type = PostgreSQL, Port = 5432, Source = My IP (ör. 88.xxx.xxx.xxx/32).
+4. Kaydet.
+
+#### 2) Ubuntu Sunucu Tarafı (PostgreSQL’ü dışarıya açma)
+
+##### 2.1) PostgreSQL 5432 portu dinliyor mu kontrol et
+```bash
+sudo ss -lntp | grep 5432
+```
+Eğer çıktı `127.0.0.1:5432` ise PostgreSQL dışarıdan bağlantı kabul etmiyordur. `0.0.0.0:5432` veya `*:5432` olmalıdır.
+
+##### 2.2) postgresql.conf → listen_addresses ayarı
+PostgreSQL sürüm klasörünü kontrol et:
+```bash
+ls /etc/postgresql/
+```
+Örnek sürüm 16 ise dosyayı aç:
+```bash
+sudo nano /etc/postgresql/16/main/postgresql.conf
+```
+Dosyada şu satırı bul (genelde yorumlu gelir):
+```conf
+#listen_addresses = 'localhost'
+```
+Başındaki `#` işaretini kaldırıp şu hale getir:
+```conf
+listen_addresses = '*'
+```
+Kaydet: **Ctrl+O (Enter)** → Çık: **Ctrl+X**
+
+##### 2.3) pg_hba.conf → dış IP’ye izin ver
+QGIS’in bağlandığı bilgisayarın public IP adresine izin vermelisin. Dosyayı aç:
+```bash
+sudo nano /etc/postgresql/16/main/pg_hba.conf
+```
+Şu bloğun altına veya dosyanın en altına ekle:
+```conf
+# IPv4 local connections:
+host    all             all             127.0.0.1/32            scram-sha-256
+```
+(SENIN_PUBLIC_IP kısmını kendi IP’n ile değiştir):
+```conf
+host    all     all     SENIN_PUBLIC_IP/32     scram-sha-256
+```
+Örnek:
+```conf
+host    all     all     88.123.45.67/32        scram-sha-256
+```
+Kaydet/çık (**Ctrl+O, Enter, Ctrl+X**).
+
+##### 2.4) PostgreSQL’i yeniden başlat ve tekrar kontrol et
+```bash
+sudo systemctl restart postgresql
+sudo ss -lntp | grep 5432
+```
+Beklenen: `0.0.0.0:5432` ve/veya `[::]:5432` (yani dış arayüzlerde dinleme).
+
+##### 2.5) UFW (Firewall) 5432 izni
+UFW açıksa 5432’ye ayrıca izin vermen gerekir:
+```bash
+sudo ufw status
+sudo ufw allow 5432/tcp
+sudo ufw reload
+sudo ufw status
+```
+
+#### 3) QGIS Tarafı (PostGIS Connection)
+QGIS → Browser Panel → PostgreSQL → New Connection (veya Layer → Data Source Manager → PostgreSQL → New).  
+**‘Service’ alanını boş bırakabilirsin (gerekli değil).**
+
+| Alan | Ne yazılacak? |
+|---|---|
+| Name | ASIS-AWS (istediğin isim) |
+| Service | Boş bırak |
+| Host | EC2 Public IPv4 DNS veya Public IPv4 Address (ör: ec2-...amazonaws.com veya 13.xx.xx.xx) |
+| Port | 5432 |
+| Database | asis (PGDATABASE) |
+| SSL mode | disable |
+| Username | postgres (PGUSER) |
+| Password | `.env` içindeki PGPASSWORD |
+
+Doldurduktan sonra: **Test Connection → başarılıysa OK.**
+
+---
+
 ## 🗺️ QField Entegrasyonu (Offline Veri Toplama)
 
 QField entegrasyonu sayesinde internet bağlantısı olmadan mobil cihazlarla coğrafi veri toplayabilir ve sonradan PostgreSQL veritabanına aktarabilirsiniz.
@@ -503,7 +597,9 @@ QField entegrasyonu sayesinde internet bağlantısı olmadan mobil cihazlarla co
 Bilgisayarınızda QField projeleri için bir klasör oluşturun:
 
 ```
+
 📁 qfield_projeler/
+
 ```
 
 **Önerilen Konum:**
@@ -525,6 +621,7 @@ Bilgisayarınızda QField projeleri için bir klasör oluşturun:
 3. Bağlantı bilgilerini girin:
 
 ```
+
 Ad: ASİS Veritabanı
 Host: 127.0.0.1
 Port: 5432
@@ -532,6 +629,7 @@ Veritabanı: oluşturduğunuz_veritabanı_adı
 Kullanıcı Adı: postgres
 Şifre: Postgres kurulumunda oluşturduğunuz şifre
 Don't Resolve type of unrestricted columns (GEOMETRY) kutucuğuna tik işareti koyun
+
 ```
 
 4. **Tamam** ile kaydedin
@@ -543,12 +641,14 @@ Don't Resolve type of unrestricted columns (GEOMETRY) kutucuğuna tik işareti k
 Browser panelinde oluşturduğunuz bağlantıyı genişletin:
 
 ```
+
 PostgreSQL
 └── ASİS Veritabanı
     └── public (schema)
         ├── olay (tablo) ← Bu layer'ı sürükle-bırak
         ├── olaylar (tablo)
         └── users (tablo)
+
 ```
 
 **`olay` tablosunu** ana haritaya sürükleyip bırakın.
@@ -587,7 +687,7 @@ PostgreSQL
 
 #### 5️⃣ Olay Layer'ı İçin Özel Stil Dosyası Yükleyin
 
-Projedeki `qfield-style` klasöründe hazır stil dosyası bulunmaktadır. Bu stil, web uygulamasındaki fotoğraf ve videoların QField'da görüntülenebilmesini sağlar.
+Projedeki `qfield-style` klasöründe hazır stil dosyası bulunmaktadır. Bu stil, web uygulamasındaki fotoğraf ve videoların QField'da görüntüleyebilmesini sağlar.
 
 ##### a) Paketlenmiş QGIS projesini açın
 
@@ -639,11 +739,13 @@ Mobil cihazınızı bilgisayara **USB kablosu** ile bağlayın.
 ##### b) QField klasörüne gidin
 
 ```
+
 Android:
 Internal Storage > QField > Imported Projects
 
 iOS:
 Files > On My iPhone > QField > Imported Projects
+
 ```
 
 Eğer `Imported Projects` klasörü yoksa, QField uygulamasını en az bir kez açıp kapattığınızda oluşacaktır.
@@ -698,7 +800,9 @@ USB ile bağlanın ve güncellenmiş `asis_proje` klasörünü bilgisayara **kop
 
 **Kopyalama Yeri (Örnek):**
 ```
+
 C:\Users\USER\Desktop\qfield_data\asis_proje_guncel
+
 ```
 
 ⚠️ **ÖNEMLİ**: Bu klasör `.env` dosyasındaki `QFIELD_SYNC_ROOT` parametresine yazılacaktır!
@@ -767,35 +871,37 @@ Artık `http://localhost:3000` adresinden giriş yaptığınızda, QField ile ek
 ###  QField Workflow Özeti
 
 ```
+
 ┌─────────────────────────────────────────────────────────────┐
-│                    1. WEB UYGULAMASI                       │
-│           (PostgreSQL Veritabanı + Web Arayüzü)           │
+│                    1. WEB UYGULAMASI                        │
+│           (PostgreSQL Veritabanı + Web Arayüzü)             │
 └──────────────────────┬──────────────────────────────────────┘
                        │
                        ↓
 ┌─────────────────────────────────────────────────────────────┐
-│                  2. QGIS DESKTOP                           │
-│          (PostgreSQL Bağlantısı + QFieldSync)              │
-│                 Package for QField                         │
+│                  2. QGIS DESKTOP                            │
+│          (PostgreSQL Bağlantısı + QFieldSync)               │
+│                 Package for QField                          │
 └──────────────────────┬──────────────────────────────────────┘
                        │
                        ↓
 ┌─────────────────────────────────────────────────────────────┐
-│                  3. QFIELD MOBİL                           │
-│         (Offline Veri Toplama + Fotoğraf/Video)            │
+│                  3. QFIELD MOBİL                            │
+│         (Offline Veri Toplama + Fotoğraf/Video)             │
 └──────────────────────┬──────────────────────────────────────┘
                        │
                        ↓
 ┌─────────────────────────────────────────────────────────────┐
-│                  4. QGIS DESKTOP                           │
-│       (Synchronize from QField → PostgreSQL'e aktar)       │
+│                  4. QGIS DESKTOP                            │
+│       (Synchronize from QField → PostgreSQL'e aktar)        │
 └──────────────────────┬──────────────────────────────────────┘
                        │
                        ↓
 ┌─────────────────────────────────────────────────────────────┐
-│                  5. WEB UYGULAMASI                         │
-│        (Otomatik Format Dönüşümü + Medya Görünümü)         │
+│                  5. WEB UYGULAMASI                          │
+│        (Otomatik Format Dönüşümü + Medya Görünümü)          │
 └──────────────────────┬──────────────────────────────────────┘
+
 ```
 
 ---
