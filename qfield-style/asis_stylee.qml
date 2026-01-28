@@ -638,6 +638,20 @@ def my_form_open(dialog, layer, feature):
   <dataDefinedFieldProperties/>
   <widgets/>
   <previewExpression>"created_by_name"</previewExpression>
-  <mapTip></mapTip>
+  <mapTip>&lt;style>&#xd;
+  h3 { color:#d63031; margin:0; font-family: Arial, sans-serif; }&#xd;
+  p  { margin:6px 0; font-family: Arial, sans-serif; }&#xd;
+  img { border: 2px solid #333; border-radius: 8px; background:#f0f0f0; }&#xd;
+&lt;/style>&#xd;
+&#xd;
+&lt;h3>Kullanıcı: [% "created_by_name" %]&lt;/h3>&#xd;
+&lt;p>&lt;b>Açıklama:&lt;/b> [% coalesce("aciklama",'') %]&lt;/p>&#xd;
+&#xd;
+&#xd;
+&lt;img width="275"&#xd;
+     src="[% 'http://localhost:3000' || array_first(from_json(coalesce("photo_urls",'[]'))) %]"&#xd;
+     onerror="this.style.display='none';" />&#xd;
+&#xd;
+</mapTip>
   <layerGeometryType>0</layerGeometryType>
 </qgis>
