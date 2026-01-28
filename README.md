@@ -235,7 +235,7 @@ PGUSER=postgres
 
 # PostgreSQL kullanıcı şifresi
 
-PGPASSWORD=şifreniz_buraya
+PGPASSWORD=porolanız_buraya
 
 # PostgreSQL veritabanı adı
 PGDATABASE=oluşturduğun_veritabanı_ismi
