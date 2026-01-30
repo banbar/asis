@@ -20,7 +20,9 @@
 
 
 </div>
+## ASİS | AWS Production Kurulum + QField Offline Veri Toplama Entegrasyonu (PostGIS, QGIS)
 
+ YouTube Tutorial: https://youtu.be/aaaHWfvmJPs
 ---
 
 ## İçindekiler
@@ -479,6 +481,47 @@ PostgreSQL’den çıkış:
 ```sql
 \q
 ```
+### 4.1) Bilgisayarınızdaki QField Klasörünü Sunucuya Aktarma (SCP)
+
+Aşağıdaki adımlar, bilgisayarınızdaki bir klasörü (ör. `Y1`) **EC2 sunucusuna** kopyalayıp
+sonrasında **/var/www/asis/asis/** altına taşımanız içindir.
+
+>  Not: Bu adımlar **Windows PowerShell** içindir.  
+>  Örnek: QField projesi klasörünüz `Y1` gibi tek bir klasör olabilir (içinde `*.qgs`, `*.gpkg`, `photos/` vb. bulunur).
+
+#### Adım 1: Klasörü sunucuya `/tmp` dizinine kopyala (SCP)
+
+```powershell
+scp -i ".\KEY.pem" -r "C:\PATH\TO\LOCAL\FOLDER\Y1" ubuntu@EC2_PUBLIC_DNS:/tmp/
+```
+
+- `KEY.pem` → EC2 anahtar dosyanız (ör. `asis3.pem`)
+- `C:\PATH\TO\LOCAL\FOLDER\Y1` → Bilgisayarınızdaki klasör yolu
+- `EC2_PUBLIC_DNS` → EC2 Public DNS (veya Public IP)
+
+#### Adım 2: SSH ile sunucuya bağlan
+
+```powershell
+ssh -i .\KEY.pem ubuntu@EC2_PUBLIC_DNS
+```
+
+#### Adım 3: Klasörü hedef dizine taşı ve izinleri ayarla
+
+Sunucuda (SSH içindeyken) çalıştırın:
+
+```bash
+
+# /tmp altına gelen klasörü hedef dizine taşı
+sudo mv /tmp/Y1 /var/www/asis/asis/Y1
+
+# Web sunucusunun (nginx/node) erişebilmesi için sahiplik/izin
+sudo chown -R www-data:www-data /var/www/asis/asis/Y1
+sudo chmod -R 775 /var/www/asis/asis/Y1
+```
+
+ Bu işlemden sonra QField klasörünüz sunucuda şu konumda olur:
+
+- `/var/www/asis/asis/Y1`
 
 ---
 
