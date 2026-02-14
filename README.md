@@ -487,7 +487,7 @@ Aşağıdaki adımlar, bilgisayarınızdaki bir klasörü (ör. `Y1`) **EC2 sunu
 sonrasında **/var/www/asis/asis/** altına taşımanız içindir.
 
 >  Not: Bu adımlar **Windows PowerShell** içindir.  
->  Örnek: QField projesi klasörünüz `Y1` gibi tek bir klasör olabilir (içinde `*.qgs`, `*.gpkg`, `photos/` vb. bulunur).
+>  Örnek: QField projesi klasörü `Y1` gibi tek bir klasör olabilir (içinde `*.qgs`, `*.gpkg`, `photos/` vb. bulunur).
 
 #### Adım 1: Klasörü sunucuya `/tmp` dizinine kopyala (SCP)
 
