@@ -323,6 +323,29 @@ app.get('/api/geom-tables', mustAuth, mustSupervisor, async (req,res)=>{
   }
 });
 
+app.get('/api/table-columns/:table', mustAuth, mustSupervisor, async (req,res)=>{
+  try{
+    const table = assertSafeIdent(req.params.table,'table');
+    const geomTables = await listGeomTables();
+    const hit = geomTables.find(x => x.table === table);
+    if(!hit) return res.status(404).json({ error:'tablo_bulunamadi' });
+    const q = `
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_schema='public' AND table_name=$1
+        AND column_name NOT IN ('geom','gid','ogc_fid','olay_turu','wkb_geometry','shape')
+        AND data_type NOT IN ('USER-DEFINED')
+      ORDER BY ordinal_position;
+    `;
+    const { rows } = await pool.query(q, [table]);
+    return res.json({ ok:true, columns: rows.map(r => r.column_name) });
+  }catch(e){
+    const sc = e.statusCode || 500;
+    return res.status(sc).json({ error: e.message || 'sunucu_hatasi' });
+  }
+});
+
+
 app.get('/api/veri-tipi/list', mustAuth, mustSupervisor, async (req,res)=>{
   try{
     const q = `

@@ -562,12 +562,18 @@ function vt_q(id){ return document.getElementById(id); }
 
 function vt_openModal(){
   const m = vt_q('modal-veri-tipi');
-  if(m) m.classList.remove('hidden');
+  if(m){
+    m.classList.remove('hidden');
+    m.classList.add('show');
+  }
 }
 
 function vt_closeModal(){
   const m = vt_q('modal-veri-tipi');
-  if(m) m.classList.add('hidden');
+  if(m){
+    m.classList.remove('show');
+    m.classList.add('hidden');
+  }
 }
 
 async function vt_refreshTable(){
@@ -731,16 +737,43 @@ function vt_renderStep(){
     btnNext.textContent = 'Next';
 
     body.innerHTML = `
-      <div class="muted">Seçtiğin tablonun kolon adını seç/yaz.</div>
-      <input id="vt-col" placeholder="ör: highway" style="width:100%; padding:10px; border:1px solid #e5e7eb; border-radius:10px;" />
+      <div class="muted">Seçtiğin tablonun sütunlarından birini seç.</div>
+      <select id="vt-col" style="width:100%; padding:10px; border:1px solid #e5e7eb; border-radius:10px;">
+        <option value="">-- Yükleniyor... --</option>
+      </select>
+      <div style="margin-top:14px; padding:10px; border:1px solid #e5e7eb; border-radius:10px;">
+        <div class="muted" style="margin-bottom:6px;">Tüm veriyi tek seferde işaretle (opsiyonel):</div>
+        <label style="display:flex; gap:8px; align-items:center; margin:4px 0;">
+          <input type="radio" name="vt-bulk" value="none" checked />
+          <span>Tek tek seçeceğim (sonraki adıma geç)</span>
+        </label>
+        <label style="display:flex; gap:8px; align-items:center; margin:4px 0;">
+          <input type="radio" name="vt-bulk" value="good" />
+          <span>Bütün veri Faydalı olsun</span>
+        </label>
+        <label style="display:flex; gap:8px; align-items:center; margin:4px 0;">
+          <input type="radio" name="vt-bulk" value="bad" />
+          <span>Bütün veri Faydasız olsun</span>
+        </label>
+      </div>
     `;
 
-    const inp = body.querySelector('#vt-col');
-    inp.value = __veriTipiState.attribute_column || '';
-    inp.oninput = ()=> __veriTipiState.attribute_column = inp.value.trim() || null;
+    (async ()=>{
+      const rr = await fetch(`/api/table-columns/${encodeURIComponent(__veriTipiState.katman_tablo)}`);
+      const dd = rr.ok ? await rr.json() : { columns:[] };
+      const sel = body.querySelector('#vt-col');
+      sel.innerHTML = `<option value="">-- Sütun Seç --</option>` +
+        (dd.columns||[]).map(c => {
+          const selected = c === __veriTipiState.attribute_column ? 'selected' : '';
+          return `<option value="${escapeHtml(c)}" ${selected}>${escapeHtml(c)}</option>`;
+        }).join('');
+      sel.onchange = ()=>{ __veriTipiState.attribute_column = sel.value || null; };
+    })();
 
     btnNext.onclick = async ()=>{
-      if(!__veriTipiState.attribute_column) return toast('Sütun gir', 'error');
+      if(!__veriTipiState.attribute_column) return toast('Sütun seç', 'error');
+
+      const bulkVal = body.querySelector('input[name="vt-bulk"]:checked')?.value || 'none';
 
       const rr = await fetch('/api/veri-tipi/wizard/values', {
         method:'POST',
@@ -756,6 +789,29 @@ function vt_renderStep(){
       const dd = await rr.json();
       __veriTipiState.values = dd.values || [];
       __veriTipiState.geomType = dd.geomType || null;
+
+      if(bulkVal === 'good' || bulkVal === 'bad'){
+        __veriTipiState.select_all = true;
+        __veriTipiState.good = bulkVal === 'good';
+        const payload = {
+          katman_tablo: __veriTipiState.katman_tablo,
+          attribute_column: __veriTipiState.attribute_column,
+          select_all: true,
+          values: [],
+          good: __veriTipiState.good
+        };
+        const cr = await fetch('/api/veri-tipi/wizard/create', {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if(!cr.ok) return toast('Kaydedilemedi','error');
+        toast('Kaydedildi');
+        vt_closeModal();
+        vt_refreshTable();
+        loadGeomLayersForMap(false);
+        return;
+      }
 
       __veriTipiState.step = 2;
       vt_renderStep();
@@ -886,8 +942,10 @@ function wireVeriTipiUI(){
 
   const bBack = vt_q('btn-veri-tipi-back');
   const bCancel = vt_q('btn-veri-tipi-cancel');
+  const bCancelX = vt_q('btn-veri-tipi-cancel-x');
   if(bBack) bBack.textContent = 'Back';
   if(bCancel) bCancel.textContent = 'Cancel';
+  if(bCancelX) bCancelX.onclick = vt_closeModal;
 
   vt_refreshTable();
 }
