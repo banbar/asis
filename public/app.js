@@ -5995,6 +5995,14 @@ window.addEventListener('popstate', (event) => {
       refreshAdminEvents()
     ]);
     
+    try {
+      await loadGeomLayersForMap(false);
+    } catch(e) {
+      console.warn('[INIT] loadGeomLayersForMap error:', e);
+    }
+
+    wireVeriTipiUI();
+
     setTimeout(() => {
       try {
         ensureEventsMap();
