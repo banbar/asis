@@ -562,18 +562,18 @@ function vt_q(id){ return document.getElementById(id); }
 
 function vt_openModal(){
   const m = vt_q('modal-veri-tipi');
-  if(m){
-    m.classList.remove('hidden');
-    m.classList.add('show');
-  }
+  if(!m) return;
+  m.classList.add('show');
+  m.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
 }
 
 function vt_closeModal(){
   const m = vt_q('modal-veri-tipi');
-  if(m){
-    m.classList.remove('show');
-    m.classList.add('hidden');
-  }
+  if(!m) return;
+  m.classList.remove('show');
+  m.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
 }
 
 async function vt_refreshTable(){
