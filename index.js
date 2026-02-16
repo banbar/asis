@@ -245,6 +245,292 @@ app.get('/i18n.js', (req, res) => {
 
 app.use(express.static(PUBLIC_DIR));
 
+
+//  (SQL injection koruması için)
+function assertSafeIdent(name, kind='ident') {
+  const s = String(name || '');
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(s)) {
+    const err = new Error(`${kind}_gecersiz`);
+    err.statusCode = 400;
+    throw err;
+  }
+  return s;
+}
+
+async function listGeomTables() {
+  const q = `
+    SELECT f_table_name AS table_name, type
+    FROM public.geometry_columns
+    WHERE f_table_schema='public'
+    ORDER BY f_table_name;
+  `;
+  const { rows } = await pool.query(q);
+  return rows.map(r => {
+    const t = String(r.type || '').toUpperCase();
+    const geomType =
+      t.includes('LINE') ? 'line' :
+      t.includes('POLYGON') ? 'polygon' :
+      t.includes('POINT') ? 'point' : 'other';
+    return { table: r.table_name, geomType };
+  }).filter(x => x.geomType !== 'other');
+}
+
+async function distinctValues(table, column, limit=500) {
+  table = assertSafeIdent(table,'table');
+  column = assertSafeIdent(column,'column');
+  const q = `SELECT DISTINCT ${column} AS v FROM public.${table} WHERE ${column} IS NOT NULL ORDER BY ${column} LIMIT $1`;
+  const { rows } = await pool.query(q, [limit]);
+  return rows.map(r => r.v);
+}
+
+async function ensureTargetHasOlayTuru(table) {
+  table = assertSafeIdent(table,'table');
+  await pool.query(`ALTER TABLE public.${table} ADD COLUMN IF NOT EXISTS olay_turu integer`);
+}
+
+function publicGoodBadWhere() {
+  // env: showGoodEventsOnLogin / showBadEventsOnLogin
+  if (SHOW_GOOD_EVENTS_ON_LOGIN && SHOW_BAD_EVENTS_ON_LOGIN) return `TRUE`;
+  if (SHOW_GOOD_EVENTS_ON_LOGIN && !SHOW_BAD_EVENTS_ON_LOGIN) return `o.good = TRUE`;
+  if (!SHOW_GOOD_EVENTS_ON_LOGIN && SHOW_BAD_EVENTS_ON_LOGIN) return `o.good = FALSE`;
+  return `FALSE`;
+}
+
+function mustAuth(req, res, next){
+  try{
+    const token = getTokenFrom(req);
+    if(!token) return res.status(401).json({ error:'unauthorized' });
+    const payload = jwt.verify(token, JWT_SECRET);
+    req.user = payload; // {sub, role, username, email}
+    return next();
+  }catch{
+    return res.status(401).json({ error:'unauthorized' });
+  }
+}
+function mustSupervisor(req,res,next){
+  if(!req.user || !['supervisor','admin'].includes(req.user.role)) {
+    return res.status(403).json({ error:'forbidden' });
+  }
+  return next();
+}
+
+app.get('/api/geom-tables', mustAuth, mustSupervisor, async (req,res)=>{
+  try{
+    const tables = await listGeomTables();
+    return res.json({ ok:true, tables });
+  }catch(e){
+    return res.status(500).json({ error:'sunucu_hatasi' });
+  }
+});
+
+app.get('/api/veri-tipi/list', mustAuth, mustSupervisor, async (req,res)=>{
+  try{
+    const q = `
+      SELECT
+        o_id,
+        COALESCE(NULLIF(katman_tablo,''), 'asis') AS katman_tablo,
+        COALESCE(NULLIF(attribute_column,''), 'o_adi') AS attribute_column,
+        o_adi AS olay_turu,
+        CASE WHEN good THEN 'Faydali' ELSE 'Faydasiz' END AS faydali_faydasiz_mi,
+        created_by_name AS ekleyen,
+        created_by_id,
+        created_by_role_name,
+        is_point, is_line, is_polygon
+      FROM public.olaylar
+      WHERE active = TRUE
+      ORDER BY is_point DESC, katman_tablo ASC, attribute_column ASC, o_adi ASC;
+    `;
+    const { rows } = await pool.query(q);
+    return res.json({ ok:true, rows });
+  }catch(e){
+    return res.status(500).json({ error:'sunucu_hatasi' });
+  }
+});
+
+app.post('/api/veri-tipi/wizard/values', mustAuth, mustSupervisor, async (req,res)=>{
+  try{
+    const table = assertSafeIdent(req.body?.katman_tablo,'table');
+    const column = assertSafeIdent(req.body?.attribute_column,'column');
+
+    const geomTables = await listGeomTables();
+    const hit = geomTables.find(x => x.table === table);
+    if(!hit) return res.status(404).json({ error:'tablo_bulunamadi' });
+    if(hit.geomType === 'point') return res.status(400).json({ error:'point_yasak' });
+
+    const values = await distinctValues(table, column);
+    return res.json({ ok:true, geomType: hit.geomType, values });
+  }catch(e){
+    const sc = e.statusCode || 500;
+    return res.status(sc).json({ error: e.message || 'sunucu_hatasi' });
+  }
+});
+
+app.post('/api/veri-tipi/wizard/create', mustAuth, mustSupervisor, async (req,res)=>{
+  const client = await pool.connect();
+  try{
+    const table = assertSafeIdent(req.body?.katman_tablo,'table');
+    const column = assertSafeIdent(req.body?.attribute_column,'column');
+    const good = String(req.body?.good) === 'true' || req.body?.good === true;
+    const selectAll = String(req.body?.select_all) === 'true' || req.body?.select_all === true;
+    const valuesIn = Array.isArray(req.body?.values) ? req.body.values : [];
+
+    const geomTables = await listGeomTables();
+    const hit = geomTables.find(x => x.table === table);
+    if(!hit) return res.status(404).json({ error:'tablo_bulunamadi' });
+    if(hit.geomType === 'point') return res.status(400).json({ error:'point_yasak' });
+
+    const values = selectAll ? await distinctValues(table, column) : valuesIn;
+
+    if(!values.length) return res.status(400).json({ error:'deger_yok' });
+
+    await client.query('BEGIN');
+    await client.query(`SET LOCAL lock_timeout TO '3s'`);
+
+    await client.query(`ALTER TABLE public.olaylar ADD COLUMN IF NOT EXISTS is_point boolean DEFAULT true`);
+    await client.query(`ALTER TABLE public.olaylar ADD COLUMN IF NOT EXISTS is_line boolean DEFAULT false`);
+    await client.query(`ALTER TABLE public.olaylar ADD COLUMN IF NOT EXISTS is_polygon boolean DEFAULT false`);
+    await client.query(`ALTER TABLE public.olaylar ADD COLUMN IF NOT EXISTS katman_tablo text`);
+    await client.query(`ALTER TABLE public.olaylar ADD COLUMN IF NOT EXISTS attribute_column text`);
+
+    await ensureTargetHasOlayTuru(table);
+
+    const isLine = hit.geomType === 'line';
+    const isPolygon = hit.geomType === 'polygon';
+
+    const createdById = req.user.sub;
+    const createdByName = req.user.username;
+    const createdByRole = req.user.role;
+
+    const created = [];
+    for(const v of values){
+      const ins = await client.query(
+        `INSERT INTO public.olaylar
+          (o_adi, good, active, created_by_name, created_by_role_name, created_by_id,
+           is_point, is_line, is_polygon, katman_tablo, attribute_column)
+         VALUES
+          ($1,$2,TRUE,$3,$4,$5,FALSE,$6,$7,$8,$9)
+         RETURNING o_id`,
+        [String(v), good, createdByName, createdByRole, createdById, isLine, isPolygon, table, column]
+      );
+      const oId = ins.rows[0].o_id;
+
+      // hedef tabloyu güncelle: seçilen değerlerde olay_turu = o_id
+      // seçilmemiş değerler NULL
+      await client.query(
+        `UPDATE public.${table} SET olay_turu = $1 WHERE ${column} = $2`,
+        [oId, v]
+      );
+      created.push({ value:v, o_id:oId });
+    }
+
+    await client.query('COMMIT');
+    return res.json({ ok:true, created });
+  }catch(e){
+    try{ await client.query('ROLLBACK'); }catch{}
+    return res.status(500).json({ error:'sunucu_hatasi', detail: e.message });
+  }finally{
+    client.release();
+  }
+});
+
+// ---------- API: update / delete (LINE/POLYGON) ----------
+app.put('/api/veri-tipi/:o_id', mustAuth, mustSupervisor, async (req,res)=>{
+  try{
+    const oId = Number(req.params.o_id);
+    const good = String(req.body?.good) === 'true' || req.body?.good === true;
+
+    const { rows } = await pool.query(`SELECT o_id, created_by_id, is_point, is_line, is_polygon FROM public.olaylar WHERE o_id=$1`, [oId]);
+    if(!rows.length) return res.status(404).json({ error:'bulunamadi' });
+
+    const r = rows[0];
+    if(r.is_point) return res.status(400).json({ error:'point_duzenlenemez' });
+    if(String(r.created_by_id) !== String(req.user.sub)) return res.status(403).json({ error:'sadece_kendi_kaydi' });
+
+    await pool.query(`UPDATE public.olaylar SET good=$1 WHERE o_id=$2`, [good, oId]);
+    return res.json({ ok:true });
+  }catch(e){
+    return res.status(500).json({ error:'sunucu_hatasi' });
+  }
+});
+
+app.delete('/api/veri-tipi/:o_id', mustAuth, mustSupervisor, async (req,res)=>{
+  try{
+    const oId = Number(req.params.o_id);
+
+    const { rows } = await pool.query(`SELECT o_id, created_by_id, is_point, katman_tablo FROM public.olaylar WHERE o_id=$1`, [oId]);
+    if(!rows.length) return res.status(404).json({ error:'bulunamadi' });
+
+    const r = rows[0];
+    if(r.is_point) return res.status(400).json({ error:'point_silinemez' });
+    if(String(r.created_by_id) !== String(req.user.sub)) return res.status(403).json({ error:'sadece_kendi_kaydi' });
+
+    if(r.katman_tablo){
+      const table = assertSafeIdent(r.katman_tablo,'table');
+      await pool.query(`UPDATE public.${table} SET olay_turu = NULL WHERE olay_turu = $1`, [oId]);
+    }
+
+    await pool.query(`UPDATE public.olaylar SET active=false, deactivated_by_id=$1, deactivated_by_name=$2, deactivated_by_role_name=$3, deactivated_at=now() WHERE o_id=$4`,
+      [req.user.sub, req.user.username, req.user.role, oId]
+    );
+    return res.json({ ok:true });
+  }catch(e){
+    return res.status(500).json({ error:'sunucu_hatasi' });
+  }
+});
+
+
+app.get('/api/geo/:table', mustAuth, async (req,res)=>{
+  try{
+    const table = assertSafeIdent(req.params.table,'table');
+    const q = `
+      SELECT jsonb_build_object(
+        'type','FeatureCollection',
+        'features', COALESCE(jsonb_agg(jsonb_build_object(
+          'type','Feature',
+          'geometry', ST_AsGeoJSON(t.geom)::jsonb,
+          'properties', to_jsonb(t) - 'geom'
+        )), '[]'::jsonb)
+      ) AS fc
+      FROM public.${table} t
+      WHERE t.geom IS NOT NULL
+        AND t.olay_turu IS NOT NULL;
+    `;
+    const { rows } = await pool.query(q);
+    return res.json(rows[0].fc);
+  }catch(e){
+    return res.status(500).json({ error:'sunucu_hatasi' });
+  }
+});
+
+
+app.get('/api/public/geo/:table', async (req,res)=>{
+  try{
+    const table = assertSafeIdent(req.params.table,'table');
+    const whereGoodBad = publicGoodBadWhere();
+
+    const q = `
+      SELECT jsonb_build_object(
+        'type','FeatureCollection',
+        'features', COALESCE(jsonb_agg(jsonb_build_object(
+          'type','Feature',
+          'geometry', ST_AsGeoJSON(t.geom)::jsonb,
+          'properties', to_jsonb(t) - 'geom'
+        )), '[]'::jsonb)
+      ) AS fc
+      FROM public.${table} t
+      JOIN public.olaylar o ON o.o_id = t.olay_turu
+      WHERE t.geom IS NOT NULL
+        AND t.olay_turu IS NOT NULL
+        AND o.active = TRUE
+        AND (${whereGoodBad});
+    `;
+    const { rows } = await pool.query(q);
+    return res.json(rows[0].fc);
+  }catch(e){
+    return res.status(500).json({ error:'sunucu_hatasi' });
+  }
+});
+
 /* ===================== HELPERS ===================== */
 
 function loadI18nTranslations() {

@@ -490,6 +490,7 @@
           <button class="tab-btn active" data-tab="types-tab" data-i18n="eventTypes">Event Types</button>
           <button class="tab-btn" data-tab="users-tab" data-i18n="users">Users</button>
           <button class="tab-btn" data-tab="events-tab" data-i18n="events">Events</button>
+          <button class="tab-btn" data-tab="veri-tipi-tab">Veri Tipi</button>
         </div>
 
         <div id="types-tab" class="tab-content active">
@@ -635,9 +636,42 @@
             </div>
           </div>
         </div>
+
+        <!-- Veri Tipi Tab -->
+        <div id="veri-tipi-tab" class="tab-content">
+          <section id="panel-veri-tipi" class="hidden">
+            <div class="row" style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+              <h3 style="margin:0;">Veri Tipi</h3>
+              <button id="btn-veri-tipi-add" class="btn" title="Ekle">+</button>
+            </div>
+
+            <div id="veri-tipi-table-wrap" style="margin-top:10px;"></div>
+          </section>
+        </div>
       </section>
+
+      <!-- Wizard Modal -->
+      <div id="modal-veri-tipi" class="modal hidden">
+        <div class="box">
+          <div class="head">
+            <h3 id="veri-tipi-step-title" style="margin:0;">Veri Tipi Ekle</h3>
+            <button id="btn-veri-tipi-cancel-x" class="btn ghost" type="button">×</button>
+          </div>
+
+          <div id="veri-tipi-step-body"></div>
+
+          <div style="display:flex; justify-content:space-between; gap:10px; margin-top:12px;">
+            <button id="btn-veri-tipi-back" class="btn ghost">Back</button>
+            <div style="display:flex; gap:10px;">
+              <button id="btn-veri-tipi-cancel" class="btn ghost">Cancel</button>
+              <button id="btn-veri-tipi-next" class="btn">Next</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </aside>
   </main>
+
 
   <!-- PHOTO CAMERA MODAL -->
   <div id="photo-modal" class="modal" aria-hidden="true">

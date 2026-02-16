@@ -133,6 +133,15 @@ function createOrUpdateMapFromConfig() {
     if (!markersLayer) {
       markersLayer = makeMarkersLayer().addTo(map);
     }
+    if (!__geomLayers.some(x => x.table === 'Events' && x.layer === markersLayer)) {
+      __geomLayers.push({
+        table: 'Events',
+        geomType: 'point',
+        layer: markersLayer,
+        visible: true,
+        z: 100
+      });
+    }
 
     fitMapHeight();
     window.addEventListener('resize', () => {
@@ -146,6 +155,13 @@ function createOrUpdateMapFromConfig() {
     map.invalidateSize();
   }
   ensureMapLegend(map);
+  ensureLayerDrawer(map);
+  renderLayerList(map);
+  loadGeomLayersForMap(!currentUser).then(() => {
+    if (currentUser && (currentUser.role === 'supervisor' || currentUser.role === 'admin')) {
+      wireVeriTipiUI();
+    }
+  });
 }
 
 function loadToken() {
@@ -363,6 +379,519 @@ function placeMicIntoMediaBar(){
     videoBtn.insertAdjacentElement('afterend', locBtn);
   }
 }
+/* ==================== LAYER UI ==================== */
+
+let __layerCtrl = null;
+let __geomLayers = []; // [{table, geomType, layer, visible, z}]
+
+function ensureLayerDrawer(mapInstance){
+  if(!mapInstance) return;
+
+  // container
+  const c = mapInstance.getContainer();
+  if(c.querySelector('.layer-drawer')) return;
+
+  const drawer = document.createElement('div');
+  drawer.className = 'layer-drawer';
+  drawer.style.cssText = `
+    position:absolute; left:10px; top:120px; z-index:1200;
+    display:flex; align-items:flex-start; gap:0;
+    font-family: Arial, sans-serif;
+  `;
+
+  // notch button
+  const notch = document.createElement('button');
+  notch.className = 'layer-notch';
+  notch.textContent = '≡';
+  notch.style.cssText = `
+    width:40px; height:40px; border-radius:10px 0 0 10px;
+    border:1px solid #cbd5e1; background:#ffffff; cursor:pointer;
+    box-shadow: 0 8px 20px rgba(0,0,0,.08);
+  `;
+
+  // panel
+  const panel = document.createElement('div');
+  panel.className = 'layer-panel hidden';
+  panel.style.cssText = `
+    min-width:260px; max-width:320px;
+    padding:10px; border:1px solid #cbd5e1; border-left:none;
+    border-radius:0 10px 10px 0;
+    background:#ffffff;
+    box-shadow: 0 8px 20px rgba(0,0,0,.08);
+  `;
+
+  panel.innerHTML = `
+    <div style="display:flex; align-items:center; justify-content:space-between;">
+      <b>Katmanlar</b>
+      <span style="opacity:.6; font-size:12px;">(göster/gizle + sırala)</span>
+    </div>
+    <div id="layer-list" style="margin-top:8px; display:flex; flex-direction:column; gap:6px;"></div>
+  `;
+
+  notch.onclick = () => panel.classList.toggle('hidden');
+
+  drawer.appendChild(notch);
+  drawer.appendChild(panel);
+  c.appendChild(drawer);
+}
+
+function geomTypeIcon(type){
+  if(type==='line') return '━';
+  if(type==='polygon') return '▧';
+  return '●';
+}
+
+function renderLayerList(mapInstance){
+  const list = mapInstance.getContainer().querySelector('#layer-list');
+  if(!list) return;
+  list.innerHTML = '';
+
+  __geomLayers.sort((a,b)=> (b.z||0)-(a.z||0));
+
+  __geomLayers.forEach((it, idx)=>{
+    const row = document.createElement('div');
+    row.style.cssText = `display:flex; align-items:center; gap:8px; border:1px solid #e5e7eb; border-radius:10px; padding:6px 8px;`;
+
+    const chk = document.createElement('input');
+    chk.type='checkbox';
+    chk.checked = !!it.visible;
+    chk.onchange = ()=>{
+      it.visible = chk.checked;
+      if(it.visible) it.layer.addTo(mapInstance);
+      else mapInstance.removeLayer(it.layer);
+    };
+
+    const lbl = document.createElement('div');
+    lbl.style.cssText = `flex:1; display:flex; gap:8px; align-items:center;`;
+    lbl.innerHTML = `<span style="font-weight:700;">${geomTypeIcon(it.geomType)}</span> <span>${escapeHtml(it.table)}</span>`;
+
+    const up = document.createElement('button');
+    up.textContent='↑';
+    up.className='btn ghost';
+    up.style.cssText='padding:2px 8px;';
+    up.onclick=()=>{
+      it.z = (it.z||0) + 1;
+      it.layer.bringToFront?.();
+      renderLayerList(mapInstance);
+    };
+
+    const down = document.createElement('button');
+    down.textContent='↓';
+    down.className='btn ghost';
+    down.style.cssText='padding:2px 8px;';
+    down.onclick=()=>{
+      it.z = (it.z||0) - 1;
+      it.layer.bringToBack?.();
+      renderLayerList(mapInstance);
+    };
+
+    row.appendChild(chk);
+    row.appendChild(lbl);
+    row.appendChild(up);
+    row.appendChild(down);
+
+    list.appendChild(row);
+  });
+}
+
+async function loadGeomLayersForMap(isPublic){
+  if(!map) return;
+
+  __geomLayers
+    .filter(x => x.geomType !== 'point' && x.table !== 'Events')
+    .forEach(x => {
+      try { map.removeLayer(x.layer); } catch {}
+    });
+
+  __geomLayers = __geomLayers.filter(x => x.geomType === 'point' || x.table === 'Events');
+
+  if(isPublic){
+    ensureLayerDrawer(map);
+    renderLayerList(map);
+    return;
+  }
+
+  const r = await fetch('/api/geom-tables');
+  if(!r.ok){
+    ensureLayerDrawer(map);
+    renderLayerList(map);
+    return;
+  }
+
+  const data = await r.json();
+  const tables = (data.tables || []).filter(x => x.geomType === 'line' || x.geomType === 'polygon');
+
+  for(const t of tables){
+    const gr = await fetch(`/api/geo/${encodeURIComponent(t.table)}`);
+    if(!gr.ok) continue;
+
+    const fc = await gr.json();
+
+    const layer = L.geoJSON(fc, {
+      style: ()=>({ weight: 4, opacity: 0.85 })
+    });
+
+    layer.addTo(map);
+
+    __geomLayers.push({
+      table: t.table,
+      geomType: t.geomType,
+      layer,
+      visible: true,
+      z: 0
+    });
+  }
+
+  ensureLayerDrawer(map);
+  renderLayerList(map);
+}
+
+/* ==================== VERI_TIPI (Supervisor) ==================== */
+let __veriTipiState = {
+  step: 0,
+  katman_tablo: null,
+  attribute_column: null,
+  values: [],
+  select_all: true,
+  good: true,
+  geomType: null,
+  selectedValues: []
+};
+
+function vt_q(id){ return document.getElementById(id); }
+
+function vt_openModal(){
+  const m = vt_q('modal-veri-tipi');
+  if(m) m.classList.remove('hidden');
+}
+
+function vt_closeModal(){
+  const m = vt_q('modal-veri-tipi');
+  if(m) m.classList.add('hidden');
+}
+
+async function vt_refreshTable(){
+  const wrap = vt_q('veri-tipi-table-wrap');
+  if(!wrap) return;
+
+  const r = await fetch('/api/veri-tipi/list');
+  if(!r.ok){
+    wrap.innerHTML = `<div class="muted">Liste alınamadı.</div>`;
+    return;
+  }
+
+  const data = await r.json();
+  const rows = data.rows || [];
+
+  const table = document.createElement('table');
+  table.className = 'table';
+  table.style.width = '100%';
+
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>Katman_tablo</th>
+        <th>Attribute_column</th>
+        <th>olay_turu</th>
+        <th>faydali_faydasiz_mi</th>
+        <th>ekleyen</th>
+        <th>işlemler</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  `;
+
+  const tb = table.querySelector('tbody');
+
+  rows.forEach(rw=>{
+    const tr = document.createElement('tr');
+
+    const isPoint = !!rw.is_point;
+
+    // sadece point değilse ve satırı ben eklediysem düzenleyebileyim
+    const myId = String(currentUser?.id || currentUser?.sub || '');
+    const canEdit = !isPoint && String(rw.created_by_id) === myId;
+
+    tr.innerHTML = `
+      <td>${escapeHtml(rw.katman_tablo || '')}</td>
+      <td>${escapeHtml(rw.attribute_column || '')}</td>
+      <td>${escapeHtml(rw.olay_turu || '')}</td>
+      <td>${escapeHtml(rw.faydali_faydasiz_mi || '')}</td>
+      <td>${escapeHtml(rw.ekleyen || '')}</td>
+      <td style="display:flex; gap:8px;">
+        <button class="btn ghost" ${canEdit ? '' : 'disabled'} data-act="upd" data-id="${rw.o_id}">Güncelle</button>
+        <button class="btn danger" ${canEdit ? '' : 'disabled'} data-act="del" data-id="${rw.o_id}">Sil</button>
+      </td>
+    `;
+
+    tr.querySelectorAll('button').forEach(b=>{
+      b.onclick = async ()=>{
+        const act = b.getAttribute('data-act');
+        const id  = b.getAttribute('data-id');
+        if(!canEdit) return;
+
+        if(act === 'upd'){
+          // sadece good değiştir
+          const good = confirm('FAYDALI yapmak için OK, FAYDASIZ için Cancel');
+          const rr = await fetch(`/api/veri-tipi/${id}`, {
+            method:'PUT',
+            headers:{ 'Content-Type':'application/json' },
+            body: JSON.stringify({ good })
+          });
+          if(rr.ok) toast('Güncellendi');
+          else toast('Güncellenemedi','error');
+          vt_refreshTable();
+        }
+
+        if(act === 'del'){
+          if(!confirm('Silinsin mi?')) return;
+          const rr = await fetch(`/api/veri-tipi/${id}`, { method:'DELETE' });
+          if(rr.ok) toast('Silindi');
+          else toast('Silinemedi','error');
+          vt_refreshTable();
+        }
+      };
+    });
+
+    tb.appendChild(tr);
+  });
+
+  wrap.innerHTML = '';
+  wrap.appendChild(table);
+}
+
+async function vt_startWizard(){
+  __veriTipiState = {
+    step: 0,
+    katman_tablo: null,
+    attribute_column: null,
+    values: [],
+    select_all: true,
+    good: true,
+    geomType: null,
+    selectedValues: []
+  };
+  vt_renderStep();
+  vt_openModal();
+}
+
+function vt_renderStep(){
+  const title = vt_q('veri-tipi-step-title');
+  const body  = vt_q('veri-tipi-step-body');
+  const btnBack   = vt_q('btn-veri-tipi-back');
+  const btnNext   = vt_q('btn-veri-tipi-next');
+  const btnCancel = vt_q('btn-veri-tipi-cancel');
+
+  if(!title || !body || !btnBack || !btnNext || !btnCancel) return;
+
+  btnCancel.onclick = vt_closeModal;
+
+  btnBack.onclick = ()=>{
+    __veriTipiState.step = Math.max(0, __veriTipiState.step - 1);
+    vt_renderStep();
+  };
+
+  // STEP 0: tablo seç
+  if(__veriTipiState.step === 0){
+    title.textContent = '1) Katman_tablo seç';
+    body.innerHTML = `<div class="muted">Line / Polygon geometry içeren tablolar listelenir.</div><div id="vt-tables"></div>`;
+    btnBack.disabled = true;
+    btnNext.textContent = 'Next';
+
+    btnNext.onclick = ()=>{
+      if(!__veriTipiState.katman_tablo) return toast('Tablo seç', 'error');
+      __veriTipiState.step = 1;
+      vt_renderStep();
+    };
+
+    (async ()=>{
+      const r = await fetch('/api/geom-tables');
+      const d = r.ok ? await r.json() : { tables:[] };
+      const tables = (d.tables||[]).filter(x => x.geomType==='line' || x.geomType==='polygon');
+
+      const wrap = body.querySelector('#vt-tables');
+      wrap.innerHTML = '';
+
+      const sel = document.createElement('select');
+      sel.style.width = '100%';
+      sel.innerHTML = `<option value="">-- Seç --</option>` +
+        tables.map(t => `<option value="${escapeHtml(t.table)}">${escapeHtml(t.table)} (${escapeHtml(t.geomType)})</option>`).join('');
+
+      sel.onchange = ()=>{ __veriTipiState.katman_tablo = sel.value || null; };
+      wrap.appendChild(sel);
+    })();
+
+    return;
+  }
+
+  // STEP 1: kolon seç
+  if(__veriTipiState.step === 1){
+    title.textContent = '2) Attribute_column seç';
+    btnBack.disabled = false;
+    btnNext.textContent = 'Next';
+
+    body.innerHTML = `
+      <div class="muted">Seçtiğin tablonun kolon adını seç/yaz.</div>
+      <input id="vt-col" placeholder="ör: highway" style="width:100%; padding:10px; border:1px solid #e5e7eb; border-radius:10px;" />
+    `;
+
+    const inp = body.querySelector('#vt-col');
+    inp.value = __veriTipiState.attribute_column || '';
+    inp.oninput = ()=> __veriTipiState.attribute_column = inp.value.trim() || null;
+
+    btnNext.onclick = async ()=>{
+      if(!__veriTipiState.attribute_column) return toast('Sütun gir', 'error');
+
+      const rr = await fetch('/api/veri-tipi/wizard/values', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({
+          katman_tablo: __veriTipiState.katman_tablo,
+          attribute_column: __veriTipiState.attribute_column
+        })
+      });
+
+      if(!rr.ok) return toast('Değerler alınamadı', 'error');
+
+      const dd = await rr.json();
+      __veriTipiState.values = dd.values || [];
+      __veriTipiState.geomType = dd.geomType || null;
+
+      __veriTipiState.step = 2;
+      vt_renderStep();
+    };
+
+    return;
+  }
+
+  // STEP 2: değer seç
+  if(__veriTipiState.step === 2){
+    title.textContent = '3) olay_turu değerlerini seç';
+    btnBack.disabled = false;
+    btnNext.textContent = 'Next';
+
+    body.innerHTML = `
+      <label style="display:flex; gap:8px; align-items:center;">
+        <input id="vt-all" type="checkbox" ${__veriTipiState.select_all ? 'checked' : ''} />
+        <span>Bu sütundaki değerlerin hepsini seç</span>
+      </label>
+      <div id="vt-values" style="margin-top:10px; max-height:240px; overflow:auto; border:1px solid #e5e7eb; border-radius:10px; padding:10px;"></div>
+    `;
+
+    const all = body.querySelector('#vt-all');
+    const list = body.querySelector('#vt-values');
+
+    all.onchange = ()=>{
+      __veriTipiState.select_all = all.checked;
+      vt_renderStep();
+    };
+
+    if(__veriTipiState.select_all){
+      list.innerHTML = `<div class="muted">Hepsi seçili (${__veriTipiState.values.length} değer)</div>`;
+      btnNext.onclick = ()=>{
+        __veriTipiState.step = 3;
+        vt_renderStep();
+      };
+      return;
+    }
+
+    const chosen = new Set(__veriTipiState.selectedValues || []);
+    list.innerHTML = (__veriTipiState.values||[]).map(v=>{
+      const vv = String(v);
+      const checked = chosen.has(vv) ? 'checked' : '';
+      return `
+        <label style="display:flex; gap:8px; align-items:center; margin:6px 0;">
+          <input type="checkbox" data-v="${escapeHtml(vv)}" ${checked} />
+          <span>${escapeHtml(vv)}</span>
+        </label>
+      `;
+    }).join('');
+
+    list.querySelectorAll('input[type="checkbox"]').forEach(ch=>{
+      ch.onchange = ()=>{
+        const v = ch.getAttribute('data-v');
+        if(ch.checked) chosen.add(v);
+        else chosen.delete(v);
+        __veriTipiState.selectedValues = Array.from(chosen);
+      };
+    });
+
+    btnNext.onclick = ()=>{
+      if(!(__veriTipiState.selectedValues||[]).length) return toast('En az 1 değer seç', 'error');
+      __veriTipiState.step = 3;
+      vt_renderStep();
+    };
+
+    return;
+  }
+
+  // STEP 3: good/bad + kaydet
+  if(__veriTipiState.step === 3){
+    title.textContent = '4) Faydalı / Faydasız seç';
+    btnBack.disabled = false;
+    btnNext.textContent = 'Kaydet';
+
+    body.innerHTML = `
+      <label style="display:flex; gap:10px; align-items:center; margin:8px 0;">
+        <input type="radio" name="vt-good" value="true" ${__veriTipiState.good ? 'checked' : ''} />
+        <span>Faydalı</span>
+      </label>
+      <label style="display:flex; gap:10px; align-items:center; margin:8px 0;">
+        <input type="radio" name="vt-good" value="false" ${!__veriTipiState.good ? 'checked' : ''} />
+        <span>Faydasız</span>
+      </label>
+
+      <div class="muted" style="margin-top:10px;">
+        Seçilen değerler için hedef tabloya <b>olay_turu</b> kolonu eklenir ve uygun satırlara <b>o_id</b> yazılır.
+        Seçilmemiş satırlar NULL kalır (None) ve haritada görünmez.
+      </div>
+    `;
+
+    body.querySelectorAll('input[name="vt-good"]').forEach(r=>{
+      r.onchange = ()=> __veriTipiState.good = r.value === 'true';
+    });
+
+    btnNext.onclick = async ()=>{
+      const payload = {
+        katman_tablo: __veriTipiState.katman_tablo,
+        attribute_column: __veriTipiState.attribute_column,
+        select_all: __veriTipiState.select_all,
+        values: __veriTipiState.select_all ? [] : (__veriTipiState.selectedValues||[]),
+        good: __veriTipiState.good
+      };
+
+      const rr = await fetch('/api/veri-tipi/wizard/create', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if(!rr.ok) return toast('Kaydedilemedi','error');
+
+      toast('Kaydedildi');
+      vt_closeModal();
+      vt_refreshTable();
+
+      // login sonrası layer’ları da yenile
+      loadGeomLayersForMap(false);
+    };
+
+    return;
+  }
+}
+
+function wireVeriTipiUI(){
+  const btnAdd = vt_q('btn-veri-tipi-add');
+  if(btnAdd) btnAdd.onclick = vt_startWizard;
+
+  const bBack = vt_q('btn-veri-tipi-back');
+  const bCancel = vt_q('btn-veri-tipi-cancel');
+  if(bBack) bBack.textContent = 'Back';
+  if(bCancel) bCancel.textContent = 'Cancel';
+
+  vt_refreshTable();
+}
+
 
 /* ----------------- Map ----------------- */
 const WORLD_BOUNDS = L.latLngBounds([-85, -180], [85, 180]);
