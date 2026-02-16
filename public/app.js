@@ -565,6 +565,7 @@ function vt_openModal(){
   if(!m) return;
   m.classList.add('show');
   m.setAttribute('aria-hidden', 'false');
+  m.style.display = 'flex';
   document.body.style.overflow = 'hidden';
 }
 
@@ -573,6 +574,7 @@ function vt_closeModal(){
   if(!m) return;
   m.classList.remove('show');
   m.setAttribute('aria-hidden', 'true');
+  m.style.display = '';
   document.body.style.overflow = '';
 }
 
@@ -6440,5 +6442,52 @@ document.addEventListener('DOMContentLoaded', () => {
     if (activeLangBtn) {
       activeLangBtn.classList.add('active');
     }
+  }
+
+  /* --- Veri Tipi + butonu yedek bağlantı --- */
+  const vtAddBtn = document.getElementById('btn-veri-tipi-add');
+  if(vtAddBtn){
+    vtAddBtn.addEventListener('click', function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      try {
+        vt_startWizard();
+      } catch(err) {
+        console.error('vt_startWizard error:', err);
+        /* fallback: doğrudan modalı aç */
+        var modal = document.getElementById('modal-veri-tipi');
+        if(modal){
+          modal.classList.add('show');
+          modal.setAttribute('aria-hidden','false');
+          modal.style.display = 'flex';
+        }
+      }
+    });
+  }
+
+  const vtCancelX = document.getElementById('btn-veri-tipi-cancel-x');
+  if(vtCancelX){
+    vtCancelX.addEventListener('click', function(){
+      var modal = document.getElementById('modal-veri-tipi');
+      if(modal){
+        modal.classList.remove('show');
+        modal.setAttribute('aria-hidden','true');
+        modal.style.display = '';
+      }
+      document.body.style.overflow = '';
+    });
+  }
+
+  const vtCancelBtn = document.getElementById('btn-veri-tipi-cancel');
+  if(vtCancelBtn){
+    vtCancelBtn.addEventListener('click', function(){
+      var modal = document.getElementById('modal-veri-tipi');
+      if(modal){
+        modal.classList.remove('show');
+        modal.setAttribute('aria-hidden','true');
+        modal.style.display = '';
+      }
+      document.body.style.overflow = '';
+    });
   }
 });
