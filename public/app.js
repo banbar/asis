@@ -3749,7 +3749,7 @@ function initTabs() {
       const targetContent = qs(`#${targetTab}`);
       if (targetContent) targetContent.classList.add('active');
       if (targetTab === 'veri-tipi-tab') {
-        try { refreshVeriTipi(); } catch {}
+        try { vt_refreshTable(); } catch {}
       }
       const mapEl = document.getElementById('map');
       if (mapEl) {
@@ -6242,44 +6242,7 @@ async function updateUIWithNewLanguage() {
     }
   }
 }
-async function refreshVeriTipi(){
-  const wrap = qs('#veri-tipi-table-wrap');
-  if (!wrap) return;
 
-  wrap.innerHTML = `<div class="muted">Loading…</div>`;
-
-  try{
-    const r = await fetch('/api/veri-tipi/list');
-    const d = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(d.message || d.error || String(r.status));
-
-    const rows = Array.isArray(d.rows) ? d.rows : (Array.isArray(d) ? d : []);
-
-    wrap.innerHTML = `
-      <div class="table-wrap" style="overflow:auto;">
-        <table id="veri-tipi-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Ad</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows.map(x => `
-              <tr>
-                <td>${escapeHtml(String(x.id ?? ''))}</td>
-                <td>${escapeHtml(String(x.ad ?? x.name ?? ''))}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    `;
-  }catch(err){
-    console.error('refreshVeriTipi error:', err);
-    wrap.innerHTML = `<div class="error">Veri Tipi yüklenemedi: ${escapeHtml(err.message)}</div>`;
-  }
-}
 
 function updateTableHeaders() {
   
