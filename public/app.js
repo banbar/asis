@@ -383,9 +383,11 @@ function placeMicIntoMediaBar(){
 
 let __layerCtrl = null;
 let __geomLayers = []; // [{table, geomType, layer, visible, z}]
+let __eventsGeomLayers = [];
 
-function ensureLayerDrawer(mapInstance){
+function ensureLayerDrawer(mapInstance, listId){
   if(!mapInstance) return;
+  if(!listId) listId = 'layer-list';
 
   // container
   const c = mapInstance.getContainer();
@@ -425,7 +427,7 @@ function ensureLayerDrawer(mapInstance){
       <b>Katmanlar</b>
       <span style="opacity:.6; font-size:12px;">(göster/gizle + sırala)</span>
     </div>
-    <div id="layer-list" style="margin-top:8px; display:flex; flex-direction:column; gap:6px;"></div>
+    <div id="${listId}" style="margin-top:8px; display:flex; flex-direction:column; gap:6px;"></div>
   `;
 
   notch.onclick = () => panel.classList.toggle('hidden');
@@ -441,14 +443,16 @@ function geomTypeIcon(type){
   return '●';
 }
 
-function renderLayerList(mapInstance){
-  const list = mapInstance.getContainer().querySelector('#layer-list');
+function renderLayerList(mapInstance, layers, listId){
+  if(!layers) layers = __geomLayers;
+  if(!listId) listId = 'layer-list';
+  const list = mapInstance.getContainer().querySelector('#' + listId);
   if(!list) return;
   list.innerHTML = '';
 
-  __geomLayers.sort((a,b)=> (b.z||0)-(a.z||0));
+  layers.sort((a,b)=> (b.z||0)-(a.z||0));
 
-  __geomLayers.forEach((it, idx)=>{
+  layers.forEach((it, idx)=>{
     const row = document.createElement('div');
     row.style.cssText = `display:flex; align-items:center; gap:8px; border:1px solid #e5e7eb; border-radius:10px; padding:6px 8px;`;
 
@@ -472,7 +476,7 @@ function renderLayerList(mapInstance){
     up.onclick=()=>{
       it.z = (it.z||0) + 1;
       it.layer.bringToFront?.();
-      renderLayerList(mapInstance);
+      renderLayerList(mapInstance, layers, listId);
     };
 
     const down = document.createElement('button');
@@ -482,7 +486,7 @@ function renderLayerList(mapInstance){
     down.onclick=()=>{
       it.z = (it.z||0) - 1;
       it.layer.bringToBack?.();
-      renderLayerList(mapInstance);
+      renderLayerList(mapInstance, layers, listId);
     };
 
     row.appendChild(chk);
@@ -505,7 +509,8 @@ async function loadGeomLayersForMap(isPublic){
 
   __geomLayers = __geomLayers.filter(x => x.geomType === 'point' || x.table === 'Events');
 
-  const tablesUrl = isPublic ? '/api/public/geom-tables' : '/api/geom-tables';
+  const isSupervisor = currentUser && (currentUser.role === 'supervisor' || currentUser.role === 'admin');
+  const tablesUrl = isSupervisor ? '/api/geom-tables' : '/api/public/geom-tables';
   const r = await fetch(tablesUrl);
   if(!r.ok){
     ensureLayerDrawer(map);
@@ -543,6 +548,50 @@ async function loadGeomLayersForMap(isPublic){
 
   ensureLayerDrawer(map);
   renderLayerList(map);
+}
+
+async function loadGeomLayersForEventsMap(){
+  if(!eventsMap) return;
+
+  __eventsGeomLayers.forEach(x => {
+    try { eventsMap.removeLayer(x.layer); } catch {}
+  });
+  __eventsGeomLayers = [];
+
+  const r = await fetch('/api/geom-tables');
+  if(!r.ok){
+    ensureLayerDrawer(eventsMap, 'events-layer-list');
+    renderLayerList(eventsMap, __eventsGeomLayers, 'events-layer-list');
+    return;
+  }
+
+  const data = await r.json();
+  const tables = (data.tables || []).filter(x => x.geomType === 'line' || x.geomType === 'polygon');
+
+  for(const t of tables){
+    const gr = await fetch(`/api/geo/${encodeURIComponent(t.table)}`);
+    if(!gr.ok) continue;
+
+    const fc = await gr.json();
+    if(!fc.features || fc.features.length === 0) continue;
+
+    const layer = L.geoJSON(fc, {
+      style: ()=>({ weight: 4, opacity: 0.85 })
+    });
+
+    layer.addTo(eventsMap);
+
+    __eventsGeomLayers.push({
+      table: t.table,
+      geomType: t.geomType,
+      layer,
+      visible: true,
+      z: 0
+    });
+  }
+
+  ensureLayerDrawer(eventsMap, 'events-layer-list');
+  renderLayerList(eventsMap, __eventsGeomLayers, 'events-layer-list');
 }
 
 /* ==================== VERI_TIPI (Supervisor) ==================== */
@@ -3701,6 +3750,7 @@ async function loadOlayTypes() {
     if (sel) {
       sel.innerHTML = `<option value="">-- ${t('pleaseSelect')} --</option>`;
       list.forEach(o => {
+        if(o.is_point === false) return;
         const opt = document.createElement('option');
         opt.value = String(o.o_id);
         opt.textContent = o.o_adi;
@@ -6002,6 +6052,14 @@ window.addEventListener('popstate', (event) => {
     try { ensureMapLegend(map); } catch {}
   }
 
+  if (currentUser && currentUser.role === 'user') {
+    try {
+      await loadGeomLayersForMap(false);
+    } catch(e) {
+      console.warn('[INIT] User geom layers error:', e);
+    }
+  }
+
   if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'supervisor')) {
     await Promise.all([
       loadOlayTypes(),
@@ -6017,13 +6075,18 @@ window.addEventListener('popstate', (event) => {
 
     wireVeriTipiUI();
 
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
         ensureEventsMap();
         ensureEventsExportControl();
         syncEventsMapWithFilteredEvents();
       } catch(e) {
         console.warn('[INIT] Admin map error:', e);
+      }
+      try {
+        await loadGeomLayersForEventsMap();
+      } catch(e) {
+        console.warn('[INIT] Events geom layers error:', e);
       }
     }, 500);
     

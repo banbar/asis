@@ -2007,7 +2007,8 @@ app.post('/api/auth/forgot/reset', async (req, res) => {
 app.get('/api/olaylar', requireAuth, async (req, res) => {
   try {
     const r = await pool.query(`
-      SELECT o_id, o_adi, good, created_by_id, created_by_name 
+      SELECT o_id, o_adi, good, created_by_id, created_by_name,
+             is_point, is_line, is_polygon 
       FROM olaylar 
       WHERE COALESCE(active,true)=true 
       ORDER BY o_id
