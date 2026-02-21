@@ -322,7 +322,14 @@ app.get('/api/geom-tables', mustAuth, mustSupervisor, async (req,res)=>{
     return res.status(500).json({ error:'sunucu_hatasi' });
   }
 });
-
+app.get('/api/public/geom-tables', async (req,res)=>{
+  try{
+    const tables = await listGeomTables();
+    return res.json({ ok:true, tables });
+  }catch(e){
+    return res.status(500).json({ error:'sunucu_hatasi' });
+  }
+});
 app.get('/api/table-columns/:table', mustAuth, mustSupervisor, async (req,res)=>{
   try{
     const table = assertSafeIdent(req.params.table,'table');
@@ -3037,4 +3044,3 @@ const shutdown = async () => {
 
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
-

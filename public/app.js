@@ -505,13 +505,8 @@ async function loadGeomLayersForMap(isPublic){
 
   __geomLayers = __geomLayers.filter(x => x.geomType === 'point' || x.table === 'Events');
 
-  if(isPublic){
-    ensureLayerDrawer(map);
-    renderLayerList(map);
-    return;
-  }
-
-  const r = await fetch('/api/geom-tables');
+  const tablesUrl = isPublic ? '/api/public/geom-tables' : '/api/geom-tables';
+  const r = await fetch(tablesUrl);
   if(!r.ok){
     ensureLayerDrawer(map);
     renderLayerList(map);
@@ -522,10 +517,14 @@ async function loadGeomLayersForMap(isPublic){
   const tables = (data.tables || []).filter(x => x.geomType === 'line' || x.geomType === 'polygon');
 
   for(const t of tables){
-    const gr = await fetch(`/api/geo/${encodeURIComponent(t.table)}`);
+    const geoUrl = isPublic
+      ? `/api/public/geo/${encodeURIComponent(t.table)}`
+      : `/api/geo/${encodeURIComponent(t.table)}`;
+    const gr = await fetch(geoUrl);
     if(!gr.ok) continue;
 
     const fc = await gr.json();
+    if(!fc.features || fc.features.length === 0) continue;
 
     const layer = L.geoJSON(fc, {
       style: ()=>({ weight: 4, opacity: 0.85 })
@@ -5339,6 +5338,12 @@ async function login(){
     resetLoginForm();
     attachMapClickForLoggedIn();
 
+    try {
+      await loadGeomLayersForMap(false);
+    } catch(e) {
+      console.warn('[LOGIN] Geom layers reload error:', e);
+    }
+
     const mapEl = document.getElementById('map');
     if (mapEl) mapEl.classList.remove('blur-background');
     
@@ -5982,6 +5987,13 @@ window.addEventListener('popstate', (event) => {
     } else {
       try { if (markersLayer) markersLayer.clearLayers(); } catch {}
     }
+
+    try {
+      await loadGeomLayersForMap(true);
+    } catch(e) {
+      console.warn('[INIT] Public geom layers error:', e);
+    }
+
     try { ensureMapLegend(map); } catch {}
   } else {
     goDefaultScreen();
