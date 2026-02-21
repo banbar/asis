@@ -155,15 +155,12 @@ function createOrUpdateMapFromConfig() {
     map.invalidateSize();
   }
   ensureMapLegend(map);
-  ensureLayerDrawer(map);
-  renderLayerList(map);
   loadGeomLayersForMap(!currentUser).then(() => {
     if (currentUser && (currentUser.role === 'supervisor' || currentUser.role === 'admin')) {
       wireVeriTipiUI();
     }
   });
 }
-
 function loadToken() {
   try { authToken = localStorage.getItem(AUTH_KEY) || null; } catch { authToken = null; }
 }
@@ -513,8 +510,10 @@ async function loadGeomLayersForMap(isPublic){
   const tablesUrl = isSupervisor ? '/api/geom-tables' : '/api/public/geom-tables';
   const r = await fetch(tablesUrl);
   if(!r.ok){
-    ensureLayerDrawer(map);
-    renderLayerList(map);
+    if(currentUser){
+      ensureLayerDrawer(map);
+      renderLayerList(map);
+    }
     return;
   }
 
@@ -546,8 +545,10 @@ async function loadGeomLayersForMap(isPublic){
     });
   }
 
-  ensureLayerDrawer(map);
-  renderLayerList(map);
+  if(currentUser){
+    ensureLayerDrawer(map);
+    renderLayerList(map);
+  }
 }
 
 async function loadGeomLayersForEventsMap(){
@@ -5241,13 +5242,18 @@ function setSupervisorMode(mode) {
     show(adminCard);
     show(olayCard);
     
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
         ensureEventsMap(); 
         ensureEventsExportControl(); 
         syncEventsMapWithFilteredEvents(); 
       } catch(e) {
         console.warn('[setSupervisorMode] Map update error:', e);
+      }
+      try {
+        await loadGeomLayersForEventsMap();
+      } catch(e) {
+        console.warn('[setSupervisorMode] Events geom layers error:', e);
       }
     }, 100);
     
@@ -5389,6 +5395,14 @@ async function login(){
     attachMapClickForLoggedIn();
 
     try {
+      const c = map && map.getContainer();
+      if(c){
+        const d = c.querySelector('.layer-drawer');
+        if(d) d.remove();
+      }
+    } catch(e){}
+
+    try {
       await loadGeomLayersForMap(false);
     } catch(e) {
       console.warn('[LOGIN] Geom layers reload error:', e);
@@ -5488,7 +5502,27 @@ async function logout(){
 
   removeDownloadIfAny();
   __eventsExportCtrlAdded = false;
-  
+
+  /* --- Katman drawer'ını kaldır ve geom katmanlarını public filtrele --- */
+  try {
+    const c = map && map.getContainer();
+    if(c){
+      const d = c.querySelector('.layer-drawer');
+      if(d) d.remove();
+    }
+  } catch(e){}
+
+  __geomLayers
+    .filter(x => x.geomType !== 'point' && x.table !== 'Events')
+    .forEach(x => { try { map.removeLayer(x.layer); } catch {} });
+  __geomLayers = __geomLayers.filter(x => x.geomType === 'point' || x.table === 'Events');
+
+  try {
+    await loadGeomLayersForMap(true);
+  } catch(e) {
+    console.warn('[LOGOUT] Geom layers reload error:', e);
+  }
+
   try {
     if (map) {
       const lat = Number(APP_CONFIG.mapInitialLat);
@@ -5501,7 +5535,6 @@ async function logout(){
     console.warn('Map could not be reloaded:', e);
   }
 }
-
 function ensureAuthBackButton(cardSelector){
   const card = qs(cardSelector);
   if (!card) return;
