@@ -259,7 +259,7 @@ function assertSafeIdent(name, kind='ident') {
 
 async function listGeomTables() {
   const q = `
-    SELECT f_table_name AS table_name, type
+    SELECT f_table_name AS table_name, type, f_geometry_column AS geom_column
     FROM public.geometry_columns
     WHERE f_table_schema='public'
     ORDER BY f_table_name;
@@ -271,7 +271,7 @@ async function listGeomTables() {
       t.includes('LINE') ? 'line' :
       t.includes('POLYGON') ? 'polygon' :
       t.includes('POINT') ? 'point' : 'other';
-    return { table: r.table_name, geomType };
+    return { table: r.table_name, geomType, geomColumn: r.geom_column || 'geom' };
   }).filter(x => x.geomType !== 'other');
 }
 
@@ -512,17 +512,20 @@ app.delete('/api/veri-tipi/:o_id', mustAuth, mustSupervisor, async (req,res)=>{
 app.get('/api/geo/:table', mustAuth, async (req,res)=>{
   try{
     const table = assertSafeIdent(req.params.table,'table');
+    const geomTables = await listGeomTables();
+    const hit = geomTables.find(x => x.table === table);
+    const gc = hit ? assertSafeIdent(hit.geomColumn,'column') : 'geom';
     const q = `
       SELECT jsonb_build_object(
         'type','FeatureCollection',
         'features', COALESCE(jsonb_agg(jsonb_build_object(
           'type','Feature',
-          'geometry', ST_AsGeoJSON(t.geom)::jsonb,
-          'properties', to_jsonb(t) - 'geom'
+          'geometry', ST_AsGeoJSON(t.${gc})::jsonb,
+          'properties', to_jsonb(t) - '${gc}'
         )), '[]'::jsonb)
       ) AS fc
       FROM public.${table} t
-      WHERE t.geom IS NOT NULL
+      WHERE t.${gc} IS NOT NULL
         AND t.olay_turu IS NOT NULL;
     `;
     const { rows } = await pool.query(q);
@@ -536,6 +539,9 @@ app.get('/api/geo/:table', mustAuth, async (req,res)=>{
 app.get('/api/public/geo/:table', async (req,res)=>{
   try{
     const table = assertSafeIdent(req.params.table,'table');
+    const geomTables = await listGeomTables();
+    const hit = geomTables.find(x => x.table === table);
+    const gc = hit ? assertSafeIdent(hit.geomColumn,'column') : 'geom';
     const whereGoodBad = publicGoodBadWhere();
 
     const q = `
@@ -543,13 +549,13 @@ app.get('/api/public/geo/:table', async (req,res)=>{
         'type','FeatureCollection',
         'features', COALESCE(jsonb_agg(jsonb_build_object(
           'type','Feature',
-          'geometry', ST_AsGeoJSON(t.geom)::jsonb,
-          'properties', to_jsonb(t) - 'geom'
+          'geometry', ST_AsGeoJSON(t.${gc})::jsonb,
+          'properties', to_jsonb(t) - '${gc}'
         )), '[]'::jsonb)
       ) AS fc
       FROM public.${table} t
       JOIN public.olaylar o ON o.o_id = t.olay_turu
-      WHERE t.geom IS NOT NULL
+      WHERE t.${gc} IS NOT NULL
         AND t.olay_turu IS NOT NULL
         AND o.active = TRUE
         AND (${whereGoodBad});
