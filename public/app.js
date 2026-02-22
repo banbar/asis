@@ -155,11 +155,6 @@ function createOrUpdateMapFromConfig() {
     map.invalidateSize();
   }
   ensureMapLegend(map);
-  loadGeomLayersForMap(!currentUser).then(() => {
-    if (currentUser && (currentUser.role === 'supervisor' || currentUser.role === 'admin')) {
-      wireVeriTipiUI();
-    }
-  });
 }
 function loadToken() {
   try { authToken = localStorage.getItem(AUTH_KEY) || null; } catch { authToken = null; }
@@ -459,8 +454,11 @@ function renderLayerList(mapInstance, layers, listId){
   layers.sort((a,b)=> (b.z||0)-(a.z||0));
 
   layers.forEach((it, idx)=>{
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'border:1px solid #e5e7eb; border-radius:10px; overflow:hidden;';
+
     const row = document.createElement('div');
-    row.style.cssText = `display:flex; align-items:center; gap:8px; border:1px solid #e5e7eb; border-radius:10px; padding:6px 8px;`;
+    row.style.cssText = 'display:flex; align-items:center; gap:8px; padding:6px 8px;';
 
     const chk = document.createElement('input');
     chk.type='checkbox';
@@ -473,8 +471,8 @@ function renderLayerList(mapInstance, layers, listId){
     };
 
     const lbl = document.createElement('div');
-    lbl.style.cssText = `flex:1; display:flex; gap:8px; align-items:center;`;
-    lbl.innerHTML = `<span style="font-weight:700;">${geomTypeIcon(it.geomType)}</span> <span>${escapeHtml(it.table)}</span>`;
+    lbl.style.cssText = 'flex:1; display:flex; gap:8px; align-items:center;';
+    lbl.innerHTML = '<span style="font-weight:700;">'+geomTypeIcon(it.geomType)+'</span> <span>'+escapeHtml(it.table)+'</span>';
 
     const up = document.createElement('button');
     up.textContent='↑';
@@ -501,7 +499,76 @@ function renderLayerList(mapInstance, layers, listId){
     row.appendChild(up);
     row.appendChild(down);
 
-    list.appendChild(row);
+    /* --- Raster bant paneli --- */
+    if(it.geomType === 'raster' && it._georaster){
+      const toggle = document.createElement('button');
+      toggle.textContent = '▼';
+      toggle.className = 'btn ghost';
+      toggle.style.cssText = 'padding:2px 6px; font-size:10px;';
+      row.appendChild(toggle);
+
+      const bandPanel = document.createElement('div');
+      bandPanel.style.cssText = 'display:none; padding:6px 8px; border-top:1px solid #e5e7eb; background:#f9fafb;';
+
+      const nb = it._georaster.numberOfRasters;
+      const labels = ['R','G','B'];
+      const selects = [];
+
+      for(var si=0; si<3; si++){
+        const line = document.createElement('div');
+        line.style.cssText = 'display:flex; align-items:center; gap:6px; margin:3px 0; font-size:12px;';
+
+        const lab = document.createElement('span');
+        lab.style.cssText = 'width:16px; font-weight:700; color:' + ['#dc2626','#16a34a','#2563eb'][si] + ';';
+        lab.textContent = labels[si];
+
+        const sel = document.createElement('select');
+        sel.style.cssText = 'flex:1; padding:2px 4px; font-size:12px; border:1px solid #d1d5db; border-radius:4px;';
+        for(var bi=0; bi<nb; bi++){
+          const opt = document.createElement('option');
+          opt.value = bi;
+          opt.textContent = 'Band ' + (bi+1);
+          if(bi === it._bandMapping[si]) opt.selected = true;
+          sel.appendChild(opt);
+        }
+        selects.push(sel);
+
+        line.appendChild(lab);
+        line.appendChild(sel);
+        bandPanel.appendChild(line);
+      }
+
+      const applyBtn = document.createElement('button');
+      applyBtn.textContent = 'Uygula';
+      applyBtn.className = 'btn';
+      applyBtn.style.cssText = 'margin-top:6px; padding:3px 12px; font-size:12px; width:100%;';
+      applyBtn.onclick = ()=>{
+        var newMapping = [
+          parseInt(selects[0].value),
+          parseInt(selects[1].value),
+          parseInt(selects[2].value)
+        ];
+        it._bandMapping = newMapping;
+        try { mapInstance.removeLayer(it.layer); } catch(e){}
+        it.layer = createRasterLayer(it._georaster, it._bandStats, newMapping);
+        if(it.visible) it.layer.addTo(mapInstance);
+        reorderMapLayers(mapInstance, layers);
+      };
+      bandPanel.appendChild(applyBtn);
+
+      toggle.onclick = ()=>{
+        var open = bandPanel.style.display !== 'none';
+        bandPanel.style.display = open ? 'none' : 'block';
+        toggle.textContent = open ? '▼' : '▲';
+      };
+
+      wrap.appendChild(row);
+      wrap.appendChild(bandPanel);
+    } else {
+      wrap.appendChild(row);
+    }
+
+    list.appendChild(wrap);
   });
 }
 
@@ -602,6 +669,63 @@ async function loadGeomLayersForEventsMap(){
 }
 
 
+function registerRasterProjection(epsg){
+  if(!window.proj4 || !epsg || epsg === 4326) return;
+  try { if(proj4.defs('EPSG:'+epsg)) return; } catch(e){}
+  if(epsg >= 32601 && epsg <= 32660){
+    var z = epsg - 32600;
+    proj4.defs('EPSG:'+epsg, '+proj=utm +zone='+z+' +datum=WGS84 +units=m +no_defs');
+  } else if(epsg >= 32701 && epsg <= 32760){
+    var z = epsg - 32700;
+    proj4.defs('EPSG:'+epsg, '+proj=utm +zone='+z+' +south +datum=WGS84 +units=m +no_defs');
+  }
+}
+
+function computeBandStats(georaster){
+  var stats = [];
+  for(var b=0; b<georaster.numberOfRasters; b++){
+    var vals = [];
+    var rowStep = Math.max(1, Math.floor(georaster.height / 80));
+    var colStep = Math.max(1, Math.floor(georaster.width / 80));
+    for(var r=0; r<georaster.height; r+=rowStep){
+      for(var c=0; c<georaster.width; c+=colStep){
+        var v = georaster.values[b][r][c];
+        if(v !== 0 && v !== null && v !== undefined && !isNaN(v)) vals.push(v);
+      }
+    }
+    vals.sort(function(a,b){ return a-b; });
+    var lo = vals[Math.floor(vals.length * 0.02)] || 0;
+    var hi = vals[Math.floor(vals.length * 0.98)] || 1;
+    if(hi <= lo) hi = lo + 1;
+    stats.push({ min: lo, max: hi });
+  }
+  return stats;
+}
+
+function createRasterLayer(georaster, bandStats, bandMapping){
+  var bm = bandMapping.slice();
+  var st = bandStats.slice();
+  var nb = georaster.numberOfRasters;
+  return new GeoRasterLayer({
+    georaster: georaster,
+    opacity: 1,
+    resolution: 512,
+    pixelValuesToColorFn: function(vals){
+      if(!vals || vals.every(function(v){ return !v; })) return null;
+      function stretch(v, mn, mx){ return Math.min(255, Math.max(0, Math.round((v-mn)/(mx-mn)*255))); }
+      if(nb >= 3){
+        var r = stretch(vals[bm[0]], st[bm[0]].min, st[bm[0]].max);
+        var g = stretch(vals[bm[1]], st[bm[1]].min, st[bm[1]].max);
+        var b = stretch(vals[bm[2]], st[bm[2]].min, st[bm[2]].max);
+        return 'rgb('+r+','+g+','+b+')';
+      } else {
+        var gray = stretch(vals[0], st[0].min, st[0].max);
+        return 'rgb('+gray+','+gray+','+gray+')';
+      }
+    }
+  });
+}
+
 async function loadRasterLayers(mapInstance, layersArray, listId){
   if(!mapInstance) return;
 
@@ -615,6 +739,14 @@ async function loadRasterLayers(mapInstance, layersArray, listId){
   layersArray.length = 0;
   for(var i=0; i<kept.length; i++) layersArray.push(kept[i]);
 
+  if(typeof parseGeoraster === 'undefined' || typeof GeoRasterLayer === 'undefined'){
+    console.warn('[RASTER] georaster libs not loaded');
+    if(!listId) listId = 'layer-list';
+    ensureLayerDrawer(mapInstance, listId);
+    renderLayerList(mapInstance, layersArray, listId);
+    return;
+  }
+
   try {
     var r = await fetch('/api/raster-layers');
     if(!r.ok) return;
@@ -623,20 +755,33 @@ async function loadRasterLayers(mapInstance, layersArray, listId){
 
     for(var ri=0; ri<rasters.length; ri++){
       var rl = rasters[ri];
-      var bounds = L.latLngBounds(
-        L.latLng(rl.bounds[0][0], rl.bounds[0][1]),
-        L.latLng(rl.bounds[1][0], rl.bounds[1][1])
-      );
-      var overlay = L.imageOverlay(rl.pngUrl, bounds, { opacity: 0.85 });
-      overlay.addTo(mapInstance);
+      try {
+        var resp = await fetch(rl.tifUrl);
+        var ab = await resp.arrayBuffer();
+        var georaster = await parseGeoraster(ab);
 
-      layersArray.push({
-        table: rl.name,
-        geomType: 'raster',
-        layer: overlay,
-        visible: true,
-        z: -10
-      });
+        registerRasterProjection(georaster.projection);
+
+        var bandStats = computeBandStats(georaster);
+        var nb = georaster.numberOfRasters;
+        var defaultMapping = nb >= 3 ? [0,1,2] : [0,0,0];
+
+        var layer = createRasterLayer(georaster, bandStats, defaultMapping);
+        layer.addTo(mapInstance);
+
+        layersArray.push({
+          table: rl.name,
+          geomType: 'raster',
+          layer: layer,
+          visible: true,
+          z: -10,
+          _georaster: georaster,
+          _bandStats: bandStats,
+          _bandMapping: defaultMapping
+        });
+      } catch(e){
+        console.warn('[RASTER] ' + rl.name + ' error:', e);
+      }
     }
   } catch(e){
     console.warn('[RASTER] load error:', e);
