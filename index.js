@@ -15,6 +15,9 @@ const speakeasy = require('speakeasy');
 const fs = require('fs');
 const multer = require('multer');
 const mimeTypes = require('mime-types');
+const GeoTIFF = require('geotiff');
+const proj4 = require('proj4');
+const sharp = require('sharp');
 
 const app = express();
 
@@ -564,6 +567,137 @@ app.get('/api/public/geo/:table', async (req,res)=>{
     return res.json(rows[0].fc);
   }catch(e){
     return res.status(500).json({ error:'sunucu_hatasi' });
+  }
+});
+
+function getRasterProj4Def(epsg) {
+  if (!epsg || epsg === 4326) return null;
+  if (epsg >= 32601 && epsg <= 32660) {
+    const zone = epsg - 32600;
+    return `+proj=utm +zone=${zone} +datum=WGS84 +units=m +no_defs`;
+  }
+  if (epsg >= 32701 && epsg <= 32760) {
+    const zone = epsg - 32700;
+    return `+proj=utm +zone=${zone} +south +datum=WGS84 +units=m +no_defs`;
+  }
+  return null;
+}
+
+async function processRasterFile(tifPath) {
+  const buf = fs.readFileSync(tifPath);
+  const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+  const tiff = await GeoTIFF.fromArrayBuffer(ab);
+  const image = await tiff.getImage();
+
+  const bbox = image.getBoundingBox();
+  const geoKeys = image.getGeoKeys();
+  const epsg = geoKeys.ProjectedCSTypeGeoKey || geoKeys.GeographicTypeGeoKey || 4326;
+
+  let sw, ne;
+  const projDef = getRasterProj4Def(epsg);
+  if (projDef) {
+    sw = proj4(projDef, 'EPSG:4326', [bbox[0], bbox[1]]);
+    ne = proj4(projDef, 'EPSG:4326', [bbox[2], bbox[3]]);
+  } else {
+    sw = [bbox[0], bbox[1]];
+    ne = [bbox[2], bbox[3]];
+  }
+
+  const width = image.getWidth();
+  const height = image.getHeight();
+  const bands = image.getSamplesPerPixel();
+  const rasters = await image.readRasters();
+
+  const rgba = Buffer.alloc(width * height * 4);
+  const mins = [], maxs = [];
+  for (let b = 0; b < Math.min(bands, 3); b++) {
+    let mn = Infinity, mx = -Infinity;
+    for (let i = 0; i < width * height; i++) {
+      const v = rasters[b][i];
+      if (v < mn) mn = v;
+      if (v > mx) mx = v;
+    }
+    mins.push(mn);
+    maxs.push(mx === mn ? mn + 1 : mx);
+  }
+
+  for (let i = 0; i < width * height; i++) {
+    for (let b = 0; b < Math.min(bands, 3); b++) {
+      rgba[i * 4 + b] = Math.round(Math.min(255, Math.max(0,
+        (rasters[b][i] - mins[b]) / (maxs[b] - mins[b]) * 255
+      )));
+    }
+    if (bands < 3) {
+      rgba[i * 4 + 1] = rgba[i * 4];
+      rgba[i * 4 + 2] = rgba[i * 4];
+    }
+    const isNodata = rasters[0][i] === 0 && rasters[1 < bands ? 1 : 0][i] === 0;
+    rgba[i * 4 + 3] = isNodata ? 0 : 255;
+  }
+
+  const pngPath = tifPath.replace(/\.tiff?$/i, '.png');
+  await sharp(rgba, { raw: { width, height, channels: 4 } })
+    .png()
+    .toFile(pngPath);
+
+  return {
+    bounds: [[sw[1], sw[0]], [ne[1], ne[0]]]
+  };
+}
+
+app.get('/api/raster-layers', async (req, res) => {
+  try {
+    const files = fs.readdirSync(UPLOAD_DIR).filter(f => /\.tiff?$/i.test(f));
+    const layers = [];
+
+    for (const f of files) {
+      try {
+        const tifPath = path.join(UPLOAD_DIR, f);
+        const pngName = f.replace(/\.tiff?$/i, '.png');
+        const pngPath = path.join(UPLOAD_DIR, pngName);
+
+        const tifStat = fs.statSync(tifPath);
+        const needConvert = !fs.existsSync(pngPath) ||
+          fs.statSync(pngPath).mtimeMs < tifStat.mtimeMs;
+
+        let bounds;
+        if (needConvert) {
+          const result = await processRasterFile(tifPath);
+          bounds = result.bounds;
+        } else {
+          const buf = fs.readFileSync(tifPath);
+          const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+          const tiff = await GeoTIFF.fromArrayBuffer(ab);
+          const image = await tiff.getImage();
+          const bbox = image.getBoundingBox();
+          const geoKeys = image.getGeoKeys();
+          const epsg = geoKeys.ProjectedCSTypeGeoKey || geoKeys.GeographicTypeGeoKey || 4326;
+          const projDef = getRasterProj4Def(epsg);
+          let sw, ne;
+          if (projDef) {
+            sw = proj4(projDef, 'EPSG:4326', [bbox[0], bbox[1]]);
+            ne = proj4(projDef, 'EPSG:4326', [bbox[2], bbox[3]]);
+          } else {
+            sw = [bbox[0], bbox[1]];
+            ne = [bbox[2], bbox[3]];
+          }
+          bounds = [[sw[1], sw[0]], [ne[1], ne[0]]];
+        }
+
+        layers.push({
+          name: f.replace(/\.tiff?$/i, ''),
+          pngUrl: `/uploads/${pngName}`,
+          bounds: bounds
+        });
+      } catch (e) {
+        console.error(`[RASTER] ${f} error:`, e.message);
+      }
+    }
+
+    return res.json({ ok: true, layers });
+  } catch (e) {
+    console.error('[RASTER] endpoint error:', e);
+    return res.json({ ok: true, layers: [] });
   }
 });
 

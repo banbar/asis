@@ -437,7 +437,16 @@ function ensureLayerDrawer(mapInstance, listId){
 function geomTypeIcon(type){
   if(type==='line') return '━';
   if(type==='polygon') return '▧';
+  if(type==='raster') return '🛰';
   return '●';
+}
+
+function reorderMapLayers(mapInstance, layers){
+  var sorted = layers.filter(function(l){ return l.visible; })
+    .sort(function(a,b){ return (a.z||0) - (b.z||0); });
+  sorted.forEach(function(it){
+    try { it.layer.bringToFront(); } catch(e){}
+  });
 }
 
 function renderLayerList(mapInstance, layers, listId){
@@ -460,6 +469,7 @@ function renderLayerList(mapInstance, layers, listId){
       it.visible = chk.checked;
       if(it.visible) it.layer.addTo(mapInstance);
       else mapInstance.removeLayer(it.layer);
+      reorderMapLayers(mapInstance, layers);
     };
 
     const lbl = document.createElement('div');
@@ -472,7 +482,7 @@ function renderLayerList(mapInstance, layers, listId){
     up.style.cssText='padding:2px 8px;';
     up.onclick=()=>{
       it.z = (it.z||0) + 1;
-      it.layer.bringToFront?.();
+      reorderMapLayers(mapInstance, layers);
       renderLayerList(mapInstance, layers, listId);
     };
 
@@ -482,7 +492,7 @@ function renderLayerList(mapInstance, layers, listId){
     down.style.cssText='padding:2px 8px;';
     down.onclick=()=>{
       it.z = (it.z||0) - 1;
-      it.layer.bringToBack?.();
+      reorderMapLayers(mapInstance, layers);
       renderLayerList(mapInstance, layers, listId);
     };
 
@@ -499,21 +509,19 @@ async function loadGeomLayersForMap(isPublic){
   if(!map) return;
 
   __geomLayers
-    .filter(x => x.geomType !== 'point' && x.table !== 'Events')
+    .filter(x => x.geomType !== 'point' && x.table !== 'Events' && x.geomType !== 'raster')
     .forEach(x => {
       try { map.removeLayer(x.layer); } catch {}
     });
 
-  __geomLayers = __geomLayers.filter(x => x.geomType === 'point' || x.table === 'Events');
+  __geomLayers = __geomLayers.filter(x => x.geomType === 'point' || x.table === 'Events' || x.geomType === 'raster');
 
   const isSupervisor = currentUser && (currentUser.role === 'supervisor' || currentUser.role === 'admin');
   const tablesUrl = isSupervisor ? '/api/geom-tables' : '/api/public/geom-tables';
   const r = await fetch(tablesUrl);
   if(!r.ok){
-    if(currentUser){
-      ensureLayerDrawer(map);
-      renderLayerList(map);
-    }
+    ensureLayerDrawer(map);
+    renderLayerList(map);
     return;
   }
 
@@ -545,10 +553,8 @@ async function loadGeomLayersForMap(isPublic){
     });
   }
 
-  if(currentUser){
-    ensureLayerDrawer(map);
-    renderLayerList(map);
-  }
+  ensureLayerDrawer(map);
+  renderLayerList(map);
 }
 
 async function loadGeomLayersForEventsMap(){
@@ -593,6 +599,52 @@ async function loadGeomLayersForEventsMap(){
 
   ensureLayerDrawer(eventsMap, 'events-layer-list');
   renderLayerList(eventsMap, __eventsGeomLayers, 'events-layer-list');
+}
+
+
+async function loadRasterLayers(mapInstance, layersArray, listId){
+  if(!mapInstance) return;
+
+  var oldRasters = layersArray.filter(function(x){ return x.geomType === 'raster'; });
+  oldRasters.forEach(function(x){ try { mapInstance.removeLayer(x.layer); } catch(e){} });
+
+  var kept = [];
+  for(var i=0; i<layersArray.length; i++){
+    if(layersArray[i].geomType !== 'raster') kept.push(layersArray[i]);
+  }
+  layersArray.length = 0;
+  for(var i=0; i<kept.length; i++) layersArray.push(kept[i]);
+
+  try {
+    var r = await fetch('/api/raster-layers');
+    if(!r.ok) return;
+    var data = await r.json();
+    var rasters = (data && data.layers) || [];
+
+    for(var ri=0; ri<rasters.length; ri++){
+      var rl = rasters[ri];
+      var bounds = L.latLngBounds(
+        L.latLng(rl.bounds[0][0], rl.bounds[0][1]),
+        L.latLng(rl.bounds[1][0], rl.bounds[1][1])
+      );
+      var overlay = L.imageOverlay(rl.pngUrl, bounds, { opacity: 0.85 });
+      overlay.addTo(mapInstance);
+
+      layersArray.push({
+        table: rl.name,
+        geomType: 'raster',
+        layer: overlay,
+        visible: true,
+        z: -10
+      });
+    }
+  } catch(e){
+    console.warn('[RASTER] load error:', e);
+  }
+
+  if(!listId) listId = 'layer-list';
+  ensureLayerDrawer(mapInstance, listId);
+  renderLayerList(mapInstance, layersArray, listId);
 }
 
 /* ==================== VERI_TIPI (Supervisor) ==================== */
@@ -5255,7 +5307,13 @@ function setSupervisorMode(mode) {
       } catch(e) {
         console.warn('[setSupervisorMode] Events geom layers error:', e);
       }
+      try {
+        await loadRasterLayers(eventsMap, __eventsGeomLayers, 'events-layer-list');
+      } catch(e) {
+        console.warn('[setSupervisorMode] Events raster layers error:', e);
+      }
     }, 100);
+
     
     setTimeout(() => {
       try { 
@@ -5395,17 +5453,15 @@ async function login(){
     attachMapClickForLoggedIn();
 
     try {
-      const c = map && map.getContainer();
-      if(c){
-        const d = c.querySelector('.layer-drawer');
-        if(d) d.remove();
-      }
-    } catch(e){}
-
-    try {
       await loadGeomLayersForMap(false);
     } catch(e) {
       console.warn('[LOGIN] Geom layers reload error:', e);
+    }
+
+    try {
+      await loadRasterLayers(map, __geomLayers, 'layer-list');
+    } catch(e) {
+      console.warn('[LOGIN] Raster layers reload error:', e);
     }
 
     const mapEl = document.getElementById('map');
@@ -5503,15 +5559,6 @@ async function logout(){
   removeDownloadIfAny();
   __eventsExportCtrlAdded = false;
 
-  /* --- Katman drawer'ını kaldır ve geom katmanlarını public filtrele --- */
-  try {
-    const c = map && map.getContainer();
-    if(c){
-      const d = c.querySelector('.layer-drawer');
-      if(d) d.remove();
-    }
-  } catch(e){}
-
   __geomLayers
     .filter(x => x.geomType !== 'point' && x.table !== 'Events')
     .forEach(x => { try { map.removeLayer(x.layer); } catch {} });
@@ -5521,6 +5568,12 @@ async function logout(){
     await loadGeomLayersForMap(true);
   } catch(e) {
     console.warn('[LOGOUT] Geom layers reload error:', e);
+  }
+
+  try {
+    await loadRasterLayers(map, __geomLayers, 'layer-list');
+  } catch(e) {
+    console.warn('[LOGOUT] Raster layers reload error:', e);
   }
 
   try {
@@ -6077,6 +6130,12 @@ window.addEventListener('popstate', (event) => {
       console.warn('[INIT] Public geom layers error:', e);
     }
 
+    try {
+      await loadRasterLayers(map, __geomLayers, 'layer-list');
+    } catch(e) {
+      console.warn('[INIT] Public raster layers error:', e);
+    }
+
     try { ensureMapLegend(map); } catch {}
   } else {
     goDefaultScreen();
@@ -6090,6 +6149,11 @@ window.addEventListener('popstate', (event) => {
       await loadGeomLayersForMap(false);
     } catch(e) {
       console.warn('[INIT] User geom layers error:', e);
+    }
+    try {
+      await loadRasterLayers(map, __geomLayers, 'layer-list');
+    } catch(e) {
+      console.warn('[INIT] User raster layers error:', e);
     }
   }
 
@@ -6108,6 +6172,12 @@ window.addEventListener('popstate', (event) => {
 
     wireVeriTipiUI();
 
+    try {
+      await loadRasterLayers(map, __geomLayers, 'layer-list');
+    } catch(e) {
+      console.warn('[INIT] Supervisor raster layers error:', e);
+    }
+
     setTimeout(async () => {
       try {
         ensureEventsMap();
@@ -6120,6 +6190,11 @@ window.addEventListener('popstate', (event) => {
         await loadGeomLayersForEventsMap();
       } catch(e) {
         console.warn('[INIT] Events geom layers error:', e);
+      }
+      try {
+        await loadRasterLayers(eventsMap, __eventsGeomLayers, 'events-layer-list');
+      } catch(e) {
+        console.warn('[INIT] Events raster layers error:', e);
       }
     }, 500);
     
