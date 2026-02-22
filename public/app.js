@@ -451,8 +451,6 @@ function renderLayerList(mapInstance, layers, listId){
   if(!list) return;
   list.innerHTML = '';
 
-  layers.sort((a,b)=> (b.z||0)-(a.z||0));
-
   layers.forEach((it, idx)=>{
     const wrap = document.createElement('div');
     wrap.style.cssText = 'border:1px solid #e5e7eb; border-radius:10px; overflow:hidden;';
@@ -467,37 +465,14 @@ function renderLayerList(mapInstance, layers, listId){
       it.visible = chk.checked;
       if(it.visible) it.layer.addTo(mapInstance);
       else mapInstance.removeLayer(it.layer);
-      reorderMapLayers(mapInstance, layers);
     };
 
     const lbl = document.createElement('div');
     lbl.style.cssText = 'flex:1; display:flex; gap:8px; align-items:center;';
     lbl.innerHTML = '<span style="font-weight:700;">'+geomTypeIcon(it.geomType)+'</span> <span>'+escapeHtml(it.table)+'</span>';
 
-    const up = document.createElement('button');
-    up.textContent='↑';
-    up.className='btn ghost';
-    up.style.cssText='padding:2px 8px;';
-    up.onclick=()=>{
-      it.z = (it.z||0) + 1;
-      reorderMapLayers(mapInstance, layers);
-      renderLayerList(mapInstance, layers, listId);
-    };
-
-    const down = document.createElement('button');
-    down.textContent='↓';
-    down.className='btn ghost';
-    down.style.cssText='padding:2px 8px;';
-    down.onclick=()=>{
-      it.z = (it.z||0) - 1;
-      reorderMapLayers(mapInstance, layers);
-      renderLayerList(mapInstance, layers, listId);
-    };
-
     row.appendChild(chk);
     row.appendChild(lbl);
-    row.appendChild(up);
-    row.appendChild(down);
 
     /* --- Raster bant paneli --- */
     if(it.geomType === 'raster' && it._georaster){
@@ -552,7 +527,6 @@ function renderLayerList(mapInstance, layers, listId){
         try { mapInstance.removeLayer(it.layer); } catch(e){}
         it.layer = createRasterLayer(it._georaster, it._bandStats, newMapping);
         if(it.visible) it.layer.addTo(mapInstance);
-        reorderMapLayers(mapInstance, layers);
       };
       bandPanel.appendChild(applyBtn);
 
@@ -703,29 +677,41 @@ function computeBandStats(georaster){
 }
 
 function createRasterLayer(georaster, bandStats, bandMapping){
-  var bm = bandMapping.slice();
-  var st = bandStats.slice();
+  var bi0 = bandMapping[0], bi1 = bandMapping[1], bi2 = bandMapping[2];
   var nb = georaster.numberOfRasters;
+
+  var rMin, rScale, gMin, gScale, bMin, bScale;
+  if(nb >= 3){
+    rMin = bandStats[bi0].min; rScale = 255 / (bandStats[bi0].max - rMin);
+    gMin = bandStats[bi1].min; gScale = 255 / (bandStats[bi1].max - gMin);
+    bMin = bandStats[bi2].min; bScale = 255 / (bandStats[bi2].max - bMin);
+  } else {
+    rMin = bandStats[0].min; rScale = 255 / (bandStats[0].max - rMin);
+  }
+
+  var lut = new Uint8Array(65536);
+  for(var i=0; i<65536; i++) lut[i] = i < 256 ? i : 255;
+
   return new GeoRasterLayer({
     georaster: georaster,
     opacity: 1,
-    resolution: 512,
-    pixelValuesToColorFn: function(vals){
-      if(!vals || vals.every(function(v){ return !v; })) return null;
-      function stretch(v, mn, mx){ return Math.min(255, Math.max(0, Math.round((v-mn)/(mx-mn)*255))); }
-      if(nb >= 3){
-        var r = stretch(vals[bm[0]], st[bm[0]].min, st[bm[0]].max);
-        var g = stretch(vals[bm[1]], st[bm[1]].min, st[bm[1]].max);
-        var b = stretch(vals[bm[2]], st[bm[2]].min, st[bm[2]].max);
-        return 'rgb('+r+','+g+','+b+')';
-      } else {
-        var gray = stretch(vals[0], st[0].min, st[0].max);
-        return 'rgb('+gray+','+gray+','+gray+')';
-      }
-    }
+    resolution: 128,
+    debugLevel: 0,
+    pixelValuesToColorFn: nb >= 3
+      ? function(vals){
+          if(!vals[bi0] && !vals[bi1] && !vals[bi2]) return null;
+          var r = lut[((vals[bi0] - rMin) * rScale + 0.5) | 0];
+          var g = lut[((vals[bi1] - gMin) * gScale + 0.5) | 0];
+          var b = lut[((vals[bi2] - bMin) * bScale + 0.5) | 0];
+          return 'rgb('+r+','+g+','+b+')';
+        }
+      : function(vals){
+          if(!vals[0]) return null;
+          var v = lut[((vals[0] - rMin) * rScale + 0.5) | 0];
+          return 'rgb('+v+','+v+','+v+')';
+        }
   });
 }
-
 async function loadRasterLayers(mapInstance, layersArray, listId){
   if(!mapInstance) return;
 
