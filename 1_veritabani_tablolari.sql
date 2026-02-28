@@ -45,7 +45,12 @@ CREATE TABLE IF NOT EXISTS public.olaylar (
   deactivated_by_name      text,
   deactivated_by_role_name text,
   deactivated_by_id        integer,
-  deactivated_at           timestamptz
+  deactivated_at           timestamptz,
+  is_point                 boolean DEFAULT true,
+  is_line                  boolean DEFAULT false,
+  is_polygon               boolean DEFAULT false,
+  katman_tablo             text,
+  attribute_column         text
 );
 
 -- 1.3) olaylar (saha kayıtları)

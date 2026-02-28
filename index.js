@@ -3054,7 +3054,25 @@ app.get(
 );
 
 /* ===================== Server ===================== */
-const server = app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
+async function ensureOlaylarSchema(){
+  const client = await pool.connect();
+  try {
+    await client.query(`ALTER TABLE public.olaylar ADD COLUMN IF NOT EXISTS is_point boolean DEFAULT true`);
+    await client.query(`ALTER TABLE public.olaylar ADD COLUMN IF NOT EXISTS is_line boolean DEFAULT false`);
+    await client.query(`ALTER TABLE public.olaylar ADD COLUMN IF NOT EXISTS is_polygon boolean DEFAULT false`);
+    await client.query(`ALTER TABLE public.olaylar ADD COLUMN IF NOT EXISTS katman_tablo text`);
+    await client.query(`ALTER TABLE public.olaylar ADD COLUMN IF NOT EXISTS attribute_column text`);
+    console.log('[SCHEMA] olaylar tablosu kontrol edildi');
+  } catch(e) {
+    console.error('[SCHEMA] olaylar sütun ekleme hatası:', e.message);
+  } finally {
+    client.release();
+  }
+}
+
+ensureOlaylarSchema().then(() => {
+  const server = app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
+});
 startQFieldIngestLoop();
 const shutdown = async () => {
   try { if (listenClient) listenClient.release(); } catch {}
