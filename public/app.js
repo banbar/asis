@@ -881,6 +881,7 @@ async function vt_refreshTable(){
           if(rr.ok) toast('Güncellendi');
           else toast('Güncellenemedi','error');
           vt_refreshTable();
+          loadOlayTypes();
         }
 
         if(act === 'del'){
@@ -889,6 +890,7 @@ async function vt_refreshTable(){
           if(rr.ok) toast('Silindi');
           else toast('Silinemedi','error');
           vt_refreshTable();
+          loadOlayTypes();
         }
       };
     });
@@ -1043,6 +1045,7 @@ function vt_renderStep(){
         toast('Kaydedildi');
         vt_closeModal();
         vt_refreshTable();
+        loadOlayTypes();
         loadGeomLayersForMap(false);
         return;
       }
@@ -1161,8 +1164,9 @@ function vt_renderStep(){
       toast('Kaydedildi');
       vt_closeModal();
       vt_refreshTable();
+      loadOlayTypes();
 
-      // login sonrası layer’ları da yenile
+      // login sonrası layer'ları da yenile
       loadGeomLayersForMap(false);
     };
 
