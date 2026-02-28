@@ -1,21 +1,22 @@
+#!/usr/bin/env bash
 set -euo pipefail
 
 GEOSERVER_VERSION="2.25.2"
 GEOSERVER_ZIP_URL="https://sourceforge.net/projects/geoserver/files/GeoServer/${GEOSERVER_VERSION}/geoserver-${GEOSERVER_VERSION}-bin.zip/download"
 GEOSERVER_HOME="/opt/geoserver"
 GEOSERVER_DATA_DIR="/opt/geoserver_data"
-GEOSERVER_TMP="/opt/geoserver/tmp"
+GEOSERVER_TMP="/tmp/geoserver-setup"
 
 AUTH_HOME="/opt/geoserver-auth"
 AUTH_ENV_FILE="/etc/geoserver-auth.env"
 AUTH_BIND="127.0.0.1:5000"
 
-NGINX_SITE_NAME="dide"
+NGINX_SITE_NAME="asis"
 NODE_UPSTREAM="127.0.0.1:3000"
 GEOSERVER_UPSTREAM="127.0.0.1:8080"
 
-WORKSPACE="dide"
-DATASTORE="dide_db"
+WORKSPACE="asis_workspace"
+DATASTORE="asis_datastore"
 DB_SCHEMA="public"
 
 USERS_TABLE="public.users"
@@ -117,6 +118,10 @@ set +a
 : "${PGUSER:?PGUSER missing in env file}"
 : "${PGPASSWORD:?PGPASSWORD missing in env file}"
 export PGPASSWORD
+
+if [[ "$NODE_UPSTREAM" == "127.0.0.1:3000" && -n "${PORT:-}" ]]; then
+  NODE_UPSTREAM="127.0.0.1:${PORT}"
+fi
 
 log "Installing packages"
 apt-get update -y
