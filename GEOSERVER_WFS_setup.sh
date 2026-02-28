@@ -154,8 +154,14 @@ if [[ ! -f "$GEOSERVER_HOME/start.jar" ]]; then
   unzip -q "$tmpzip" -d "$GEOSERVER_TMP/geoserver-unpack"
 
   inner_dir="$(find "$GEOSERVER_TMP/geoserver-unpack" -maxdepth 1 -type d -name 'geoserver-*' | head -n 1 || true)"
-  [[ -n "$inner_dir" ]] || die "Could not find extracted geoserver-* directory"
-  sudo -u geoserver bash -lc "shopt -s dotglob; rm -rf '$GEOSERVER_HOME'/*; mv '$inner_dir'/* '$GEOSERVER_HOME'/"
+  if [[ -z "$inner_dir" ]]; then
+    inner_dir="$GEOSERVER_TMP/geoserver-unpack"
+  fi
+  rm -rf "${GEOSERVER_HOME:?}"/*
+  shopt -s dotglob
+  mv "$inner_dir"/* "$GEOSERVER_HOME"/
+  shopt -u dotglob
+  chown -R geoserver:geoserver "$GEOSERVER_HOME"
 fi
 
 log "Configuring systemd service for GeoServer"
