@@ -455,9 +455,14 @@ if ! gs_post_xml "${GS_REST}/workspaces/${WORKSPACE}/datastores" /tmp/gs_datasto
 fi
 
 log "Publishing WFS layers"
+PUBLISH_ERRORS=0
 for spec in "${TABLE_SPECS[@]}"; do
   IFS=',' read -r TABLE_NAME FILTER_COL FILTER_VAL <<<"$spec" || true
-  [[ -n "${TABLE_NAME:-}" ]] || die "Bad --tables spec: '$spec'"
+  if [[ -z "${TABLE_NAME:-}" ]]; then
+    echo "WARNING: Bad --tables spec: '$spec' — skipping" >&2
+    PUBLISH_ERRORS=$((PUBLISH_ERRORS+1))
+    continue
+  fi
 
   FILTER_COL="${FILTER_COL:-*}"
   FILTER_VAL="${FILTER_VAL:-*}"
@@ -470,22 +475,26 @@ for spec in "${TABLE_SPECS[@]}"; do
   fi
 
   exists="$(psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -tA -c "SELECT 1 FROM information_schema.tables WHERE table_schema=$(sql_quote_literal "$schema") AND table_name=$(sql_quote_literal "$table") LIMIT 1;")"
-  [[ "$exists" == "1" ]] || die "Table not found: ${schema}.${table}"
+  if [[ "$exists" != "1" ]]; then
+    echo "WARNING: Table not found: ${schema}.${table} — skipping" >&2
+    PUBLISH_ERRORS=$((PUBLISH_ERRORS+1))
+    continue
+  fi
 
-  geom_col="$(psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -tA -v ON_ERROR_STOP=1 --set=sch="$schema" --set=tbl="$table" -c "WITH cols AS (
-      SELECT n.nspname AS schema_name, c.relname AS table_name, a.attname AS col_name, t.typname AS typname
-      FROM pg_attribute a
-      JOIN pg_class c ON c.oid = a.attrelid
-      JOIN pg_namespace n ON n.oid = c.relnamespace
-      JOIN pg_type t ON t.oid = a.atttypid
-      WHERE a.attnum > 0 AND NOT a.attisdropped
-    )
-    SELECT col_name FROM cols WHERE schema_name = :'sch' AND table_name = :'tbl' AND typname='geometry'
-    ORDER BY col_name LIMIT 1;")"
-  [[ -n "$geom_col" ]] || die "No geometry column found on ${schema}.${table}"
+  geom_col="$(psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -tA -c "SELECT f_geometry_column FROM geometry_columns WHERE f_table_schema=$(sql_quote_literal "$schema") AND f_table_name=$(sql_quote_literal "$table") LIMIT 1;")"
+  if [[ -z "$geom_col" ]]; then
+    echo "WARNING: No geometry column found on ${schema}.${table} — skipping" >&2
+    PUBLISH_ERRORS=$((PUBLISH_ERRORS+1))
+    continue
+  fi
 
-  srid="$(psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -tA -v ON_ERROR_STOP=1 -c "SELECT COALESCE(NULLIF(ST_SRID(${geom_col}),0), 4326) FROM ${schema}.${table} WHERE ${geom_col} IS NOT NULL LIMIT 1;")"
-  [[ -n "$srid" ]] || srid="4326"
+  log "Found geometry column '${geom_col}' on ${schema}.${table}"
+
+  srid="$(psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -tA -c "SELECT srid FROM geometry_columns WHERE f_table_schema=$(sql_quote_literal "$schema") AND f_table_name=$(sql_quote_literal "$table") AND f_geometry_column=$(sql_quote_literal "$geom_col") LIMIT 1;")"
+  if [[ -z "$srid" || "$srid" == "0" ]]; then
+    srid="$(psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -tA -c "SELECT COALESCE(NULLIF(ST_SRID(\"${geom_col}\"),0), 4326) FROM ${schema}.${table} WHERE \"${geom_col}\" IS NOT NULL LIMIT 1;" 2>/dev/null || true)"
+    [[ -n "$srid" ]] || srid="4326"
+  fi
 
   publish_name="$table"
   native_name="$table"
@@ -495,9 +504,9 @@ for spec in "${TABLE_SPECS[@]}"; do
     view_name="wfs_${view_suffix}"
 
     if looks_numeric "$FILTER_VAL"; then
-      where_expr="${FILTER_COL} = ${FILTER_VAL}"
+      where_expr="\"${FILTER_COL}\" = ${FILTER_VAL}"
     else
-      where_expr="${FILTER_COL} = $(sql_quote_literal "$FILTER_VAL")"
+      where_expr="\"${FILTER_COL}\" = $(sql_quote_literal "$FILTER_VAL")"
     fi
 
     log "Creating/Updating VIEW ${schema}.${view_name} AS SELECT * FROM ${schema}.${table} WHERE ${where_expr}"
@@ -520,8 +529,17 @@ for spec in "${TABLE_SPECS[@]}"; do
 </featureType>
 EOF
 
-  gs_post_xml "${GS_REST}/workspaces/${WORKSPACE}/datastores/${DATASTORE}/featuretypes" /tmp/gs_featuretype.xml
+  if gs_post_xml "${GS_REST}/workspaces/${WORKSPACE}/datastores/${DATASTORE}/featuretypes" /tmp/gs_featuretype.xml; then
+    log "Published: ${publish_name} (EPSG:${srid}, geom: ${geom_col})"
+  else
+    echo "WARNING: Failed to publish ${publish_name} — skipping" >&2
+    PUBLISH_ERRORS=$((PUBLISH_ERRORS+1))
+  fi
 done
+
+if [[ $PUBLISH_ERRORS -gt 0 ]]; then
+  echo "WARNING: ${PUBLISH_ERRORS} table(s) had errors (see above)" >&2
+fi
 
 log "Sanity checks"
 curl -fsS "http://${GEOSERVER_UPSTREAM}/geoserver/rest/workspaces/${WORKSPACE}/datastores/${DATASTORE}/featuretypes.json" -u "$GS_AUTH" | head -n 50 || true
