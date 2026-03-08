@@ -1,0 +1,57 @@
+
+
+config:
+  target: "http://localhost:3000"
+
+  phases:
+    - duration: 10
+      arrivalRate: 2
+      name: "Hızlı doğrulama"
+
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+  processor: "./helpers.js"
+
+  payload:
+    path: "./test-users.csv"
+    fields:
+      - "username"
+      - "password"
+    order: "random"
+    skipHeader: true
+
+scenarios:
+  - name: "Giriş + Olay Ekleme (Doğrulama)"
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            usernameOrEmail: "{{ username }}"
+            password: "{{ password }}"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+          expect:
+            - statusCode: 200
+
+      - function: "generateRandomEvent"
+      - post:
+          url: "/api/submit_olay"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          json:
+            enlem: "{{ randomLat }}"
+            boylam: "{{ randomLng }}"
+            olay_turu: "{{ randomOlayTuru }}"
+            aciklama: "{{ randomAciklama }}"
+          expect:
+            - statusCode: 200
+
+      - get:
+          url: "/api/olaylar_tum"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200

@@ -1,0 +1,170 @@
+
+
+config:
+  target: "http://localhost:3000"
+
+  # ── Aşamalar: Kademeli yük artışı ──
+  phases:
+    # Isınma: 30 sn boyunca saniyede 5 kullanıcı
+    - duration: 30
+      arrivalRate: 5
+      name: "Isınma (Warm-up)"
+
+    # Orta yük: 60 sn boyunca saniyede 20 kullanıcı
+    - duration: 60
+      arrivalRate: 20
+      name: "Orta Yük"
+
+    # Yoğun yük: 60 sn boyunca saniyede 50 kullanıcı
+    - duration: 60
+      arrivalRate: 50
+      name: "Yoğun Yük"
+
+    # Stres testi: 30 sn boyunca saniyede 100 kullanıcı
+    - duration: 30
+      arrivalRate: 100
+      name: "zorlayıcı Yük"
+
+  # ── Varsayılan HTTP ayarları ──
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+  # ── Yardımcı JS dosyası ──
+  processor: "./helpers.js"
+
+  # ── Test kullanıcı havuzu  ──
+  payload:
+    path: "./test-users.csv"
+    fields:
+      - "username"
+      - "password"
+    order: "random"
+    skipHeader: true
+
+
+scenarios:
+
+  - name: "Giriş + Olay Listeleme"
+    weight: 40
+    flow:
+      # 1) Giriş yap
+      - post:
+          url: "/api/auth/login"
+          json:
+            usernameOrEmail: "{{ username }}"
+            password: "{{ password }}"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+          expect:
+            - statusCode: 200
+
+      # 2) Tüm olayları getir
+      - get:
+          url: "/api/olaylar_tum"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+
+      # 3) Olay türlerini getir
+      - get:
+          url: "/api/olaylar"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+
+      # 4) Config bilgisi
+      - get:
+          url: "/api/config"
+          expect:
+            - statusCode: 200
+
+
+  - name: "Giriş + Olay Ekleme"
+    weight: 30
+    flow:
+      # 1) Giriş yap
+      - post:
+          url: "/api/auth/login"
+          json:
+            usernameOrEmail: "{{ username }}"
+            password: "{{ password }}"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+          expect:
+            - statusCode: 200
+
+      # 2) Rastgele koordinat ile olay ekle
+      - function: "generateRandomEvent"
+      - post:
+          url: "/api/submit_olay"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          json:
+            enlem: "{{ randomLat }}"
+            boylam: "{{ randomLng }}"
+            olay_turu: "{{ randomOlayTuru }}"
+            aciklama: "{{ randomAciklama }}"
+            photo_urls: []
+            video_urls: []
+          expect:
+            - statusCode: 200
+
+      - get:
+          url: "/api/olaylar_tum"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+
+
+  - name: "Giriş + Medyalı Olay"
+    weight: 15
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            usernameOrEmail: "{{ username }}"
+            password: "{{ password }}"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+          expect:
+            - statusCode: 200
+
+      - function: "generateRandomEvent"
+      - post:
+          url: "/api/submit_olay"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          json:
+            enlem: "{{ randomLat }}"
+            boylam: "{{ randomLng }}"
+            olay_turu: "{{ randomOlayTuru }}"
+            aciklama: "Medyalı test olay bildirimi"
+            photo_urls:
+              - "/uploads/1763203444090_p2385k6hmk.jpg"
+            video_urls:
+              - "/uploads/1763203444091_affw8078dnc.mp4"
+          expect:
+            - statusCode: 200
+
+
+  - name: "Sağlık Kontrolü + Config"
+    weight: 15
+    flow:
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: 200
+
+      - get:
+          url: "/api/config"
+          expect:
+            - statusCode: 200
+
+      - think: 1
