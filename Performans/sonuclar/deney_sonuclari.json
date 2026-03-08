@@ -1,1057 +1,1089 @@
 [
   {
     "deney_no": 1,
+    "db_adi": "asis_deney_1",
     "kullanici_sayisi": 30,
-    "toplam_veri": 944,
-    "insert_suresi": 0.589,
+    "toplam_veri": 1058,
+    "insert_suresi": 0.037,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (AFAD Ankara İl Müdürlüğü)",
+        "ad": "Kurum (Ankara Büyükşehir Belediyesi)",
         "sure_sn": 0.001,
-        "sonuc_sayisi": 186
+        "sonuc_sayisi": 35
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=36)",
+        "ad": "Uzman (id=21)",
         "sure_sn": 0.0,
-        "sonuc_sayisi": 43
+        "sonuc_sayisi": 46
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=6)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 0
+        "ad": "Olay türü (id=8)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 90
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=6)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 0
+        "ad": "Medyalı (tür=8)",
+        "sure_sn": 0.001,
+        "sonuc_sayisi": 69
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (AFAD Ankara İl Müdürlüğü, son 30 gün)",
-        "sure_sn": 0.004,
-        "sonuc_sayisi": 21
+        "ad": "Tarih+Kurum (Ankara Büyükşehir Belediyesi)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 14
       }
     }
   },
   {
     "deney_no": 2,
+    "db_adi": "asis_deney_2",
     "kullanici_sayisi": 36,
-    "toplam_veri": 1145,
-    "insert_suresi": 0.036,
+    "toplam_veri": 1120,
+    "insert_suresi": 0.037,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (AFAD Ankara İl Müdürlüğü)",
+        "ad": "Kurum (Kızılay Derneği)",
         "sure_sn": 0.001,
-        "sonuc_sayisi": 175
+        "sonuc_sayisi": 22
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=65)",
+        "ad": "Uzman (id=13)",
         "sure_sn": 0.0,
-        "sonuc_sayisi": 25
+        "sonuc_sayisi": 26
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=28)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 96
+        "ad": "Olay türü (id=7)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 69
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=28)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 65
+        "ad": "Medyalı (tür=7)",
+        "sure_sn": 0.001,
+        "sonuc_sayisi": 54
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (AFAD Ankara İl Müdürlüğü, son 30 gün)",
-        "sure_sn": 0.003,
-        "sonuc_sayisi": 23
+        "ad": "Tarih+Kurum (Kızılay Derneği)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 14
       }
     }
   },
   {
     "deney_no": 3,
+    "db_adi": "asis_deney_3",
     "kullanici_sayisi": 42,
-    "toplam_veri": 1247,
-    "insert_suresi": 0.043,
+    "toplam_veri": 1375,
+    "insert_suresi": 0.051,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (Sağlık Bakanlığı)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 275
+        "ad": "Kurum (Ankara Büyükşehir Belediyesi)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 32
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=128)",
+        "ad": "Uzman (id=25)",
         "sure_sn": 0.001,
-        "sonuc_sayisi": 28
+        "sonuc_sayisi": 24
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=16)",
+        "ad": "Olay türü (id=6)",
         "sure_sn": 0.0,
-        "sonuc_sayisi": 0
+        "sonuc_sayisi": 111
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=16)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 0
+        "ad": "Medyalı (tür=6)",
+        "sure_sn": 0.0007,
+        "sonuc_sayisi": 91
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (Sağlık Bakanlığı, son 30 gün)",
-        "sure_sn": 0.0043,
-        "sonuc_sayisi": 132
+        "ad": "Tarih+Kurum (Ankara Büyükşehir Belediyesi)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 14
       }
     }
   },
   {
     "deney_no": 4,
+    "db_adi": "asis_deney_4",
     "kullanici_sayisi": 46,
-    "toplam_veri": 1300,
-    "insert_suresi": 0.044,
+    "toplam_veri": 1421,
+    "insert_suresi": 0.048,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (AFAD Ankara İl Müdürlüğü)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 225
+        "ad": "Kurum (Hacettepe Üniversitesi)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 40
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=145)",
+        "ad": "Uzman (id=10)",
         "sure_sn": 0.0,
-        "sonuc_sayisi": 26
+        "sonuc_sayisi": 50
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=31)",
+        "ad": "Olay türü (id=2)",
         "sure_sn": 0.001,
-        "sonuc_sayisi": 125
+        "sonuc_sayisi": 152
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=31)",
+        "ad": "Medyalı (tür=2)",
         "sure_sn": 0.0,
-        "sonuc_sayisi": 97
+        "sonuc_sayisi": 118
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (AFAD Ankara İl Müdürlüğü, son 30 gün)",
-        "sure_sn": 0.004,
-        "sonuc_sayisi": 46
+        "ad": "Tarih+Kurum (Hacettepe Üniversitesi)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 15
       }
     }
   },
   {
     "deney_no": 5,
+    "db_adi": "asis_deney_5",
     "kullanici_sayisi": 52,
-    "toplam_veri": 1592,
-    "insert_suresi": 0.05,
+    "toplam_veri": 1476,
+    "insert_suresi": 0.049,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (Kızılay Derneği)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 147
+        "ad": "Kurum (Hacettepe Üniversitesi)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 17
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=228)",
+        "ad": "Uzman (id=49)",
         "sure_sn": 0.0,
-        "sonuc_sayisi": 15
+        "sonuc_sayisi": 25
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=30)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 155
+        "ad": "Olay türü (id=11)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 128
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=30)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 124
+        "ad": "Medyalı (tür=11)",
+        "sure_sn": 0.001,
+        "sonuc_sayisi": 92
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (Kızılay Derneği, son 30 gün)",
-        "sure_sn": 0.006,
-        "sonuc_sayisi": 68
+        "ad": "Tarih+Kurum (Hacettepe Üniversitesi)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 12
       }
     }
   },
   {
     "deney_no": 6,
+    "db_adi": "asis_deney_6",
     "kullanici_sayisi": 60,
-    "toplam_veri": 1829,
-    "insert_suresi": 0.06,
+    "toplam_veri": 1724,
+    "insert_suresi": 0.058,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (AFAD Ankara İl Müdürlüğü)",
+        "ad": "Kurum (Kızılay Derneği)",
         "sure_sn": 0.001,
-        "sonuc_sayisi": 256
+        "sonuc_sayisi": 70
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=293)",
+        "ad": "Uzman (id=15)",
         "sure_sn": 0.0,
-        "sonuc_sayisi": 16
+        "sonuc_sayisi": 21
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=18)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 0
+        "ad": "Olay türü (id=10)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 170
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=18)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 0
+        "ad": "Medyalı (tür=10)",
+        "sure_sn": 0.001,
+        "sonuc_sayisi": 120
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (AFAD Ankara İl Müdürlüğü, son 30 gün)",
-        "sure_sn": 0.007,
-        "sonuc_sayisi": 63
+        "ad": "Tarih+Kurum (Kızılay Derneği)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 38
       }
     }
   },
   {
     "deney_no": 7,
+    "db_adi": "asis_deney_7",
     "kullanici_sayisi": 68,
-    "toplam_veri": 1866,
-    "insert_suresi": 0.06,
+    "toplam_veri": 2029,
+    "insert_suresi": 0.085,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (Ankara Büyükşehir Belediyesi)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 13
+        "ad": "Kurum (Kızılay Derneği)",
+        "sure_sn": 0.0013,
+        "sonuc_sayisi": 190
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=331)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 19
+        "ad": "Uzman (id=66)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 24
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=1)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 255
+        "ad": "Olay türü (id=5)",
+        "sure_sn": 0.001,
+        "sonuc_sayisi": 184
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=1)",
+        "ad": "Medyalı (tür=5)",
         "sure_sn": 0.0,
-        "sonuc_sayisi": 129
+        "sonuc_sayisi": 130
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (Ankara Büyükşehir Belediyesi, son 30 gün)",
-        "sure_sn": 0.0085,
-        "sonuc_sayisi": 12
+        "ad": "Tarih+Kurum (Kızılay Derneği)",
+        "sure_sn": 0.001,
+        "sonuc_sayisi": 92
       }
     }
   },
   {
     "deney_no": 8,
+    "db_adi": "asis_deney_8",
     "kullanici_sayisi": 78,
-    "toplam_veri": 2199,
-    "insert_suresi": 0.068,
+    "toplam_veri": 2463,
+    "insert_suresi": 0.08,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (Sağlık Bakanlığı)",
+        "ad": "Kurum (Harita Genel Müdürlüğü)",
         "sure_sn": 0.001,
-        "sonuc_sayisi": 555
+        "sonuc_sayisi": 371
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=410)",
+        "ad": "Uzman (id=11)",
         "sure_sn": 0.001,
-        "sonuc_sayisi": 12
+        "sonuc_sayisi": 24
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=3)",
+        "ad": "Olay türü (id=5)",
         "sure_sn": 0.0,
-        "sonuc_sayisi": 275
+        "sonuc_sayisi": 224
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=3)",
-        "sure_sn": 0.0015,
-        "sonuc_sayisi": 145
+        "ad": "Medyalı (tür=5)",
+        "sure_sn": 0.001,
+        "sonuc_sayisi": 165
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (Sağlık Bakanlığı, son 30 gün)",
-        "sure_sn": 0.0108,
-        "sonuc_sayisi": 271
+        "ad": "Tarih+Kurum (Harita Genel Müdürlüğü)",
+        "sure_sn": 0.001,
+        "sonuc_sayisi": 185
       }
     }
   },
   {
     "deney_no": 9,
+    "db_adi": "asis_deney_9",
     "kullanici_sayisi": 88,
-    "toplam_veri": 2543,
-    "insert_suresi": 0.079,
+    "toplam_veri": 2509,
+    "insert_suresi": 0.081,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (Hacettepe Üniversitesi)",
+        "ad": "Kurum (Ankara Büyükşehir Belediyesi)",
         "sure_sn": 0.001,
-        "sonuc_sayisi": 37
+        "sonuc_sayisi": 31
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=513)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 44
+        "ad": "Uzman (id=25)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 20
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=7)",
+        "ad": "Olay türü (id=8)",
         "sure_sn": 0.0,
-        "sonuc_sayisi": 0
+        "sonuc_sayisi": 247
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=7)",
+        "ad": "Medyalı (tür=8)",
         "sure_sn": 0.001,
-        "sonuc_sayisi": 0
+        "sonuc_sayisi": 186
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (Hacettepe Üniversitesi, son 30 gün)",
-        "sure_sn": 0.0134,
-        "sonuc_sayisi": 3
+        "ad": "Tarih+Kurum (Ankara Büyükşehir Belediyesi)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 10
       }
     }
   },
   {
     "deney_no": 10,
+    "db_adi": "asis_deney_10",
     "kullanici_sayisi": 100,
-    "toplam_veri": 3028,
-    "insert_suresi": 0.092,
+    "toplam_veri": 2912,
+    "insert_suresi": 0.112,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (Çevre ve Şehircilik Bakanlığı)",
-        "sure_sn": 0.0025,
-        "sonuc_sayisi": 947
+        "ad": "Kurum (Sağlık Bakanlığı)",
+        "sure_sn": 0.002,
+        "sonuc_sayisi": 815
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=612)",
+        "ad": "Uzman (id=25)",
         "sure_sn": 0.0,
-        "sonuc_sayisi": 43
+        "sonuc_sayisi": 29
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=9)",
+        "ad": "Olay türü (id=8)",
         "sure_sn": 0.001,
-        "sonuc_sayisi": 0
+        "sonuc_sayisi": 286
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=9)",
+        "ad": "Medyalı (tür=8)",
         "sure_sn": 0.0,
-        "sonuc_sayisi": 0
+        "sonuc_sayisi": 199
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (Çevre ve Şehircilik Bakanlığı, son 30 gün)",
-        "sure_sn": 0.016,
-        "sonuc_sayisi": 442
+        "ad": "Tarih+Kurum (Sağlık Bakanlığı)",
+        "sure_sn": 0.004,
+        "sonuc_sayisi": 378
       }
     }
   },
   {
     "deney_no": 11,
+    "db_adi": "asis_deney_11",
     "kullanici_sayisi": 116,
-    "toplam_veri": 3225,
-    "insert_suresi": 0.099,
+    "toplam_veri": 3313,
+    "insert_suresi": 0.375,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (Sağlık Bakanlığı)",
-        "sure_sn": 0.002,
-        "sonuc_sayisi": 1023
+        "ad": "Kurum (Harita Genel Müdürlüğü)",
+        "sure_sn": 0.001,
+        "sonuc_sayisi": 392
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=725)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 17
+        "ad": "Uzman (id=55)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 36
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=11)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 0
+        "ad": "Olay türü (id=3)",
+        "sure_sn": 0.0014,
+        "sonuc_sayisi": 290
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=11)",
+        "ad": "Medyalı (tür=3)",
         "sure_sn": 0.0,
-        "sonuc_sayisi": 0
+        "sonuc_sayisi": 223
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (Sağlık Bakanlığı, son 30 gün)",
-        "sure_sn": 0.0186,
-        "sonuc_sayisi": 464
+        "ad": "Tarih+Kurum (Harita Genel Müdürlüğü)",
+        "sure_sn": 0.002,
+        "sonuc_sayisi": 196
       }
     }
   },
   {
     "deney_no": 12,
+    "db_adi": "asis_deney_12",
     "kullanici_sayisi": 134,
-    "toplam_veri": 3936,
-    "insert_suresi": 0.121,
+    "toplam_veri": 3832,
+    "insert_suresi": 0.167,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (Harita Genel Müdürlüğü)",
-        "sure_sn": 0.002,
-        "sonuc_sayisi": 627
+        "ad": "Kurum (AFAD Ankara İl Müdürlüğü)",
+        "sure_sn": 0.001,
+        "sonuc_sayisi": 269
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=798)",
+        "ad": "Uzman (id=55)",
         "sure_sn": 0.0,
-        "sonuc_sayisi": 15
+        "sonuc_sayisi": 44
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=3)",
+        "ad": "Olay türü (id=11)",
         "sure_sn": 0.001,
-        "sonuc_sayisi": 394
+        "sonuc_sayisi": 349
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=3)",
+        "ad": "Medyalı (tür=11)",
         "sure_sn": 0.001,
-        "sonuc_sayisi": 243
+        "sonuc_sayisi": 264
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (Harita Genel Müdürlüğü, son 30 gün)",
-        "sure_sn": 0.0262,
-        "sonuc_sayisi": 295
+        "ad": "Tarih+Kurum (AFAD Ankara İl Müdürlüğü)",
+        "sure_sn": 0.001,
+        "sonuc_sayisi": 115
       }
     }
   },
   {
     "deney_no": 13,
+    "db_adi": "asis_deney_13",
     "kullanici_sayisi": 152,
-    "toplam_veri": 4481,
-    "insert_suresi": 0.136,
+    "toplam_veri": 4440,
+    "insert_suresi": 0.201,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (Kızılay Derneği)",
+        "ad": "Kurum (Harita Genel Müdürlüğü)",
         "sure_sn": 0.002,
-        "sonuc_sayisi": 298
+        "sonuc_sayisi": 592
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=1000)",
-        "sure_sn": 0.0002,
-        "sonuc_sayisi": 14
+        "ad": "Uzman (id=141)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 10
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=28)",
+        "ad": "Olay türü (id=1)",
         "sure_sn": 0.001,
-        "sonuc_sayisi": 393
+        "sonuc_sayisi": 422
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=28)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 306
+        "ad": "Medyalı (tür=1)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 322
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (Kızılay Derneği, son 30 gün)",
-        "sure_sn": 0.0345,
-        "sonuc_sayisi": 149
+        "ad": "Tarih+Kurum (Harita Genel Müdürlüğü)",
+        "sure_sn": 0.0035,
+        "sonuc_sayisi": 296
       }
     }
   },
   {
     "deney_no": 14,
+    "db_adi": "asis_deney_14",
     "kullanici_sayisi": 174,
-    "toplam_veri": 5106,
-    "insert_suresi": 0.161,
+    "toplam_veri": 5231,
+    "insert_suresi": 0.194,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (Çevre ve Şehircilik Bakanlığı)",
-        "sure_sn": 0.0032,
-        "sonuc_sayisi": 1563
+        "ad": "Kurum (AFAD Ankara İl Müdürlüğü)",
+        "sure_sn": 0.001,
+        "sonuc_sayisi": 377
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=1107)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 24
+        "ad": "Uzman (id=136)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 13
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=30)",
+        "ad": "Olay türü (id=11)",
         "sure_sn": 0.001,
-        "sonuc_sayisi": 493
+        "sonuc_sayisi": 486
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=30)",
+        "ad": "Medyalı (tür=11)",
         "sure_sn": 0.001,
-        "sonuc_sayisi": 371
+        "sonuc_sayisi": 358
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (Çevre ve Şehircilik Bakanlığı, son 30 gün)",
-        "sure_sn": 0.0428,
-        "sonuc_sayisi": 726
+        "ad": "Tarih+Kurum (AFAD Ankara İl Müdürlüğü)",
+        "sure_sn": 0.003,
+        "sonuc_sayisi": 204
       }
     }
   },
   {
     "deney_no": 15,
+    "db_adi": "asis_deney_15",
     "kullanici_sayisi": 202,
-    "toplam_veri": 5910,
-    "insert_suresi": 0.177,
+    "toplam_veri": 6131,
+    "insert_suresi": 0.272,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (Sağlık Bakanlığı)",
-        "sure_sn": 0.004,
-        "sonuc_sayisi": 1602
+        "ad": "Kurum (Ankara Büyükşehir Belediyesi)",
+        "sure_sn": 0.001,
+        "sonuc_sayisi": 106
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=1334)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 33
+        "ad": "Uzman (id=120)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 20
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=15)",
-        "sure_sn": 0.0005,
-        "sonuc_sayisi": 0
+        "ad": "Olay türü (id=6)",
+        "sure_sn": 0.001,
+        "sonuc_sayisi": 554
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=15)",
+        "ad": "Medyalı (tür=6)",
         "sure_sn": 0.001,
-        "sonuc_sayisi": 0
+        "sonuc_sayisi": 420
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (Sağlık Bakanlığı, son 30 gün)",
-        "sure_sn": 0.061,
-        "sonuc_sayisi": 789
+        "ad": "Tarih+Kurum (Ankara Büyükşehir Belediyesi)",
+        "sure_sn": 0.001,
+        "sonuc_sayisi": 49
       }
     }
   },
   {
     "deney_no": 16,
+    "db_adi": "asis_deney_16",
     "kullanici_sayisi": 230,
-    "toplam_veri": 7185,
-    "insert_suresi": 0.221,
+    "toplam_veri": 6945,
+    "insert_suresi": 0.262,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (Çevre ve Şehircilik Bakanlığı)",
-        "sure_sn": 0.0045,
-        "sonuc_sayisi": 1996
+        "ad": "Kurum (AFAD Ankara İl Müdürlüğü)",
+        "sure_sn": 0.001,
+        "sonuc_sayisi": 440
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=1616)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 47
+        "ad": "Uzman (id=19)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 16
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=15)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 0
+        "ad": "Olay türü (id=8)",
+        "sure_sn": 0.001,
+        "sonuc_sayisi": 656
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=15)",
+        "ad": "Medyalı (tür=8)",
         "sure_sn": 0.001,
-        "sonuc_sayisi": 0
+        "sonuc_sayisi": 492
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (Çevre ve Şehircilik Bakanlığı, son 30 gün)",
-        "sure_sn": 0.0738,
-        "sonuc_sayisi": 943
+        "ad": "Tarih+Kurum (AFAD Ankara İl Müdürlüğü)",
+        "sure_sn": 0.005,
+        "sonuc_sayisi": 235
       }
     }
   },
   {
     "deney_no": 17,
+    "db_adi": "asis_deney_17",
     "kullanici_sayisi": 264,
-    "toplam_veri": 7998,
-    "insert_suresi": 0.255,
+    "toplam_veri": 8269,
+    "insert_suresi": 0.28,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (Çevre ve Şehircilik Bakanlığı)",
-        "sure_sn": 0.0045,
-        "sonuc_sayisi": 2227
+        "ad": "Kurum (Harita Genel Müdürlüğü)",
+        "sure_sn": 0.002,
+        "sonuc_sayisi": 1173
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=1683)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 20
+        "ad": "Uzman (id=108)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 49
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=17)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 0
+        "ad": "Olay türü (id=6)",
+        "sure_sn": 0.002,
+        "sonuc_sayisi": 739
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=17)",
+        "ad": "Medyalı (tür=6)",
         "sure_sn": 0.001,
-        "sonuc_sayisi": 0
+        "sonuc_sayisi": 549
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (Çevre ve Şehircilik Bakanlığı, son 30 gün)",
-        "sure_sn": 0.1011,
-        "sonuc_sayisi": 1049
+        "ad": "Tarih+Kurum (Harita Genel Müdürlüğü)",
+        "sure_sn": 0.0105,
+        "sonuc_sayisi": 595
       }
     }
   },
   {
     "deney_no": 18,
+    "db_adi": "asis_deney_18",
     "kullanici_sayisi": 302,
-    "toplam_veri": 9367,
-    "insert_suresi": 0.286,
+    "toplam_veri": 9249,
+    "insert_suresi": 0.311,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (Sağlık Bakanlığı)",
-        "sure_sn": 0.0053,
-        "sonuc_sayisi": 2543
+        "ad": "Kurum (Kızılay Derneği)",
+        "sure_sn": 0.002,
+        "sonuc_sayisi": 610
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=2073)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 24
+        "ad": "Uzman (id=68)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 39
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=29)",
+        "ad": "Olay türü (id=9)",
         "sure_sn": 0.002,
-        "sonuc_sayisi": 845
+        "sonuc_sayisi": 869
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=29)",
-        "sure_sn": 0.003,
-        "sonuc_sayisi": 643
+        "ad": "Medyalı (tür=9)",
+        "sure_sn": 0.001,
+        "sonuc_sayisi": 639
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (Sağlık Bakanlığı, son 30 gün)",
-        "sure_sn": 0.0115,
-        "sonuc_sayisi": 1215
+        "ad": "Tarih+Kurum (Kızılay Derneği)",
+        "sure_sn": 0.0065,
+        "sonuc_sayisi": 266
       }
     }
   },
   {
     "deney_no": 19,
+    "db_adi": "asis_deney_19",
     "kullanici_sayisi": 346,
-    "toplam_veri": 10554,
-    "insert_suresi": 0.327,
+    "toplam_veri": 10370,
+    "insert_suresi": 0.37,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (Kızılay Derneği)",
-        "sure_sn": 0.003,
-        "sonuc_sayisi": 832
+        "ad": "Kurum (Çevre ve Şehircilik Bakanlığı)",
+        "sure_sn": 0.006,
+        "sonuc_sayisi": 2817
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=2275)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 19
+        "ad": "Uzman (id=30)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 42
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=12)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 0
+        "ad": "Olay türü (id=9)",
+        "sure_sn": 0.002,
+        "sonuc_sayisi": 976
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=12)",
+        "ad": "Medyalı (tür=9)",
         "sure_sn": 0.001,
-        "sonuc_sayisi": 0
+        "sonuc_sayisi": 713
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (Kızılay Derneği, son 30 gün)",
-        "sure_sn": 0.1592,
-        "sonuc_sayisi": 400
+        "ad": "Tarih+Kurum (Çevre ve Şehircilik Bakanlığı)",
+        "sure_sn": 0.032,
+        "sonuc_sayisi": 1370
       }
     }
   },
   {
     "deney_no": 20,
+    "db_adi": "asis_deney_20",
     "kullanici_sayisi": 392,
-    "toplam_veri": 11905,
-    "insert_suresi": 0.356,
+    "toplam_veri": 11939,
+    "insert_suresi": 0.384,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (AFAD Ankara İl Müdürlüğü)",
-        "sure_sn": 0.0026,
-        "sonuc_sayisi": 998
+        "ad": "Kurum (Harita Genel Müdürlüğü)",
+        "sure_sn": 0.004,
+        "sonuc_sayisi": 1735
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=2675)",
-        "sure_sn": 0.0021,
-        "sonuc_sayisi": 41
+        "ad": "Uzman (id=102)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 17
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=12)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 0
+        "ad": "Olay türü (id=2)",
+        "sure_sn": 0.002,
+        "sonuc_sayisi": 1012
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=12)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 0
+        "ad": "Medyalı (tür=2)",
+        "sure_sn": 0.0015,
+        "sonuc_sayisi": 765
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (AFAD Ankara İl Müdürlüğü, son 30 gün)",
-        "sure_sn": 0.1976,
-        "sonuc_sayisi": 447
+        "ad": "Tarih+Kurum (Harita Genel Müdürlüğü)",
+        "sure_sn": 0.0215,
+        "sonuc_sayisi": 840
       }
     }
   },
   {
     "deney_no": 21,
+    "db_adi": "asis_deney_21",
     "kullanici_sayisi": 450,
-    "toplam_veri": 13627,
-    "insert_suresi": 0.414,
+    "toplam_veri": 13418,
+    "insert_suresi": 0.456,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (Sağlık Bakanlığı)",
-        "sure_sn": 0.0082,
-        "sonuc_sayisi": 3781
+        "ad": "Kurum (Ankara Büyükşehir Belediyesi)",
+        "sure_sn": 0.001,
+        "sonuc_sayisi": 191
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=3145)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 33
+        "ad": "Uzman (id=35)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 10
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=16)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 0
+        "ad": "Olay türü (id=11)",
+        "sure_sn": 0.0025,
+        "sonuc_sayisi": 1185
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=16)",
+        "ad": "Medyalı (tür=11)",
         "sure_sn": 0.002,
-        "sonuc_sayisi": 0
+        "sonuc_sayisi": 869
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (Sağlık Bakanlığı, son 30 gün)",
-        "sure_sn": 0.017,
-        "sonuc_sayisi": 1805
+        "ad": "Tarih+Kurum (Ankara Büyükşehir Belediyesi)",
+        "sure_sn": 0.002,
+        "sonuc_sayisi": 90
       }
     }
   },
   {
     "deney_no": 22,
+    "db_adi": "asis_deney_22",
     "kullanici_sayisi": 518,
-    "toplam_veri": 15573,
-    "insert_suresi": 0.493,
+    "toplam_veri": 15296,
+    "insert_suresi": 0.541,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (Harita Genel Müdürlüğü)",
-        "sure_sn": 0.0055,
-        "sonuc_sayisi": 2276
+        "ad": "Kurum (İtfaiye Daire Başkanlığı)",
+        "sure_sn": 0.004,
+        "sonuc_sayisi": 2176
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=3866)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 47
+        "ad": "Uzman (id=16)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 20
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=14)",
-        "sure_sn": 0.0024,
-        "sonuc_sayisi": 0
+        "ad": "Olay türü (id=1)",
+        "sure_sn": 0.003,
+        "sonuc_sayisi": 1403
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=14)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 0
+        "ad": "Medyalı (tür=1)",
+        "sure_sn": 0.002,
+        "sonuc_sayisi": 1050
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (Harita Genel Müdürlüğü, son 30 gün)",
-        "sure_sn": 0.3207,
-        "sonuc_sayisi": 1094
+        "ad": "Tarih+Kurum (İtfaiye Daire Başkanlığı)",
+        "sure_sn": 0.0369,
+        "sonuc_sayisi": 1071
       }
     }
   },
   {
     "deney_no": 23,
+    "db_adi": "asis_deney_23",
     "kullanici_sayisi": 590,
-    "toplam_veri": 18030,
-    "insert_suresi": 0.549,
+    "toplam_veri": 17848,
+    "insert_suresi": 0.632,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (AFAD Ankara İl Müdürlüğü)",
-        "sure_sn": 0.0052,
-        "sonuc_sayisi": 1363
+        "ad": "Kurum (İtfaiye Daire Başkanlığı)",
+        "sure_sn": 0.004,
+        "sonuc_sayisi": 2661
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=4324)",
-        "sure_sn": 0.002,
-        "sonuc_sayisi": 28
+        "ad": "Uzman (id=260)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 13
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=1)",
-        "sure_sn": 0.004,
-        "sonuc_sayisi": 1763
+        "ad": "Olay türü (id=10)",
+        "sure_sn": 0.0031,
+        "sonuc_sayisi": 1547
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=1)",
-        "sure_sn": 0.004,
-        "sonuc_sayisi": 1222
+        "ad": "Medyalı (tür=10)",
+        "sure_sn": 0.003,
+        "sonuc_sayisi": 1125
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (AFAD Ankara İl Müdürlüğü, son 30 gün)",
-        "sure_sn": 0.0192,
-        "sonuc_sayisi": 614
+        "ad": "Tarih+Kurum (İtfaiye Daire Başkanlığı)",
+        "sure_sn": 0.0451,
+        "sonuc_sayisi": 1295
       }
     }
   },
   {
     "deney_no": 24,
+    "db_adi": "asis_deney_24",
     "kullanici_sayisi": 676,
-    "toplam_veri": 20188,
-    "insert_suresi": 0.631,
+    "toplam_veri": 20120,
+    "insert_suresi": 0.649,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (Çevre ve Şehircilik Bakanlığı)",
-        "sure_sn": 0.0115,
-        "sonuc_sayisi": 5531
+        "ad": "Kurum (Ankara Büyükşehir Belediyesi)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 307
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=4622)",
-        "sure_sn": 0.002,
-        "sonuc_sayisi": 15
+        "ad": "Uzman (id=464)",
+        "sure_sn": 0.001,
+        "sonuc_sayisi": 33
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=3)",
-        "sure_sn": 0.005,
-        "sonuc_sayisi": 1992
+        "ad": "Olay türü (id=7)",
+        "sure_sn": 0.003,
+        "sonuc_sayisi": 1831
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=3)",
-        "sure_sn": 0.004,
-        "sonuc_sayisi": 1448
+        "ad": "Medyalı (tür=7)",
+        "sure_sn": 0.003,
+        "sonuc_sayisi": 1373
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (Çevre ve Şehircilik Bakanlığı, son 30 gün)",
-        "sure_sn": 0.5158,
-        "sonuc_sayisi": 2738
+        "ad": "Tarih+Kurum (Ankara Büyükşehir Belediyesi)",
+        "sure_sn": 0.0065,
+        "sonuc_sayisi": 154
       }
     }
   },
   {
     "deney_no": 25,
+    "db_adi": "asis_deney_25",
     "kullanici_sayisi": 776,
-    "toplam_veri": 23862,
-    "insert_suresi": 0.726,
+    "toplam_veri": 23605,
+    "insert_suresi": 0.816,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (Hacettepe Üniversitesi)",
-        "sure_sn": 0.004,
-        "sonuc_sayisi": 370
+        "ad": "Kurum (Harita Genel Müdürlüğü)",
+        "sure_sn": 0.006,
+        "sonuc_sayisi": 3190
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=5332)",
-        "sure_sn": 0.002,
-        "sonuc_sayisi": 46
+        "ad": "Uzman (id=417)",
+        "sure_sn": 0.001,
+        "sonuc_sayisi": 45
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=19)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 0
+        "ad": "Olay türü (id=4)",
+        "sure_sn": 0.003,
+        "sonuc_sayisi": 2124
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=19)",
-        "sure_sn": 0.0025,
-        "sonuc_sayisi": 0
+        "ad": "Medyalı (tür=4)",
+        "sure_sn": 0.004,
+        "sonuc_sayisi": 1584
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (Hacettepe Üniversitesi, son 30 gün)",
-        "sure_sn": 0.0259,
-        "sonuc_sayisi": 170
+        "ad": "Tarih+Kurum (Harita Genel Müdürlüğü)",
+        "sure_sn": 0.08,
+        "sonuc_sayisi": 1558
       }
     }
   },
   {
     "deney_no": 26,
+    "db_adi": "asis_deney_26",
     "kullanici_sayisi": 888,
-    "toplam_veri": 27169,
-    "insert_suresi": 0.871,
+    "toplam_veri": 26491,
+    "insert_suresi": 0.903,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (Hacettepe Üniversitesi)",
-        "sure_sn": 0.004,
-        "sonuc_sayisi": 365
+        "ad": "Kurum (AFAD Ankara İl Müdürlüğü)",
+        "sure_sn": 0.003,
+        "sonuc_sayisi": 1808
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=6625)",
-        "sure_sn": 0.002,
-        "sonuc_sayisi": 10
+        "ad": "Uzman (id=135)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 45
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=14)",
-        "sure_sn": 0.0031,
-        "sonuc_sayisi": 0
+        "ad": "Olay türü (id=1)",
+        "sure_sn": 0.004,
+        "sonuc_sayisi": 2503
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=14)",
-        "sure_sn": 0.002,
-        "sonuc_sayisi": 0
+        "ad": "Medyalı (tür=1)",
+        "sure_sn": 0.003,
+        "sonuc_sayisi": 1889
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (Hacettepe Üniversitesi, son 30 gün)",
-        "sure_sn": 0.992,
-        "sonuc_sayisi": 170
+        "ad": "Tarih+Kurum (AFAD Ankara İl Müdürlüğü)",
+        "sure_sn": 0.055,
+        "sonuc_sayisi": 929
       }
     }
   },
   {
     "deney_no": 27,
+    "db_adi": "asis_deney_27",
     "kullanici_sayisi": 1016,
-    "toplam_veri": 30241,
-    "insert_suresi": 0.906,
+    "toplam_veri": 30854,
+    "insert_suresi": 1.064,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (Çevre ve Şehircilik Bakanlığı)",
-        "sure_sn": 0.016,
-        "sonuc_sayisi": 8151
+        "ad": "Kurum (Sağlık Bakanlığı)",
+        "sure_sn": 0.0146,
+        "sonuc_sayisi": 8705
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=7795)",
-        "sure_sn": 0.002,
-        "sonuc_sayisi": 18
+        "ad": "Uzman (id=316)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 35
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=17)",
-        "sure_sn": 0.003,
-        "sonuc_sayisi": 0
+        "ad": "Olay türü (id=4)",
+        "sure_sn": 0.0046,
+        "sonuc_sayisi": 2727
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=17)",
-        "sure_sn": 0.003,
-        "sonuc_sayisi": 0
+        "ad": "Medyalı (tür=4)",
+        "sure_sn": 0.0041,
+        "sonuc_sayisi": 2050
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (Çevre ve Şehircilik Bakanlığı, son 30 gün)",
-        "sure_sn": 0.0387,
-        "sonuc_sayisi": 4017
+        "ad": "Tarih+Kurum (Sağlık Bakanlığı)",
+        "sure_sn": 0.2926,
+        "sonuc_sayisi": 4335
       }
     }
   },
   {
     "deney_no": 28,
+    "db_adi": "asis_deney_28",
     "kullanici_sayisi": 1164,
-    "toplam_veri": 35846,
-    "insert_suresi": 1.109,
+    "toplam_veri": 34734,
+    "insert_suresi": 1.198,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (Çevre ve Şehircilik Bakanlığı)",
-        "sure_sn": 0.021,
-        "sonuc_sayisi": 9981
+        "ad": "Kurum (Kızılay Derneği)",
+        "sure_sn": 0.004,
+        "sonuc_sayisi": 2611
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=8323)",
-        "sure_sn": 0.004,
-        "sonuc_sayisi": 49
+        "ad": "Uzman (id=1093)",
+        "sure_sn": 0.001,
+        "sonuc_sayisi": 37
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=29)",
-        "sure_sn": 0.0078,
-        "sonuc_sayisi": 3278
+        "ad": "Olay türü (id=7)",
+        "sure_sn": 0.006,
+        "sonuc_sayisi": 3185
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=29)",
-        "sure_sn": 0.0083,
-        "sonuc_sayisi": 2472
+        "ad": "Medyalı (tür=7)",
+        "sure_sn": 0.0045,
+        "sonuc_sayisi": 2402
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (Çevre ve Şehircilik Bakanlığı, son 30 gün)",
-        "sure_sn": 1.525,
-        "sonuc_sayisi": 4822
+        "ad": "Tarih+Kurum (Kızılay Derneği)",
+        "sure_sn": 0.0962,
+        "sonuc_sayisi": 1306
       }
     }
   },
   {
     "deney_no": 29,
+    "db_adi": "asis_deney_29",
     "kullanici_sayisi": 1334,
-    "toplam_veri": 39640,
-    "insert_suresi": 1.204,
+    "toplam_veri": 39652,
+    "insert_suresi": 1.37,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (İtfaiye Daire Başkanlığı)",
-        "sure_sn": 0.013,
-        "sonuc_sayisi": 5469
+        "ad": "Kurum (İtfaiye Daire Başkanlığı)",
+        "sure_sn": 0.0134,
+        "sonuc_sayisi": 5412
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=9593)",
-        "sure_sn": 0.003,
-        "sonuc_sayisi": 35
+        "ad": "Uzman (id=979)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 27
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=1)",
-        "sure_sn": 0.0085,
-        "sonuc_sayisi": 3612
+        "ad": "Olay türü (id=5)",
+        "sure_sn": 0.006,
+        "sonuc_sayisi": 3555
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=1)",
-        "sure_sn": 0.0085,
-        "sonuc_sayisi": 2665
+        "ad": "Medyalı (tür=5)",
+        "sure_sn": 0.006,
+        "sonuc_sayisi": 2710
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (İtfaiye Daire Başkanlığı, son 30 gün)",
-        "sure_sn": 1.9913,
-        "sonuc_sayisi": 2658
+        "ad": "Tarih+Kurum (İtfaiye Daire Başkanlığı)",
+        "sure_sn": 0.2333,
+        "sonuc_sayisi": 2603
       }
     }
   },
   {
     "deney_no": 30,
+    "db_adi": "asis_deney_30",
     "kullanici_sayisi": 1526,
-    "toplam_veri": 46162,
-    "insert_suresi": 1.394,
+    "toplam_veri": 46163,
+    "insert_suresi": 1.536,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (İtfaiye Daire Başkanlığı)",
-        "sure_sn": 0.015,
-        "sonuc_sayisi": 6150
+        "ad": "Kurum (Harita Genel Müdürlüğü)",
+        "sure_sn": 0.0121,
+        "sonuc_sayisi": 6660
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=11605)",
-        "sure_sn": 0.0048,
-        "sonuc_sayisi": 23
+        "ad": "Uzman (id=378)",
+        "sure_sn": 0.0002,
+        "sonuc_sayisi": 17
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=6)",
-        "sure_sn": 0.003,
-        "sonuc_sayisi": 0
+        "ad": "Olay türü (id=8)",
+        "sure_sn": 0.007,
+        "sonuc_sayisi": 4181
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=6)",
-        "sure_sn": 0.0055,
-        "sonuc_sayisi": 0
+        "ad": "Medyalı (tür=8)",
+        "sure_sn": 0.005,
+        "sonuc_sayisi": 3151
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (İtfaiye Daire Başkanlığı, son 30 gün)",
-        "sure_sn": 2.616,
-        "sonuc_sayisi": 3017
+        "ad": "Tarih+Kurum (Harita Genel Müdürlüğü)",
+        "sure_sn": 0.3434,
+        "sonuc_sayisi": 3240
       }
     }
   },
   {
     "deney_no": 31,
+    "db_adi": "asis_deney_31",
     "kullanici_sayisi": 1746,
-    "toplam_veri": 52535,
-    "insert_suresi": 1.605,
+    "toplam_veri": 51657,
+    "insert_suresi": 1.695,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (Çevre ve Şehircilik Bakanlığı)",
-        "sure_sn": 0.0295,
-        "sonuc_sayisi": 14619
+        "ad": "Kurum (Sağlık Bakanlığı)",
+        "sure_sn": 0.034,
+        "sonuc_sayisi": 14053
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=13114)",
-        "sure_sn": 0.0055,
-        "sonuc_sayisi": 18
+        "ad": "Uzman (id=1091)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 16
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=25)",
-        "sure_sn": 0.0043,
-        "sonuc_sayisi": 0
+        "ad": "Olay türü (id=6)",
+        "sure_sn": 0.0133,
+        "sonuc_sayisi": 4593
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=25)",
-        "sure_sn": 0.004,
-        "sonuc_sayisi": 0
+        "ad": "Medyalı (tür=6)",
+        "sure_sn": 0.0078,
+        "sonuc_sayisi": 3480
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (Çevre ve Şehircilik Bakanlığı, son 30 gün)",
-        "sure_sn": 0.0661,
-        "sonuc_sayisi": 7110
+        "ad": "Tarih+Kurum (Sağlık Bakanlığı)",
+        "sure_sn": 0.871,
+        "sonuc_sayisi": 7002
       }
     }
   },
   {
     "deney_no": 32,
+    "db_adi": "asis_deney_32",
     "kullanici_sayisi": 2002,
-    "toplam_veri": 60016,
-    "insert_suresi": 1.815,
+    "toplam_veri": 59752,
+    "insert_suresi": 2.019,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum sorgulama (Sağlık Bakanlığı)",
-        "sure_sn": 0.0323,
-        "sonuc_sayisi": 16438
+        "ad": "Kurum (Hacettepe Üniversitesi)",
+        "sure_sn": 0.0024,
+        "sonuc_sayisi": 851
       },
       "sorgu2_uzman": {
-        "ad": "Uzman sorgulama (id=14564)",
-        "sure_sn": 0.004,
-        "sonuc_sayisi": 42
+        "ad": "Uzman (id=1540)",
+        "sure_sn": 0.0,
+        "sonuc_sayisi": 39
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü sorgulama (id=35)",
-        "sure_sn": 0.0136,
-        "sonuc_sayisi": 5336
+        "ad": "Olay türü (id=6)",
+        "sure_sn": 0.0095,
+        "sonuc_sayisi": 5452
       },
       "sorgu4_medya": {
-        "ad": "Medyalı olay sorgulama (tür=35)",
-        "sure_sn": 0.013,
-        "sonuc_sayisi": 4005
+        "ad": "Medyalı (tür=6)",
+        "sure_sn": 0.008,
+        "sonuc_sayisi": 4107
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih+Kurum sorgulama (Sağlık Bakanlığı, son 30 gün)",
-        "sure_sn": 0.074,
-        "sonuc_sayisi": 8096
+        "ad": "Tarih+Kurum (Hacettepe Üniversitesi)",
+        "sure_sn": 0.0594,
+        "sonuc_sayisi": 447
       }
     }
   }
