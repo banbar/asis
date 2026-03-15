@@ -42,12 +42,24 @@ ARTILLERY_TARGET = os.getenv('ARTILLERY_TARGET', 'http://localhost:3000')
 
 SCRIPT_DIR  = Path(__file__).resolve().parent
 
+# Proje kökünü bul: Script Performans/artillery/ içinde,
+# data ise Performans/data/ içinde → 2 seviye yukarı çıkmak lazım
 if (SCRIPT_DIR / 'Performans' / 'data').exists():
     PROJECT_DIR = SCRIPT_DIR
 elif (SCRIPT_DIR.parent / 'Performans' / 'data').exists():
     PROJECT_DIR = SCRIPT_DIR.parent
+elif (SCRIPT_DIR.parent.parent / 'Performans' / 'data').exists():
+    PROJECT_DIR = SCRIPT_DIR.parent.parent
 else:
+    # Son çare: data klasörünü yukarı doğru ara
     PROJECT_DIR = SCRIPT_DIR
+    for _ in range(5):
+        if (PROJECT_DIR.parent / 'Performans' / 'data').exists():
+            PROJECT_DIR = PROJECT_DIR.parent
+            break
+        PROJECT_DIR = PROJECT_DIR.parent
+    else:
+        PROJECT_DIR = SCRIPT_DIR
 
 PERF_DATA_DIR   = PROJECT_DIR / 'Performans' / 'data'
 PHOTO_FILENAME  = '1763203444090_p2385k6hmk.jpg'
@@ -426,6 +438,10 @@ def artillery_yaml_olustur(kullanici_sayisi, csv_path, yaml_path, helpers_path):
 
     Kullanıcı sayısı arttıkça arrivalRate ve duration ölçeklenir.
     """
+    # Windows ters-slash'larını forward-slash'a çevir (Node.js/YAML uyumluluğu)
+    csv_path_safe = str(csv_path).replace('\\', '/')
+    helpers_path_safe = str(helpers_path).replace('\\', '/')
+
     # arrivalRate'i kullanıcı sayısına göre ölçekle
     if kullanici_sayisi <= 50:
         arrival_rate = 5
@@ -452,9 +468,9 @@ def artillery_yaml_olustur(kullanici_sayisi, csv_path, yaml_path, helpers_path):
   defaults:
     headers:
       Content-Type: "application/json"
-  processor: "{helpers_path}"
+  processor: "{helpers_path_safe}"
   payload:
-    path: "{csv_path}"
+    path: "{csv_path_safe}"
     fields:
       - "username"
       - "password"
@@ -548,24 +564,31 @@ scenarios:
 def artillery_binary_bul():
     """Artillery binary yolunu bul. Önce lokal node_modules, sonra global aranır.
 
+    Windows'ta node_modules/.bin/artillery bir bash script'tir ve çalışmaz.
+    Windows'ta .cmd uzantılı dosya kullanılmalıdır.
+
     Returns:
         str veya None: Artillery çalıştırılabilir dosyanın tam yolu
     """
-    # 1) Lokal: Performans/artillery/node_modules/.bin/artillery
-    lokal_bin = SCRIPT_DIR / 'node_modules' / '.bin' / 'artillery'
-    if lokal_bin.exists():
-        return str(lokal_bin)
+    is_windows = sys.platform.startswith('win')
 
-    # 2) Global npx ile dene (artillery global kuruluysa)
-    try:
-        result = subprocess.run(
-            ['which', 'artillery'],
-            capture_output=True, text=True, timeout=10
-        )
-        if result.returncode == 0 and result.stdout.strip():
-            return result.stdout.strip()
-    except Exception:
-        pass
+    # 1) Lokal: node_modules/.bin/ içinde ara
+    bin_dir = SCRIPT_DIR / 'node_modules' / '.bin'
+    if is_windows:
+        # Windows: artillery.cmd kullan (bash script çalışmaz → WinError 193)
+        lokal_cmd = bin_dir / 'artillery.cmd'
+        if lokal_cmd.exists():
+            return str(lokal_cmd)
+    else:
+        # Linux/macOS: artillery (bash script)
+        lokal_bin = bin_dir / 'artillery'
+        if lokal_bin.exists():
+            return str(lokal_bin)
+
+    # 2) Global kurulum: shutil.which ile platformdan bağımsız ara
+    global_path = shutil.which('artillery')
+    if global_path:
+        return global_path
 
     return None
 
@@ -592,11 +615,13 @@ def artillery_kur():
         return False
 
     print(f"  [NPM] Artillery kuruluyor: npm install --prefix {SCRIPT_DIR} ...")
+    is_windows = sys.platform.startswith('win')
     try:
         result = subprocess.run(
             ['npm', 'install'],
             capture_output=True, text=True, timeout=120,
-            cwd=str(SCRIPT_DIR)
+            cwd=str(SCRIPT_DIR),
+            shell=is_windows  # Windows'ta npm.cmd için shell gerekir
         )
         if result.returncode != 0:
             print(f"  [HATA] npm install başarısız:")
@@ -645,11 +670,14 @@ def artillery_calistir(yaml_path, json_output_path):
             return None
 
     # ── 3) Artillery'yi çalıştır ──
+    is_windows = sys.platform.startswith('win')
     try:
+        cmd = [artillery_bin, 'run', '--output', str(json_output_path), str(yaml_path)]
         result = subprocess.run(
-            [artillery_bin, 'run', '--output', str(json_output_path), str(yaml_path)],
+            cmd,
             capture_output=True, text=True, timeout=300,
-            cwd=str(SCRIPT_DIR)
+            cwd=str(SCRIPT_DIR),
+            shell=is_windows  # Windows'ta .cmd dosyaları shell gerektirir
         )
 
         if result.returncode != 0:
