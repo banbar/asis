@@ -15,6 +15,8 @@ import sys
 import json
 import shutil
 import math
+import subprocess
+import tempfile
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')
@@ -35,6 +37,8 @@ DB_CONFIG = {
     'database': os.getenv('PGDATABASE', ''),
 }
 
+# Artillery ile test edilecek sunucu adresi
+ARTILLERY_TARGET = os.getenv('ARTILLERY_TARGET', 'http://localhost:3000')
 
 SCRIPT_DIR  = Path(__file__).resolve().parent
 
@@ -401,8 +405,216 @@ def veri_ekle(conn, kullanicilar, olay_turu_ids):
     return toplam_eklenen, insert_suresi
 
 
+# ════════════════════════════════════════════════════════════════
+#  Artillery HTTP Yük Testi
+# ════════════════════════════════════════════════════════════════
 
-# Sorgular
+def artillery_csv_olustur(kullanicilar, csv_path):
+    """Artillery için test kullanıcıları CSV dosyasını oluştur."""
+    lines = ['username,password']
+    for u in kullanicilar:
+        lines.append(f"{u['username']},{PERF_TEST_PASSWORD}")
+    with open(csv_path, 'w', encoding='utf-8') as f:
+        f.write('\n'.join(lines))
+
+
+def artillery_yaml_olustur(kullanici_sayisi, csv_path, yaml_path, helpers_path):
+    """Kullanıcı sayısına göre dinamik Artillery YAML konfigürasyonu oluştur.
+
+    arrivalRate: Saniyede oluşturulacak sanal kullanıcı sayısı
+    duration:    Testin toplam süresi (saniye)
+
+    Kullanıcı sayısı arttıkça arrivalRate ve duration ölçeklenir.
+    """
+    # arrivalRate'i kullanıcı sayısına göre ölçekle
+    if kullanici_sayisi <= 50:
+        arrival_rate = 5
+        duration = 10
+    elif kullanici_sayisi <= 200:
+        arrival_rate = 15
+        duration = 15
+    elif kullanici_sayisi <= 500:
+        arrival_rate = 30
+        duration = 20
+    elif kullanici_sayisi <= 1000:
+        arrival_rate = 50
+        duration = 25
+    else:
+        arrival_rate = 80
+        duration = 30
+
+    yaml_content = f"""config:
+  target: "{ARTILLERY_TARGET}"
+  phases:
+    - duration: {duration}
+      arrivalRate: {arrival_rate}
+      name: "Yük Testi ({kullanici_sayisi} kullanıcı)"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+  processor: "{helpers_path}"
+  payload:
+    path: "{csv_path}"
+    fields:
+      - "username"
+      - "password"
+    order: "random"
+    skipHeader: true
+
+scenarios:
+  - name: "Giriş + Olay Listeleme"
+    weight: 40
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            usernameOrEmail: "{{{{ username }}}}"
+            password: "{{{{ password }}}}"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      - get:
+          url: "/api/olaylar_tum"
+          headers:
+            Authorization: "Bearer {{{{ authToken }}}}"
+      - get:
+          url: "/api/olaylar"
+          headers:
+            Authorization: "Bearer {{{{ authToken }}}}"
+
+  - name: "Giriş + Olay Ekleme"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            usernameOrEmail: "{{{{ username }}}}"
+            password: "{{{{ password }}}}"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      - function: "generateRandomEvent"
+      - post:
+          url: "/api/submit_olay"
+          headers:
+            Authorization: "Bearer {{{{ authToken }}}}"
+          json:
+            enlem: "{{{{ randomLat }}}}"
+            boylam: "{{{{ randomLng }}}}"
+            olay_turu: "{{{{ randomOlayTuru }}}}"
+            aciklama: "{{{{ randomAciklama }}}}"
+            photo_urls: []
+            video_urls: []
+
+  - name: "Medyalı Olay"
+    weight: 15
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            usernameOrEmail: "{{{{ username }}}}"
+            password: "{{{{ password }}}}"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      - function: "generateRandomEvent"
+      - post:
+          url: "/api/submit_olay"
+          headers:
+            Authorization: "Bearer {{{{ authToken }}}}"
+          json:
+            enlem: "{{{{ randomLat }}}}"
+            boylam: "{{{{ randomLng }}}}"
+            olay_turu: "{{{{ randomOlayTuru }}}}"
+            aciklama: "Medyalı test olay bildirimi"
+            photo_urls:
+              - "/uploads/{PHOTO_FILENAME}"
+            video_urls:
+              - "/uploads/{VIDEO_FILENAME}"
+
+  - name: "Sağlık Kontrolü"
+    weight: 15
+    flow:
+      - get:
+          url: "/health"
+      - get:
+          url: "/api/config"
+      - think: 1
+"""
+    with open(yaml_path, 'w', encoding='utf-8') as f:
+        f.write(yaml_content)
+
+
+def artillery_calistir(yaml_path, json_output_path):
+    """Artillery testini çalıştır ve JSON raporunu döndür.
+
+    Returns:
+        dict veya None: Artillery sonuç metrikleri
+            - toplam_istek: Toplam HTTP istek sayısı
+            - basarili_istek: Başarılı istek sayısı (2xx)
+            - ortalama_yanit_ms: Ortalama yanıt süresi (ms)
+            - p95_yanit_ms: p95 yanıt süresi (ms)
+            - p99_yanit_ms: p99 yanıt süresi (ms)
+            - istek_saniye: Saniyedeki istek sayısı (throughput)
+            - hata_sayisi: Hata sayısı
+    """
+    try:
+        # Artillery'nin kurulu olup olmadığını kontrol et
+        check = subprocess.run(['npx', 'artillery', '--version'],
+                               capture_output=True, text=True, timeout=30)
+        if check.returncode != 0:
+            print(f"  [UYARI] Artillery bulunamadı, HTTP testi atlanıyor.")
+            return None
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        print(f"  [UYARI] Artillery/npx bulunamadı, HTTP testi atlanıyor.")
+        return None
+
+    try:
+        result = subprocess.run(
+            ['npx', 'artillery', 'run', '--output', str(json_output_path), str(yaml_path)],
+            capture_output=True, text=True, timeout=300,
+            cwd=str(SCRIPT_DIR)
+        )
+
+        if not Path(json_output_path).exists():
+            print(f"  [UYARI] Artillery JSON raporu oluşmadı.")
+            return None
+
+        with open(json_output_path, 'r', encoding='utf-8') as f:
+            rapor = json.load(f)
+
+        # Artillery JSON yapısından metrikleri çıkar
+        aggregate = rapor.get('aggregate', {})
+        counters = aggregate.get('counters', {})
+        summaries = aggregate.get('summaries', {})
+
+        http_response_time = summaries.get('http.response_time', {})
+
+        toplam_istek = counters.get('http.requests', 0)
+        basarili = counters.get('http.codes.200', 0)
+        hatalar = counters.get('http.codes.4xx', 0) + counters.get('http.codes.5xx', 0)
+
+        return {
+            'toplam_istek': toplam_istek,
+            'basarili_istek': basarili,
+            'ortalama_yanit_ms': http_response_time.get('mean', 0),
+            'p95_yanit_ms': http_response_time.get('p95', 0),
+            'p99_yanit_ms': http_response_time.get('p99', 0),
+            'istek_saniye': aggregate.get('rates', {}).get('http.request_rate', 0),
+            'hata_sayisi': hatalar,
+        }
+
+    except subprocess.TimeoutExpired:
+        print(f"  [UYARI] Artillery zaman aşımına uğradı.")
+        return None
+    except Exception as e:
+        print(f"  [UYARI] Artillery hatası: {e}")
+        return None
+
+
+# ════════════════════════════════════════════════════════════════
+#  Sorgular (6 adet)
+# ════════════════════════════════════════════════════════════════
 
 def sorgu_calistir(conn, sql, params=None):
     cur = conn.cursor()
@@ -431,6 +643,7 @@ def supervizor_sorgulari(conn, kurum_kullanici_map):
     t2 = datetime.now()
     t1 = t2 - timedelta(days=30)
 
+    # ── Sorgu 1: Kurum Sorgulama ──
     sql1 = """
         SELECT o.olay_id, o.enlem, o.boylam, o.olay_turu, o.aciklama,
                o.created_by_name, o.photo_urls, o.video_urls, o.created_at
@@ -440,6 +653,7 @@ def supervizor_sorgulari(conn, kurum_kullanici_map):
     rows1, sure1 = sorgu_calistir(conn, sql1, (f'%@{secili_domain}',))
     sonuclar['sorgu1_kurum'] = {'ad': f'Kurum ({secili_kurum})', 'sure_sn': round(sure1, 4), 'sonuc_sayisi': len(rows1)}
 
+    # ── Sorgu 2: Uzman Sorgulama ──
     sql2 = """
         SELECT o.olay_id, o.enlem, o.boylam, o.olay_turu, o.aciklama,
                o.created_by_name, o.photo_urls, o.video_urls, o.created_at
@@ -448,6 +662,7 @@ def supervizor_sorgulari(conn, kurum_kullanici_map):
     rows2, sure2 = sorgu_calistir(conn, sql2, (secili_user_id,))
     sonuclar['sorgu2_uzman'] = {'ad': f'Uzman (id={secili_user_id})', 'sure_sn': round(sure2, 4), 'sonuc_sayisi': len(rows2)}
 
+    # ── Sorgu 3: Olay Türü Sorgulama ──
     sql3 = """
         SELECT o.olay_id, o.enlem, o.boylam, o.aciklama,
                o.created_by_name, o.photo_urls, o.video_urls, o.created_at
@@ -456,6 +671,7 @@ def supervizor_sorgulari(conn, kurum_kullanici_map):
     rows3, sure3 = sorgu_calistir(conn, sql3, (secili_olay_turu,))
     sonuclar['sorgu3_olay_turu'] = {'ad': f'Olay türü (id={secili_olay_turu})', 'sure_sn': round(sure3, 4), 'sonuc_sayisi': len(rows3)}
 
+    # ── Sorgu 4: Medyalı Olay Sorgulama ──
     sql4 = """
         SELECT o.olay_id, o.enlem, o.boylam, o.aciklama,
                o.created_by_name, o.photo_urls, o.video_urls, o.created_at
@@ -467,6 +683,7 @@ def supervizor_sorgulari(conn, kurum_kullanici_map):
     rows4, sure4 = sorgu_calistir(conn, sql4, (secili_olay_turu,))
     sonuclar['sorgu4_medya'] = {'ad': f'Medyalı (tür={secili_olay_turu})', 'sure_sn': round(sure4, 4), 'sonuc_sayisi': len(rows4)}
 
+    # ── Sorgu 5: Tarih aralığı + Kurum Sorgulama ──
     sql5 = """
         SELECT o.olay_id, o.enlem, o.boylam, o.olay_turu, o.aciklama,
                o.created_by_name, o.photo_urls, o.video_urls, o.created_at
@@ -475,12 +692,59 @@ def supervizor_sorgulari(conn, kurum_kullanici_map):
           AND COALESCE(o.active, true) = true
     """
     rows5, sure5 = sorgu_calistir(conn, sql5, (f'%@{secili_domain}', t1, t2))
-    sonuclar['sorgu5_tarih_kurum'] = {'ad': f'Tarih+Kurum ({secili_kurum})', 'sure_sn': round(sure5, 4), 'sonuc_sayisi': len(rows5)}
+    sonuclar['sorgu5_tarih_kurum'] = {'ad': f'Tarih aralığı+Kurum ({secili_kurum})', 'sure_sn': round(sure5, 4), 'sonuc_sayisi': len(rows5)}
+
+    # ── Sorgu 6: T1-T2 tarih aralığında [X] kurumundan toplanan veri (COUNT) ──
+    sql6 = """
+        SELECT COUNT(*) AS toplanan_veri
+        FROM olay o JOIN users u ON o.created_by_id = u.id
+        WHERE u.email LIKE %s AND o.created_at BETWEEN %s AND %s
+          AND COALESCE(o.active, true) = true
+    """
+    rows6, sure6 = sorgu_calistir(conn, sql6, (f'%@{secili_domain}', t1, t2))
+    toplanan_veri = rows6[0][0] if rows6 else 0
+    sonuclar['sorgu6_tarih_kurum_count'] = {
+        'ad': f'T1-T2 {secili_kurum} toplanan veri',
+        'sure_sn': round(sure6, 4),
+        'sonuc_sayisi': toplanan_veri
+    }
 
     return sonuclar
 
 
-# Grafik ve tablo oluşturma (SVG) 
+# ════════════════════════════════════════════════════════════════
+#  SVG Grafik ve Tablo Oluşturma
+# ════════════════════════════════════════════════════════════════
+
+def stil_uygula(ax, xlabel='', ylabel='', title='', fontsize_label=14, fontsize_title=15):
+    """Tüm grafiklere ortak stil uygula:
+    - Sadece sol (y) ve alt (x) eksenler görünsün
+    - Eksenler kalın olsun
+    - Eksen etiketlerinin fontu büyük olsun
+    - Grid temiz ve hafif olsun
+    """
+    # Sadece sol ve alt eksenler görünsün
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+    # Sol ve alt eksenleri kalınlaştır
+    ax.spines['left'].set_linewidth(2.5)
+    ax.spines['bottom'].set_linewidth(2.5)
+
+    # Tick işaretlerini kalınlaştır
+    ax.tick_params(axis='both', width=2, length=6, labelsize=12)
+
+    # Eksen etiketlerini büyük puntolu yap
+    if xlabel:
+        ax.set_xlabel(xlabel, fontsize=fontsize_label, fontweight='bold')
+    if ylabel:
+        ax.set_ylabel(ylabel, fontsize=fontsize_label, fontweight='bold')
+    if title:
+        ax.set_title(title, fontsize=fontsize_title, fontweight='bold')
+
+    # Grid
+    ax.grid(True, alpha=0.3, linewidth=0.5)
+
 
 def grafik_olustur(tum_sonuclar, output_dir):
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -490,93 +754,129 @@ def grafik_olustur(tum_sonuclar, output_dir):
     toplam_veriler     = [s['toplam_veri'] for s in tum_sonuclar]
     insert_sureleri    = [s['insert_suresi'] for s in tum_sonuclar]
 
+    # ── 6 sorgu tanımı (eski 5 + yeni 6. sorgu) ──
     sorgu_isimleri = [
-        ('sorgu1_kurum',       'S1: Kurum Sorgulama'),
-        ('sorgu2_uzman',       'S2: Uzman Sorgulama'),
-        ('sorgu3_olay_turu',   'S3: Olay Türü Sorgulama'),
-        ('sorgu4_medya',       'S4: Medyalı Olay Sorgulama'),
-        ('sorgu5_tarih_kurum', 'S5: Tarih+Kurum Sorgulama'),
+        ('sorgu1_kurum',             'S1: Kurum Sorgulama'),
+        ('sorgu2_uzman',             'S2: Uzman Sorgulama'),
+        ('sorgu3_olay_turu',         'S3: Olay Türü Sorgulama'),
+        ('sorgu4_medya',             'S4: Medyalı Olay Sorgulama'),
+        ('sorgu5_tarih_kurum',       'S5: Tarih aralığı + Kurum Sorgulama'),
+        ('sorgu6_tarih_kurum_count', 'S6: T1-T2 Tarih Aralığında Kurumdan Toplanan Veri'),
     ]
     sorgu_sureleri = {}
     for key, label in sorgu_isimleri:
         sorgu_sureleri[key] = [s['sorgular'][key]['sure_sn'] for s in tum_sonuclar]
 
-    plt.rcParams.update({'font.size': 10, 'figure.dpi': 150, 'axes.grid': True, 'grid.alpha': 0.3})
-    renk_paleti = ['#E91E63', '#FF9800', '#9C27B0', '#00BCD4', '#8BC34A']
+    plt.rcParams.update({'font.size': 12, 'figure.dpi': 150, 'axes.grid': True, 'grid.alpha': 0.3})
+    renk_paleti = ['#E91E63', '#FF9800', '#9C27B0', '#00BCD4', '#8BC34A', '#FF5722']
 
-    # 1
+    # ── 1: Insert Süresi ──
     fig, ax = plt.subplots(figsize=(12, 6))
     ax.plot(kullanici_sayilari, insert_sureleri, 'o-', color='#2196F3', linewidth=2, markersize=5)
-    ax.set_xlabel('Kullanıcı Sayısı'); ax.set_ylabel('Süre (saniye)')
-    ax.set_title('Kullanıcı Sayısına Göre Veri Ekleme Süresi', fontweight='bold')
-    ax.set_xscale('log'); fig.tight_layout()
+    stil_uygula(ax, xlabel='Kullanıcı Sayısı', ylabel='Süre (saniye)',
+                title='Kullanıcı Sayısına Göre Veri Ekleme Süresi')
+    ax.set_xscale('log')
+    # Eşit aralıklı tick'ler (log ölçekte)
+    ax.xaxis.set_major_locator(ticker.LogLocator(base=10, numticks=10))
+    ax.xaxis.set_minor_locator(ticker.LogLocator(base=10, subs=np.arange(2, 10) * 0.1, numticks=20))
+    ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f'{int(x):,}'))
+    fig.tight_layout()
     fig.savefig(output_dir / '01_insert_suresi.svg', format='svg'); plt.close(fig)
     print(f"  [SVG] 01_insert_suresi.svg")
 
-    # 2
+    # ── 2: Toplam Veri ──
     fig, ax = plt.subplots(figsize=(12, 6))
-    ax.bar(range(len(deney_nolari)), toplam_veriler, color='#4CAF50', alpha=0.8)
-    ax.set_xlabel('Deney No'); ax.set_ylabel('Toplam Veri Sayısı')
-    ax.set_title('Her Deneydeki Toplam Veri Miktarı', fontweight='bold')
-    ax.set_xticks(range(0, len(deney_nolari), 4))
-    ax.set_xticklabels([str(deney_nolari[i]) for i in range(0, len(deney_nolari), 4)])
+    # Eşit aralıklı bar grafiği
+    x_pos = np.arange(len(deney_nolari))
+    ax.bar(x_pos, toplam_veriler, color='#4CAF50', alpha=0.8)
+    stil_uygula(ax, xlabel='Deney No', ylabel='Toplam Veri Sayısı',
+                title='Her Deneydeki Toplam Veri Miktarı')
+    # Eşit aralıklı tick'ler
+    tick_step = max(1, len(deney_nolari) // 8)
+    tick_positions = list(range(0, len(deney_nolari), tick_step))
+    ax.set_xticks(tick_positions)
+    ax.set_xticklabels([str(deney_nolari[i]) for i in tick_positions])
     fig.tight_layout(); fig.savefig(output_dir / '02_toplam_veri.svg', format='svg'); plt.close(fig)
     print(f"  [SVG] 02_toplam_veri.svg")
 
-    # 3
+    # ── 3: Sorgu Süreleri (6 sorgu) ──
     fig, ax = plt.subplots(figsize=(14, 7))
     for idx, (key, label) in enumerate(sorgu_isimleri):
-        ax.plot(kullanici_sayilari, sorgu_sureleri[key], 'o-', color=renk_paleti[idx], linewidth=2, markersize=4, label=label)
-    ax.set_xlabel('Kullanıcı Sayısı (log)'); ax.set_ylabel('Sorgu Süresi (s)')
-    ax.set_title('Süpervizör Sorgu Süreleri vs Kullanıcı Sayısı', fontweight='bold')
-    ax.legend(fontsize=9, loc='upper left'); ax.set_xscale('log')
+        ax.plot(kullanici_sayilari, sorgu_sureleri[key], 'o-',
+                color=renk_paleti[idx], linewidth=2, markersize=4, label=label)
+    stil_uygula(ax, xlabel='Kullanıcı Sayısı (log)', ylabel='Sorgu Süresi (s)',
+                title='Süpervizör Sorgu Süreleri vs Kullanıcı Sayısı')
+    ax.legend(fontsize=10, loc='upper left')
+    ax.set_xscale('log')
+    ax.xaxis.set_major_locator(ticker.LogLocator(base=10, numticks=10))
+    ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f'{int(x):,}'))
     fig.tight_layout(); fig.savefig(output_dir / '03_sorgu_sureleri.svg', format='svg'); plt.close(fig)
     print(f"  [SVG] 03_sorgu_sureleri.svg")
 
-    # 4
-    fig, ax = plt.subplots(figsize=(10, 6))
+    # ── 4: Ortalama Yanıt Süreleri (6 sorgu) ──
+    fig, ax = plt.subplots(figsize=(12, 7))
     ort_sureler = [np.mean(sorgu_sureleri[k]) for k, _ in sorgu_isimleri]
     std_sureler = [np.std(sorgu_sureleri[k]) for k, _ in sorgu_isimleri]
-    bars = ax.bar([l for _, l in sorgu_isimleri], ort_sureler, yerr=std_sureler, capsize=5,
+    # Eşit aralıklı bar pozisyonları
+    x_pos = np.arange(len(sorgu_isimleri))
+    bars = ax.bar(x_pos, ort_sureler, yerr=std_sureler, capsize=5,
                   color=renk_paleti, alpha=0.85, edgecolor='black', linewidth=0.5)
-    ax.set_ylabel('Ortalama Süre (s)'); ax.set_title('Ortalama Yanıt Süreleri', fontweight='bold')
-    ax.set_xticklabels([l for _, l in sorgu_isimleri], rotation=25, ha='right', fontsize=9)
+    stil_uygula(ax, ylabel='Ortalama Süre (s)', title='Ortalama Yanıt Süreleri')
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels([l for _, l in sorgu_isimleri], rotation=25, ha='right', fontsize=10)
     for bar, val in zip(bars, ort_sureler):
-        ax.text(bar.get_x()+bar.get_width()/2, bar.get_height()+0.001, f'{val:.4f}s', ha='center', va='bottom', fontsize=8, fontweight='bold')
+        ax.text(bar.get_x()+bar.get_width()/2, bar.get_height()+0.001,
+                f'{val:.4f}s', ha='center', va='bottom', fontsize=9, fontweight='bold')
     fig.tight_layout(); fig.savefig(output_dir / '04_ortalama_sorgu_sureleri.svg', format='svg'); plt.close(fig)
     print(f"  [SVG] 04_ortalama_sorgu_sureleri.svg")
 
-    # 5
+    # ── 5: Insert Hızı ──
     fig, ax = plt.subplots(figsize=(12, 6))
     hizlar = [v / max(s, 0.001) for v, s in zip(toplam_veriler, insert_sureleri)]
     ax.plot(kullanici_sayilari, hizlar, 's-', color='#FF5722', linewidth=2, markersize=5)
-    ax.set_xlabel('Kullanıcı Sayısı (log)'); ax.set_ylabel('Veri/Saniye')
-    ax.set_title('Veri Ekleme Hızı (throughput)', fontweight='bold'); ax.set_xscale('log')
+    stil_uygula(ax, xlabel='Kullanıcı Sayısı (log)', ylabel='Veri/Saniye',
+                title='Veri Ekleme Hızı (throughput)')
+    ax.set_xscale('log')
+    ax.xaxis.set_major_locator(ticker.LogLocator(base=10, numticks=10))
+    ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f'{int(x):,}'))
     fig.tight_layout(); fig.savefig(output_dir / '05_insert_hizi.svg', format='svg'); plt.close(fig)
     print(f"  [SVG] 05_insert_hizi.svg")
 
-    # 6
+    # ── 6: Isı Haritası (6 sorgu) ──
     fig, ax = plt.subplots(figsize=(14, 7))
     matrix = [[s['sorgular'][k]['sonuc_sayisi'] for s in tum_sonuclar] for k, _ in sorgu_isimleri]
     im = ax.imshow(matrix, aspect='auto', cmap='YlOrRd')
-    ax.set_yticks(range(len(sorgu_isimleri))); ax.set_yticklabels([l for _, l in sorgu_isimleri], fontsize=9)
-    ax.set_xlabel('Deney No'); ax.set_title('Sorgu Sonuç Sayıları (Isı Haritası)', fontweight='bold')
-    xtick_pos = list(range(0, len(deney_nolari), 4))
-    ax.set_xticks(xtick_pos); ax.set_xticklabels([str(deney_nolari[i]) for i in xtick_pos])
+    ax.set_yticks(range(len(sorgu_isimleri)))
+    ax.set_yticklabels([l for _, l in sorgu_isimleri], fontsize=10)
+    # Eşit aralıklı x tick'leri
+    tick_step = max(1, len(deney_nolari) // 8)
+    xtick_pos = list(range(0, len(deney_nolari), tick_step))
+    ax.set_xticks(xtick_pos)
+    ax.set_xticklabels([str(deney_nolari[i]) for i in xtick_pos])
+    stil_uygula(ax, xlabel='Deney No', title='Sorgu Sonuç Sayıları (Isı Haritası)')
     fig.colorbar(im, label='Sonuç Sayısı')
     fig.tight_layout(); fig.savefig(output_dir / '06_sorgu_sonuc_isi_haritasi.svg', format='svg'); plt.close(fig)
     print(f"  [SVG] 06_sorgu_sonuc_isi_haritasi.svg")
 
-    # 7 – Özet tablosu
-    fig, ax = plt.subplots(figsize=(20, max(10, len(tum_sonuclar)*0.35+2)))
-    ax.axis('off'); ax.set_title('Deney Sonuçları Özet Tablosu', fontsize=16, fontweight='bold', pad=20)
-    basliklar = ['Deney\nNo','DB Adı','Kullanıcı\nSayısı','Toplam\nVeri','Insert\nSüresi(s)','S1\nKurum(s)','S2\nUzman(s)','S3\nOlay(s)','S4\nMedya(s)','S5\nTarih(s)']
+    # ── 7: Özet Tablosu (6 sorgu) ──
+    fig, ax = plt.subplots(figsize=(22, max(10, len(tum_sonuclar)*0.35+2)))
+    ax.axis('off')
+    ax.set_title('Deney Sonuçları Özet Tablosu', fontsize=16, fontweight='bold', pad=20)
+    basliklar = ['Deney\nNo','DB Adı','Kullanıcı\nSayısı','Toplam\nVeri','Insert\nSüresi(s)',
+                 'S1\nKurum(s)','S2\nUzman(s)','S3\nOlay(s)','S4\nMedya(s)',
+                 'S5\nTarih+\nKurum(s)','S6\nToplanan\nVeri(s)']
     rows = []
     for s in tum_sonuclar:
-        rows.append([str(s['deney_no']), s['db_adi'], f"{s['kullanici_sayisi']:,}", f"{s['toplam_veri']:,}",
-                     f"{s['insert_suresi']:.3f}", f"{s['sorgular']['sorgu1_kurum']['sure_sn']:.4f}",
-                     f"{s['sorgular']['sorgu2_uzman']['sure_sn']:.4f}", f"{s['sorgular']['sorgu3_olay_turu']['sure_sn']:.4f}",
-                     f"{s['sorgular']['sorgu4_medya']['sure_sn']:.4f}", f"{s['sorgular']['sorgu5_tarih_kurum']['sure_sn']:.4f}"])
+        rows.append([
+            str(s['deney_no']), s['db_adi'], f"{s['kullanici_sayisi']:,}", f"{s['toplam_veri']:,}",
+            f"{s['insert_suresi']:.3f}",
+            f"{s['sorgular']['sorgu1_kurum']['sure_sn']:.4f}",
+            f"{s['sorgular']['sorgu2_uzman']['sure_sn']:.4f}",
+            f"{s['sorgular']['sorgu3_olay_turu']['sure_sn']:.4f}",
+            f"{s['sorgular']['sorgu4_medya']['sure_sn']:.4f}",
+            f"{s['sorgular']['sorgu5_tarih_kurum']['sure_sn']:.4f}",
+            f"{s['sorgular']['sorgu6_tarih_kurum_count']['sure_sn']:.4f}",
+        ])
     tablo = ax.table(cellText=rows, colLabels=basliklar, loc='center', cellLoc='center')
     tablo.auto_set_font_size(False); tablo.set_fontsize(7); tablo.scale(1, 1.4)
     for j in range(len(basliklar)):
@@ -584,20 +884,31 @@ def grafik_olustur(tum_sonuclar, output_dir):
     for i in range(1, len(rows)+1):
         for j in range(len(basliklar)):
             tablo[i,j].set_facecolor('#E3F2FD' if i%2==0 else '#FFFFFF')
-    fig.tight_layout(); fig.savefig(output_dir / '07_ozet_tablosu.svg', format='svg', bbox_inches='tight'); plt.close(fig)
+    fig.tight_layout()
+    fig.savefig(output_dir / '07_ozet_tablosu.svg', format='svg', bbox_inches='tight'); plt.close(fig)
     print(f"  [SVG] 07_ozet_tablosu.svg")
 
-    # 8 – İstatistik
-    fig, ax = plt.subplots(figsize=(14, 6))
-    ax.axis('off'); ax.set_title('İstatistiksel Özet', fontsize=16, fontweight='bold', pad=20)
+    # ── 8: İstatistik Özeti (6 sorgu) ──
+    fig, ax = plt.subplots(figsize=(14, 7))
+    ax.axis('off')
+    ax.set_title('İstatistiksel Özet', fontsize=16, fontweight='bold', pad=20)
     ist_baslik = ['Metrik','Min','Max','Ortalama','Medyan','Std Sapma']
-    metrikler = [('Kullanıcı Sayısı',kullanici_sayilari),('Toplam Veri',toplam_veriler),('Insert Süresi (s)',insert_sureleri),
-                 ('S1: Kurum (s)',sorgu_sureleri['sorgu1_kurum']),('S2: Uzman (s)',sorgu_sureleri['sorgu2_uzman']),
-                 ('S3: Olay Türü (s)',sorgu_sureleri['sorgu3_olay_turu']),('S4: Medya (s)',sorgu_sureleri['sorgu4_medya']),
-                 ('S5: Tarih+Kurum (s)',sorgu_sureleri['sorgu5_tarih_kurum'])]
+    metrikler = [
+        ('Kullanıcı Sayısı',                   kullanici_sayilari),
+        ('Toplam Veri',                         toplam_veriler),
+        ('Insert Süresi (s)',                   insert_sureleri),
+        ('S1: Kurum (s)',                       sorgu_sureleri['sorgu1_kurum']),
+        ('S2: Uzman (s)',                       sorgu_sureleri['sorgu2_uzman']),
+        ('S3: Olay Türü (s)',                   sorgu_sureleri['sorgu3_olay_turu']),
+        ('S4: Medya (s)',                       sorgu_sureleri['sorgu4_medya']),
+        ('S5: Tarih aralığı+Kurum (s)',         sorgu_sureleri['sorgu5_tarih_kurum']),
+        ('S6: Toplanan Veri (s)',               sorgu_sureleri['sorgu6_tarih_kurum_count']),
+    ]
     ist_rows = []
     for ad, v in metrikler:
-        a = np.array(v); ist_rows.append([ad, f"{a.min():.4f}", f"{a.max():.4f}", f"{a.mean():.4f}", f"{np.median(a):.4f}", f"{a.std():.4f}"])
+        a = np.array(v)
+        ist_rows.append([ad, f"{a.min():.4f}", f"{a.max():.4f}",
+                         f"{a.mean():.4f}", f"{np.median(a):.4f}", f"{a.std():.4f}"])
     t2 = ax.table(cellText=ist_rows, colLabels=ist_baslik, loc='center', cellLoc='center')
     t2.auto_set_font_size(False); t2.set_fontsize(9); t2.scale(1, 1.6)
     for j in range(len(ist_baslik)):
@@ -605,45 +916,90 @@ def grafik_olustur(tum_sonuclar, output_dir):
     for i in range(1, len(ist_rows)+1):
         for j in range(len(ist_baslik)):
             t2[i,j].set_facecolor('#E8F5E9' if i%2==0 else '#FFFFFF')
-    fig.tight_layout(); fig.savefig(output_dir / '08_istatistik_ozeti.svg', format='svg', bbox_inches='tight'); plt.close(fig)
+    fig.tight_layout()
+    fig.savefig(output_dir / '08_istatistik_ozeti.svg', format='svg', bbox_inches='tight'); plt.close(fig)
     print(f"  [SVG] 08_istatistik_ozeti.svg")
 
-    # 9 – Box plot
-    fig, ax = plt.subplots(figsize=(12, 6))
-    bp = ax.boxplot([sorgu_sureleri[k] for k,_ in sorgu_isimleri], patch_artist=True, labels=[l for _,l in sorgu_isimleri])
-    for patch, color in zip(bp['boxes'], renk_paleti): patch.set_facecolor(color); patch.set_alpha(0.6)
-    ax.set_ylabel('Sorgu Süresi (s)'); ax.set_title('Sorgu Süresi Dağılımları (Box Plot)', fontweight='bold')
-    ax.set_xticklabels([l for _,l in sorgu_isimleri], rotation=20, ha='right', fontsize=9)
+    # ── 9: Box Plot (6 sorgu) ──
+    fig, ax = plt.subplots(figsize=(14, 7))
+    bp = ax.boxplot([sorgu_sureleri[k] for k, _ in sorgu_isimleri],
+                    patch_artist=True,
+                    labels=[l for _, l in sorgu_isimleri])
+    for patch, color in zip(bp['boxes'], renk_paleti):
+        patch.set_facecolor(color)
+        patch.set_alpha(0.6)
+    stil_uygula(ax, ylabel='Sorgu Süresi (s)', title='Sorgu Süresi Dağılımları (Box Plot)')
+    ax.set_xticklabels([l for _, l in sorgu_isimleri], rotation=20, ha='right', fontsize=10)
     fig.tight_layout(); fig.savefig(output_dir / '09_sorgu_boxplot.svg', format='svg'); plt.close(fig)
     print(f"  [SVG] 09_sorgu_boxplot.svg")
 
-    # 10 – Scatter
+    # ── 10: Scatter – Tüm noktalar SİYAH (6 sorgu → 2x3 grid) ──
     fig, axes = plt.subplots(2, 3, figsize=(18, 10))
     axes_flat = axes.flatten()
     for idx, (key, label) in enumerate(sorgu_isimleri):
         ax = axes_flat[idx]
-        ax.scatter(toplam_veriler, sorgu_sureleri[key], c=renk_paleti[idx], s=30, alpha=0.7, edgecolor='black', linewidth=0.3)
-        z = np.polyfit(toplam_veriler, sorgu_sureleri[key], 1); p = np.poly1d(z)
+        # ★ Tüm noktalar siyah, tek renk, içi dolu
+        ax.scatter(toplam_veriler, sorgu_sureleri[key],
+                   c='black', s=30, alpha=0.8,
+                   edgecolor='black', linewidth=0.3)
+        z = np.polyfit(toplam_veriler, sorgu_sureleri[key], 1)
+        p = np.poly1d(z)
         x_fit = np.linspace(min(toplam_veriler), max(toplam_veriler), 100)
         ax.plot(x_fit, p(x_fit), '--', color='gray', alpha=0.7)
-        ax.set_xlabel('Toplam Veri'); ax.set_ylabel('Süre (s)'); ax.set_title(label, fontsize=10, fontweight='bold')
-    axes_flat[5].axis('off')
-    fig.suptitle('Veri Miktarı vs Sorgu Süreleri (Trend Çizgisiyle)', fontsize=14, fontweight='bold')
-    fig.tight_layout(rect=[0,0,1,0.95]); fig.savefig(output_dir / '10_veri_vs_sorgu_scatter.svg', format='svg'); plt.close(fig)
+        stil_uygula(ax, xlabel='Toplam Veri', ylabel='Süre (s)', title=label,
+                    fontsize_label=11, fontsize_title=11)
+    fig.suptitle('Veri Miktarı vs Sorgu Süreleri (Trend Çizgisiyle)',
+                 fontsize=14, fontweight='bold')
+    fig.tight_layout(rect=[0, 0, 1, 0.95])
+    fig.savefig(output_dir / '10_veri_vs_sorgu_scatter.svg', format='svg'); plt.close(fig)
     print(f"  [SVG] 10_veri_vs_sorgu_scatter.svg")
+
+    # ── 11: Artillery HTTP Yük Testi Sonuçları (varsa) ──
+    artillery_sonuclari = [s.get('artillery') for s in tum_sonuclar]
+    if any(a is not None for a in artillery_sonuclari):
+        art_deney = [(s['kullanici_sayisi'], s['artillery'])
+                     for s in tum_sonuclar if s.get('artillery')]
+        if art_deney:
+            art_kullanici = [a[0] for a in art_deney]
+            art_ort_yanit = [a[1]['ortalama_yanit_ms'] for a in art_deney]
+            art_p95 = [a[1]['p95_yanit_ms'] for a in art_deney]
+            art_throughput = [a[1]['istek_saniye'] for a in art_deney]
+
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+
+            # Sol: Yanıt süreleri
+            ax1.plot(art_kullanici, art_ort_yanit, 'o-', color='black', linewidth=2,
+                     markersize=5, label='Ortalama')
+            ax1.plot(art_kullanici, art_p95, 's--', color='black', linewidth=1.5,
+                     markersize=4, alpha=0.6, label='p95')
+            stil_uygula(ax1, xlabel='Kullanıcı Sayısı', ylabel='Yanıt Süresi (ms)',
+                        title='Artillery HTTP Yanıt Süreleri')
+            ax1.legend(fontsize=11)
+
+            # Sağ: Throughput
+            ax2.bar(range(len(art_kullanici)), art_throughput, color='black', alpha=0.8)
+            stil_uygula(ax2, xlabel='Kullanıcı Sayısı', ylabel='İstek/Saniye',
+                        title='Artillery HTTP Throughput')
+            ax2.set_xticks(range(len(art_kullanici)))
+            ax2.set_xticklabels([str(k) for k in art_kullanici], rotation=45, fontsize=10)
+
+            fig.tight_layout()
+            fig.savefig(output_dir / '11_artillery_sonuclari.svg', format='svg'); plt.close(fig)
+            print(f"  [SVG] 11_artillery_sonuclari.svg")
 
     print(f"\n  Tüm grafikler ve tablolar '{output_dir}' klasörüne kaydedildi.")
 
 
 def main():
     print("=" * 70)
-    print("  ASİS - PERFORMANS ANALİZ SCRİPTİ")
-    print("  32 Deney | 32 Ayrı Veritabanı | 8 Kurum | 11 Olay Türü")
+    print("  ASİS - PERFORMANS ANALİZ SCRİPTİ (Artillery + DB)")
+    print("  32 Deney | 32 Ayrı Veritabanı | 8 Kurum | 11 Olay Türü | 6 Sorgu")
     print("=" * 70)
 
     print(f"\n[BİLGİ] Script dizini : {SCRIPT_DIR}")
     print(f"[BİLGİ] Proje kökü    : {PROJECT_DIR}")
     print(f"[BİLGİ] Medya dizini  : {PERF_DATA_DIR}")
+    print(f"[BİLGİ] Artillery hedef: {ARTILLERY_TARGET}")
 
     if PHOTO_SRC.exists():
         print(f"[OK] Fotoğraf bulundu: {PHOTO_SRC}")
@@ -655,7 +1011,12 @@ def main():
     else:
         print(f"[UYARI] Video bulunamadı: {VIDEO_SRC}")
 
-    # PostgreSQL sunucusuna bağlan 
+    # Artillery helpers.js yolu
+    helpers_path = SCRIPT_DIR / 'helpers.js'
+    if not helpers_path.exists():
+        print(f"[UYARI] Artillery helpers.js bulunamadı: {helpers_path}")
+
+    # PostgreSQL sunucusuna bağlan
     admin_conn = admin_connect()
     print(f"\n[OK] PostgreSQL sunucu bağlantısı: {DB_CONFIG['host']}:{DB_CONFIG['port']}")
 
@@ -668,8 +1029,11 @@ def main():
 
     print(f"\n{'Deney':>5} | {'DB Adı':<16} | {'Kullanıcı':>10} | {'Veri':>10} | "
           f"{'Insert(s)':>10} | {'S1(s)':>8} | {'S2(s)':>8} | {'S3(s)':>8} | "
-          f"{'S4(s)':>8} | {'S5(s)':>8}")
-    print("-" * 130)
+          f"{'S4(s)':>8} | {'S5(s)':>8} | {'S6(s)':>8} | {'Art.':>6}")
+    print("-" * 145)
+
+    # Geçici dizin: Artillery dosyaları için
+    tmp_dir = Path(tempfile.mkdtemp(prefix='asis_artillery_'))
 
     for deney_idx in range(DENEY_SAYISI):
         deney_no = deney_idx + 1
@@ -691,14 +1055,24 @@ def main():
         kullanicilar, kurum_map = kullanicilari_olustur(conn, k_sayisi)
         gercek_k_sayisi = len(kullanicilar)
 
-        # 6) Verileri eklenmesi
+        # 6) Verileri eklenmesi (doğrudan DB'ye – sorgu testi için)
         toplam_veri, insert_suresi = veri_ekle(conn, kullanicilar, olay_turu_ids)
 
-        # 7) sorguların çalışması
+        # 7) Sorguların çalışması (6 sorgu)
         sorgular = supervizor_sorgulari(conn, kurum_map)
 
-        # 8) Bağlantıyı kapat 
+        # 8) Bağlantıyı kapat
         conn.close()
+
+        # 9) Artillery HTTP Yük Testi (sunucu çalışıyorsa)
+        artillery_sonuc = None
+        csv_path = tmp_dir / f'test_users_{deney_no}.csv'
+        yaml_path = tmp_dir / f'artillery_{deney_no}.yml'
+        json_path = tmp_dir / f'artillery_{deney_no}_result.json'
+
+        artillery_csv_olustur(kullanicilar, csv_path)
+        artillery_yaml_olustur(k_sayisi, str(csv_path), str(yaml_path), str(helpers_path))
+        artillery_sonuc = artillery_calistir(str(yaml_path), str(json_path))
 
         sonuc = {
             'deney_no': deney_no,
@@ -707,6 +1081,7 @@ def main():
             'toplam_veri': toplam_veri,
             'insert_suresi': round(insert_suresi, 3),
             'sorgular': sorgular,
+            'artillery': artillery_sonuc,
         }
         tum_sonuclar.append(sonuc)
 
@@ -715,11 +1090,17 @@ def main():
         s3 = sorgular['sorgu3_olay_turu']['sure_sn']
         s4 = sorgular['sorgu4_medya']['sure_sn']
         s5 = sorgular['sorgu5_tarih_kurum']['sure_sn']
+        s6 = sorgular['sorgu6_tarih_kurum_count']['sure_sn']
+        art_str = f"{artillery_sonuc['ortalama_yanit_ms']:.0f}ms" if artillery_sonuc else "–"
         print(f"{deney_no:>5} | {db_name:<16} | {gercek_k_sayisi:>10,} | "
               f"{toplam_veri:>10,} | {insert_suresi:>10.3f} | {s1:>8.4f} | "
-              f"{s2:>8.4f} | {s3:>8.4f} | {s4:>8.4f} | {s5:>8.4f}")
+              f"{s2:>8.4f} | {s3:>8.4f} | {s4:>8.4f} | {s5:>8.4f} | "
+              f"{s6:>8.4f} | {art_str:>6}")
 
     admin_conn.close()
+
+    # Geçici dosyaları temizle
+    shutil.rmtree(tmp_dir, ignore_errors=True)
 
     print(f"\n[4/4] Grafikler ve tablolar oluşturuluyor...")
     grafik_olustur(tum_sonuclar, OUTPUT_DIR)
