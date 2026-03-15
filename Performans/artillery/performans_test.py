@@ -42,33 +42,29 @@ ARTILLERY_TARGET = os.getenv('ARTILLERY_TARGET', 'http://localhost:3000')
 
 SCRIPT_DIR  = Path(__file__).resolve().parent
 
-# Proje kökünü bul: Script Performans/artillery/ içinde,
-# data ise Performans/data/ içinde → 2 seviye yukarı çıkmak lazım
-if (SCRIPT_DIR / 'Performans' / 'data').exists():
-    PROJECT_DIR = SCRIPT_DIR
-elif (SCRIPT_DIR.parent / 'Performans' / 'data').exists():
-    PROJECT_DIR = SCRIPT_DIR.parent
-elif (SCRIPT_DIR.parent.parent / 'Performans' / 'data').exists():
-    PROJECT_DIR = SCRIPT_DIR.parent.parent
-else:
-    # Son çare: data klasörünü yukarı doğru ara
-    PROJECT_DIR = SCRIPT_DIR
-    for _ in range(5):
-        if (PROJECT_DIR.parent / 'Performans' / 'data').exists():
-            PROJECT_DIR = PROJECT_DIR.parent
-            break
-        PROJECT_DIR = PROJECT_DIR.parent
-    else:
-        PROJECT_DIR = SCRIPT_DIR
+# ════════════════════════════════════════════════════════════════
+# Proje yol yapısı (SABİT):
+#   repo_root/
+#     Performans/
+#       artillery/          ← SCRIPT_DIR (bu dosya burada)
+#         performans_test.py
+#       data/               ← fotoğraf/video
+#       sonuclar/           ← SVG çıktıları buraya
+# ════════════════════════════════════════════════════════════════
+# SCRIPT_DIR        = repo_root/Performans/artillery/
+# SCRIPT_DIR.parent = repo_root/Performans/          (Performans klasörü)
+# ════════════════════════════════════════════════════════════════
 
-PERF_DATA_DIR   = PROJECT_DIR / 'Performans' / 'data'
+PERFORMANS_DIR = SCRIPT_DIR.parent                # repo_root/Performans/
+PERF_DATA_DIR  = PERFORMANS_DIR / 'data'          # repo_root/Performans/data/
+OUTPUT_DIR     = PERFORMANS_DIR / 'sonuclar'      # repo_root/Performans/sonuclar/
+PROJECT_DIR    = PERFORMANS_DIR.parent            # repo_root/
 PHOTO_FILENAME  = '1763203444090_p2385k6hmk.jpg'
 VIDEO_FILENAME  = '1763203444091_affw8078dnc.mp4'
 PHOTO_SRC       = PERF_DATA_DIR / PHOTO_FILENAME
 VIDEO_SRC       = PERF_DATA_DIR / VIDEO_FILENAME
 
 UPLOADS_DIR = PROJECT_DIR / 'public' / 'uploads'
-OUTPUT_DIR  = PROJECT_DIR / 'Performans' / 'sonuclar'
 
 SCHEMA_SQL = """
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -1105,10 +1101,12 @@ def main():
     print("  32 Deney | 32 Ayrı Veritabanı | 8 Kurum | 11 Olay Türü | 6 Sorgu")
     print("=" * 70)
 
-    print(f"\n[BİLGİ] Script dizini : {SCRIPT_DIR}")
-    print(f"[BİLGİ] Proje kökü    : {PROJECT_DIR}")
-    print(f"[BİLGİ] Medya dizini  : {PERF_DATA_DIR}")
-    print(f"[BİLGİ] Artillery hedef: {ARTILLERY_TARGET}")
+    print(f"\n[BİLGİ] Script dizini  : {SCRIPT_DIR}")
+    print(f"[BİLGİ] Performans dir : {PERFORMANS_DIR}")
+    print(f"[BİLGİ] Proje kökü     : {PROJECT_DIR}")
+    print(f"[BİLGİ] Medya dizini   : {PERF_DATA_DIR}")
+    print(f"[BİLGİ] Çıktı dizini   : {OUTPUT_DIR}")
+    print(f"[BİLGİ] Artillery hedef : {ARTILLERY_TARGET}")
 
     if PHOTO_SRC.exists():
         print(f"[OK] Fotoğraf bulundu: {PHOTO_SRC}")
