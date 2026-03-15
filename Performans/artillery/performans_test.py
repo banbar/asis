@@ -545,8 +545,82 @@ scenarios:
         f.write(yaml_content)
 
 
+def artillery_binary_bul():
+    """Artillery binary yolunu bul. Önce lokal node_modules, sonra global aranır.
+
+    Returns:
+        str veya None: Artillery çalıştırılabilir dosyanın tam yolu
+    """
+    # 1) Lokal: Performans/artillery/node_modules/.bin/artillery
+    lokal_bin = SCRIPT_DIR / 'node_modules' / '.bin' / 'artillery'
+    if lokal_bin.exists():
+        return str(lokal_bin)
+
+    # 2) Global npx ile dene (artillery global kuruluysa)
+    try:
+        result = subprocess.run(
+            ['which', 'artillery'],
+            capture_output=True, text=True, timeout=10
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+    except Exception:
+        pass
+
+    return None
+
+
+def artillery_kur():
+    """Artillery'yi Performans/artillery/ dizininde npm install ile kur.
+
+    Returns:
+        bool: Kurulum başarılı mı
+    """
+    pkg_json = SCRIPT_DIR / 'package.json'
+    if not pkg_json.exists():
+        print(f"  [HATA] package.json bulunamadı: {pkg_json}")
+        return False
+
+    # package.json içinde artillery var mı kontrol et
+    with open(pkg_json, 'r', encoding='utf-8') as f:
+        pkg = json.load(f)
+    deps = pkg.get('dependencies', {})
+    if 'artillery' not in deps:
+        print(f"  [HATA] package.json içinde 'artillery' bağımlılığı yok!")
+        print(f"         Lütfen package.json dosyasına ekleyin:")
+        print(f'         "artillery": "^2.0.22"')
+        return False
+
+    print(f"  [NPM] Artillery kuruluyor: npm install --prefix {SCRIPT_DIR} ...")
+    try:
+        result = subprocess.run(
+            ['npm', 'install'],
+            capture_output=True, text=True, timeout=120,
+            cwd=str(SCRIPT_DIR)
+        )
+        if result.returncode != 0:
+            print(f"  [HATA] npm install başarısız:")
+            print(f"         {result.stderr[:500]}")
+            return False
+
+        print(f"  [OK] Artillery başarıyla kuruldu.")
+        return True
+    except FileNotFoundError:
+        print(f"  [HATA] 'npm' komutu bulunamadı. Node.js kurulu mu?")
+        print(f"         Kurulum: https://nodejs.org/")
+        return False
+    except subprocess.TimeoutExpired:
+        print(f"  [HATA] npm install zaman aşımına uğradı (120s).")
+        return False
+
+
 def artillery_calistir(yaml_path, json_output_path):
     """Artillery testini çalıştır ve JSON raporunu döndür.
+
+    Akış:
+      1. Artillery binary aranır (lokal node_modules → global)
+      2. Bulunamazsa npm install ile otomatik kurulur
+      3. Kurulum da başarısızsa None döner (test atlanır)
 
     Returns:
         dict veya None: Artillery sonuç metrikleri
@@ -558,23 +632,30 @@ def artillery_calistir(yaml_path, json_output_path):
             - istek_saniye: Saniyedeki istek sayısı (throughput)
             - hata_sayisi: Hata sayısı
     """
-    try:
-        # Artillery'nin kurulu olup olmadığını kontrol et
-        check = subprocess.run(['npx', 'artillery', '--version'],
-                               capture_output=True, text=True, timeout=30)
-        if check.returncode != 0:
-            print(f"  [UYARI] Artillery bulunamadı, HTTP testi atlanıyor.")
-            return None
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        print(f"  [UYARI] Artillery/npx bulunamadı, HTTP testi atlanıyor.")
-        return None
+    # ── 1) Artillery binary'sini bul ──
+    artillery_bin = artillery_binary_bul()
 
+    # ── 2) Bulunamazsa otomatik kur ──
+    if artillery_bin is None:
+        print(f"  [BİLGİ] Artillery bulunamadı, otomatik kurulum deneniyor...")
+        if artillery_kur():
+            artillery_bin = artillery_binary_bul()
+        if artillery_bin is None:
+            print(f"  [UYARI] Artillery kurulamadı, HTTP testi atlanıyor.")
+            return None
+
+    # ── 3) Artillery'yi çalıştır ──
     try:
         result = subprocess.run(
-            ['npx', 'artillery', 'run', '--output', str(json_output_path), str(yaml_path)],
+            [artillery_bin, 'run', '--output', str(json_output_path), str(yaml_path)],
             capture_output=True, text=True, timeout=300,
             cwd=str(SCRIPT_DIR)
         )
+
+        if result.returncode != 0:
+            stderr_short = result.stderr[:300] if result.stderr else ''
+            print(f"  [UYARI] Artillery çalıştırma hatası (exit={result.returncode}): {stderr_short}")
+            return None
 
         if not Path(json_output_path).exists():
             print(f"  [UYARI] Artillery JSON raporu oluşmadı.")
@@ -605,7 +686,7 @@ def artillery_calistir(yaml_path, json_output_path):
         }
 
     except subprocess.TimeoutExpired:
-        print(f"  [UYARI] Artillery zaman aşımına uğradı.")
+        print(f"  [UYARI] Artillery zaman aşımına uğradı (300s).")
         return None
     except Exception as e:
         print(f"  [UYARI] Artillery hatası: {e}")
@@ -1016,6 +1097,26 @@ def main():
     if not helpers_path.exists():
         print(f"[UYARI] Artillery helpers.js bulunamadı: {helpers_path}")
 
+    # ── Artillery ön kontrol: Başlamadan önce bir kez kur ──
+    artillery_hazir = False
+    artillery_bin = artillery_binary_bul()
+    if artillery_bin:
+        print(f"[OK] Artillery bulundu: {artillery_bin}")
+        artillery_hazir = True
+    else:
+        print(f"\n[BİLGİ] Artillery bulunamadı, otomatik kurulum deneniyor...")
+        print(f"        Dizin: {SCRIPT_DIR}")
+        if artillery_kur():
+            artillery_bin = artillery_binary_bul()
+            if artillery_bin:
+                print(f"[OK] Artillery kuruldu: {artillery_bin}")
+                artillery_hazir = True
+            else:
+                print(f"[UYARI] Artillery kurulumu tamamlandı ama binary bulunamadı.")
+        else:
+            print(f"[UYARI] Artillery kurulamadı. HTTP yük testleri atlanacak.")
+            print(f"        Manuel kurulum: cd {SCRIPT_DIR} && npm install")
+
     # PostgreSQL sunucusuna bağlan
     admin_conn = admin_connect()
     print(f"\n[OK] PostgreSQL sunucu bağlantısı: {DB_CONFIG['host']}:{DB_CONFIG['port']}")
@@ -1064,15 +1165,16 @@ def main():
         # 8) Bağlantıyı kapat
         conn.close()
 
-        # 9) Artillery HTTP Yük Testi (sunucu çalışıyorsa)
+        # 9) Artillery HTTP Yük Testi (sunucu çalışıyorsa ve artillery kuruluysa)
         artillery_sonuc = None
-        csv_path = tmp_dir / f'test_users_{deney_no}.csv'
-        yaml_path = tmp_dir / f'artillery_{deney_no}.yml'
-        json_path = tmp_dir / f'artillery_{deney_no}_result.json'
+        if artillery_hazir:
+            csv_path = tmp_dir / f'test_users_{deney_no}.csv'
+            yaml_path = tmp_dir / f'artillery_{deney_no}.yml'
+            json_path = tmp_dir / f'artillery_{deney_no}_result.json'
 
-        artillery_csv_olustur(kullanicilar, csv_path)
-        artillery_yaml_olustur(k_sayisi, str(csv_path), str(yaml_path), str(helpers_path))
-        artillery_sonuc = artillery_calistir(str(yaml_path), str(json_path))
+            artillery_csv_olustur(kullanicilar, csv_path)
+            artillery_yaml_olustur(k_sayisi, str(csv_path), str(yaml_path), str(helpers_path))
+            artillery_sonuc = artillery_calistir(str(yaml_path), str(json_path))
 
         sonuc = {
             'deney_no': deney_no,
