@@ -42,18 +42,6 @@ ARTILLERY_TARGET = os.getenv('ARTILLERY_TARGET', 'http://localhost:3000')
 
 SCRIPT_DIR  = Path(__file__).resolve().parent
 
-# ════════════════════════════════════════════════════════════════
-# Proje yol yapısı (SABİT):
-#   repo_root/
-#     Performans/
-#       artillery/          ← SCRIPT_DIR (bu dosya burada)
-#         performans_test.py
-#       data/               ← fotoğraf/video
-#       sonuclar/           ← SVG çıktıları buraya
-# ════════════════════════════════════════════════════════════════
-# SCRIPT_DIR        = repo_root/Performans/artillery/
-# SCRIPT_DIR.parent = repo_root/Performans/          (Performans klasörü)
-# ════════════════════════════════════════════════════════════════
 
 PERFORMANS_DIR = SCRIPT_DIR.parent                # repo_root/Performans/
 PERF_DATA_DIR  = PERFORMANS_DIR / 'data'          # repo_root/Performans/data/
@@ -144,27 +132,19 @@ CREATE INDEX IF NOT EXISTS idx_olay_created_at    ON public.olay (created_at);
 
 PERF_TEST_PASSWORD = 'PerfTest1!'
 
-DISTRICTS = [
-    {'lat': 39.9180, 'lng': 32.8620},
-    {'lat': 39.9686, 'lng': 32.8580},
-    {'lat': 39.9520, 'lng': 32.7850},
-    {'lat': 39.9180, 'lng': 32.9100},
-    {'lat': 39.9180, 'lng': 32.6770},
-    {'lat': 39.9680, 'lng': 32.5780},
-    {'lat': 39.9450, 'lng': 32.8780},
-    {'lat': 39.7890, 'lng': 32.8100},
-]
+# Ankara merkez bounding box: enlem 39.75–40.05, boylam 32.50–33.00
+ANKARA_LAT_MIN = 39.75
+ANKARA_LAT_MAX = 40.05
+ANKARA_LNG_MIN = 32.50
+ANKARA_LNG_MAX = 33.00
 
-KURUMLAR = [
-    {'ad': 'Hacettepe Üniversitesi',         'domain': 'hacettepe.edu.tr',   'kisaltma': 'hu'},
-    {'ad': 'AFAD Ankara İl Müdürlüğü',       'domain': 'afad.gov.tr',        'kisaltma': 'afad'},
-    {'ad': 'Harita Genel Müdürlüğü',         'domain': 'harita.gov.tr',      'kisaltma': 'hgm'},
-    {'ad': 'Çevre ve Şehircilik Bakanlığı',  'domain': 'csb.gov.tr',         'kisaltma': 'cbs'},
-    {'ad': 'Ankara Büyükşehir Belediyesi',   'domain': 'ankara.bel.tr',      'kisaltma': 'abb'},
-    {'ad': 'Kızılay Derneği',                'domain': 'kizilay.org.tr',     'kisaltma': 'kzl'},
-    {'ad': 'İtfaiye Daire Başkanlığı',       'domain': 'itfaiye.gov.tr',     'kisaltma': 'itf'},
-    {'ad': 'Sağlık Bakanlığı',               'domain': 'saglik.gov.tr',      'kisaltma': 'sag'},
-]
+
+DOMAINS = ["k1.gov.tr", "k2.gov.tr", "k3.gov.tr", "k4.gov.tr", "k5.gov.tr",
+           "k6.gov.tr", "k7.gov.tr", "k8.gov.tr", "k9.gov.tr", "k10.gov.tr"]
+
+# Deney matrisi: kurum_sayisi × uzman_sayisi = 8 × 4 = 32 deney
+KURUM_SAYILARI = list(range(3, 11))       # [3, 4, 5, 6, 7, 8, 9, 10]
+UZMAN_SAYILARI = [10, 50, 100, 200]       # Her kuruma atanacak uzman sayısı
 
 OLAY_TURLERI = [
     {'ad': 'Az Hasarlı',       'good': True},
@@ -180,31 +160,28 @@ OLAY_TURLERI = [
     {'ad': 'Çocuk bakım',      'good': True},
 ]
 
-DENEY_SAYISI = 32
-MIN_KULLANICI = 30
-MAX_KULLANICI = 2000
 
 
-def deney_kullanici_sayilari():
-    sayilar = np.logspace(
-        np.log10(MIN_KULLANICI),
-        np.log10(MAX_KULLANICI),
-        DENEY_SAYISI
-    )
-    sayilar = np.ceil(sayilar).astype(int)
-    sayilar[0] = MIN_KULLANICI
-    sayilar[-1] = MAX_KULLANICI
-    for i in range(1, len(sayilar)):
-        if sayilar[i] <= sayilar[i-1]:
-            sayilar[i] = sayilar[i-1] + 1
-    return sayilar.tolist()
+
+def deney_matris_olustur():
+
+    matris = []
+    for k_sayisi in [KURUM_SAYILARI[-1]]:        # Tam: KURUM_SAYILARI  |  Az: [:1]
+        for u_sayisi in [UZMAN_SAYILARI[-1]]:    # Tam: UZMAN_SAYILARI  |  Az: [:1]
+            matris.append({
+                'kurum_sayisi': k_sayisi,
+                'uzman_sayisi': u_sayisi,
+                'toplam_kullanici': k_sayisi * u_sayisi,
+            })
+    return matris
+
 
 
 def get_coords():
-    d = random.choice(DISTRICTS)
+    """Ankara il genelinde rastgele koordinat üret (bounding box)."""
     return (
-        round(d['lat'] + random.uniform(-0.02, 0.02), 6),
-        round(d['lng'] + random.uniform(-0.02, 0.02), 6),
+        round(random.uniform(ANKARA_LAT_MIN, ANKARA_LAT_MAX), 6),
+        round(random.uniform(ANKARA_LNG_MIN, ANKARA_LNG_MAX), 6),
     )
 
 def get_date():
@@ -309,24 +286,31 @@ def olay_turlerini_ekle(conn):
     return olay_turu_ids
 
 
-def kullanicilari_olustur(conn, kullanici_sayisi):
+def kullanicilari_olustur(conn, deney_config):
     """Yeni veritabanında kullanıcıları oluştur.
-    Bu DB'lerde index.js trigger'ı YOK – doğrudan crypt() yeterli."""
+    deney_config: {
+        'kurum_sayisi': int,    # Kaç kurum seçilecek (3..10)
+        'uzman_sayisi': int,    # Her kuruma kaç uzman (10, 50, 100, 200)
+    }
+    DOMAINS listesinden kurum_sayisi kadar rastgele seçilir,
+    her seçilen domain'e uzman_sayisi kadar kullanıcı eklenir.
+    """
     cur = conn.cursor()
-    kurum_agirliklari = [10, 50, 100, 200, 10, 50, 100, 200]
-    toplam_agirlik = sum(kurum_agirliklari)
+    kurum_sayisi = deney_config['kurum_sayisi']
+    uzman_sayisi = deney_config['uzman_sayisi']
+
+    # Düz listeden rastgele domain seç
+    secilen_domainler = random.sample(DOMAINS, kurum_sayisi)
 
     kullanici_idleri = []
     kurum_kullanici_map = {}
 
-    for k_idx, kurum in enumerate(KURUMLAR):
-        oran = kurum_agirliklari[k_idx] / toplam_agirlik
-        kurum_kullanici_n = max(1, round(kullanici_sayisi * oran))
-
+    for domain in secilen_domainler:
+        kisaltma = domain.split('.')[0]  # "k1.gov.tr" → "k1"
         kurum_ids = []
-        for u_idx in range(kurum_kullanici_n):
-            username = f"{kurum['kisaltma']}_{u_idx+1}"
-            email = f"{username}@{kurum['domain']}"
+        for u_idx in range(uzman_sayisi):
+            username = f"{kisaltma}_{u_idx+1}"
+            email = f"{username}@{domain}"
 
             cur.execute(
                 """INSERT INTO users (
@@ -346,12 +330,12 @@ def kullanicilari_olustur(conn, kullanici_sayisi):
             kullanici_idleri.append({
                 'id': uid,
                 'username': username,
-                'kurum': kurum['ad'],
-                'domain': kurum['domain'],
+                'kurum': domain,
+                'domain': domain,
             })
             kurum_ids.append(uid)
 
-        kurum_kullanici_map[kurum['domain']] = kurum_ids
+        kurum_kullanici_map[domain] = kurum_ids
 
     conn.commit()
     return kullanici_idleri, kurum_kullanici_map
@@ -571,7 +555,7 @@ def artillery_binary_bul():
     # 1) Lokal: node_modules/.bin/ içinde ara
     bin_dir = SCRIPT_DIR / 'node_modules' / '.bin'
     if is_windows:
-        # Windows: artillery.cmd kullan (bash script çalışmaz → WinError 193)
+        # Windows: artillery.cmd kullan 
         lokal_cmd = bin_dir / 'artillery.cmd'
         if lokal_cmd.exists():
             return str(lokal_cmd)
@@ -696,17 +680,45 @@ def artillery_calistir(yaml_path, json_output_path):
         http_response_time = summaries.get('http.response_time', {})
 
         toplam_istek = counters.get('http.requests', 0)
-        basarili = counters.get('http.codes.200', 0)
-        hatalar = counters.get('http.codes.4xx', 0) + counters.get('http.codes.5xx', 0)
+
+        basarili_2xx = 0
+        hatali_4xx = 0
+        hatali_5xx = 0
+        kod_dagilimi = {}
+
+        for key, val in counters.items():
+            if key.startswith('http.codes.'):
+                kod = int(key.split('.')[-1])
+                kod_dagilimi[kod] = val
+                if 200 <= kod < 300:
+                    basarili_2xx += val
+                elif 400 <= kod < 500:
+                    hatali_4xx += val
+                elif 500 <= kod < 600:
+                    hatali_5xx += val
+
+        basarisiz = toplam_istek - basarili_2xx
+
+        # Yanıt süresi — tüm yüzdelikler
+        http_rt = summaries.get('http.response_time', {})
 
         return {
             'toplam_istek': toplam_istek,
-            'basarili_istek': basarili,
-            'ortalama_yanit_ms': http_response_time.get('mean', 0),
-            'p95_yanit_ms': http_response_time.get('p95', 0),
-            'p99_yanit_ms': http_response_time.get('p99', 0),
+            'basarili_2xx': basarili_2xx,
+            'basarisiz': basarisiz,
+            'hatali_4xx': hatali_4xx,
+            'hatali_5xx': hatali_5xx,
+            'kod_dagilimi': kod_dagilimi,
+            'yanit_min_ms': http_rt.get('min', 0),
+            'yanit_max_ms': http_rt.get('max', 0),
+            'yanit_ortalama_ms': round(http_rt.get('mean', 0), 2),
+            'yanit_medyan_ms': http_rt.get('median', 0),
+            'yanit_p95_ms': http_rt.get('p95', 0),
+            'yanit_p99_ms': http_rt.get('p99', 0),
             'istek_saniye': aggregate.get('rates', {}).get('http.request_rate', 0),
-            'hata_sayisi': hatalar,
+            'vusers_olusturulan': counters.get('vusers.created', 0),
+            'vusers_tamamlanan': counters.get('vusers.completed', 0),
+            'vusers_basarisiz': counters.get('vusers.failed', 0),
         }
 
     except subprocess.TimeoutExpired:
@@ -734,7 +746,7 @@ def supervizor_sorgulari(conn, kurum_kullanici_map):
     sonuclar = {}
     domain_list = list(kurum_kullanici_map.keys())
     secili_domain = random.choice(domain_list)
-    secili_kurum = next(k['ad'] for k in KURUMLAR if k['domain'] == secili_domain)
+    secili_kurum = secili_domain  # DOMAINS düz liste, domain'in kendisi isim
 
     tum_userids = []
     for ids in kurum_kullanici_map.values():
@@ -823,31 +835,23 @@ def supervizor_sorgulari(conn, kurum_kullanici_map):
 
 def stil_uygula(ax, xlabel='', ylabel='', title='', fontsize_label=14, fontsize_title=15):
     """Tüm grafiklere ortak stil uygula:
-    - Sadece sol (y) ve alt (x) eksenler görünsün
-    - Eksenler kalın olsun
-    - Eksen etiketlerinin fontu büyük olsun
-    - Grid temiz ve hafif olsun
+    - Sadece sol (y) ve alt (x) eksenler görünsün, kalın olsun
+    - Eksen etiketleri büyük puntolu
+    - Y ekseni eşit aralıklı (MaxNLocator)
     """
-    # Sadece sol ve alt eksenler görünsün
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-
-    # Sol ve alt eksenleri kalınlaştır
     ax.spines['left'].set_linewidth(2.5)
     ax.spines['bottom'].set_linewidth(2.5)
-
-    # Tick işaretlerini kalınlaştır
     ax.tick_params(axis='both', width=2, length=6, labelsize=12)
-
-    # Eksen etiketlerini büyük puntolu yap
+    # Y ekseni eşit aralıklı tick'ler
+    ax.yaxis.set_major_locator(ticker.MaxNLocator(nbins=8, integer=False))
     if xlabel:
         ax.set_xlabel(xlabel, fontsize=fontsize_label, fontweight='bold')
     if ylabel:
         ax.set_ylabel(ylabel, fontsize=fontsize_label, fontweight='bold')
     if title:
         ax.set_title(title, fontsize=fontsize_title, fontweight='bold')
-
-    # Grid
     ax.grid(True, alpha=0.3, linewidth=0.5)
 
 
@@ -877,14 +881,14 @@ def grafik_olustur(tum_sonuclar, output_dir):
 
     # ── 1: Insert Süresi ──
     fig, ax = plt.subplots(figsize=(12, 6))
-    ax.plot(kullanici_sayilari, insert_sureleri, 'o-', color='#2196F3', linewidth=2, markersize=5)
+    ax.plot(range(len(kullanici_sayilari)), insert_sureleri, 'o-', color='#2196F3', linewidth=2, markersize=5)
     stil_uygula(ax, xlabel='Kullanıcı Sayısı', ylabel='Süre (saniye)',
                 title='Kullanıcı Sayısına Göre Veri Ekleme Süresi')
-    ax.set_xscale('log')
-    # Eşit aralıklı tick'ler (log ölçekte)
-    ax.xaxis.set_major_locator(ticker.LogLocator(base=10, numticks=10))
-    ax.xaxis.set_minor_locator(ticker.LogLocator(base=10, subs=np.arange(2, 10) * 0.1, numticks=20))
-    ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f'{int(x):,}'))
+    # Eşit aralıklı tick'ler: veri indekslerinden eşit adımlarla seç
+    n_ticks = min(10, len(kullanici_sayilari))
+    tick_idx = np.linspace(0, len(kullanici_sayilari) - 1, n_ticks, dtype=int)
+    ax.set_xticks(tick_idx)
+    ax.set_xticklabels([f'{kullanici_sayilari[i]:,}' for i in tick_idx], rotation=45, ha='right')
     fig.tight_layout()
     fig.savefig(output_dir / '01_insert_suresi.svg', format='svg'); plt.close(fig)
     print(f"  [SVG] 01_insert_suresi.svg")
@@ -906,15 +910,17 @@ def grafik_olustur(tum_sonuclar, output_dir):
 
     # ── 3: Sorgu Süreleri (6 sorgu) ──
     fig, ax = plt.subplots(figsize=(14, 7))
+    x_idx = range(len(kullanici_sayilari))
     for idx, (key, label) in enumerate(sorgu_isimleri):
-        ax.plot(kullanici_sayilari, sorgu_sureleri[key], 'o-',
+        ax.plot(x_idx, sorgu_sureleri[key], 'o-',
                 color=renk_paleti[idx], linewidth=2, markersize=4, label=label)
-    stil_uygula(ax, xlabel='Kullanıcı Sayısı (log)', ylabel='Sorgu Süresi (s)',
+    stil_uygula(ax, xlabel='Kullanıcı Sayısı', ylabel='Sorgu Süresi (s)',
                 title='Süpervizör Sorgu Süreleri vs Kullanıcı Sayısı')
     ax.legend(fontsize=10, loc='upper left')
-    ax.set_xscale('log')
-    ax.xaxis.set_major_locator(ticker.LogLocator(base=10, numticks=10))
-    ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f'{int(x):,}'))
+    n_ticks = min(10, len(kullanici_sayilari))
+    tick_idx = np.linspace(0, len(kullanici_sayilari) - 1, n_ticks, dtype=int)
+    ax.set_xticks(tick_idx)
+    ax.set_xticklabels([f'{kullanici_sayilari[i]:,}' for i in tick_idx], rotation=45, ha='right')
     fig.tight_layout(); fig.savefig(output_dir / '03_sorgu_sureleri.svg', format='svg'); plt.close(fig)
     print(f"  [SVG] 03_sorgu_sureleri.svg")
 
@@ -938,12 +944,13 @@ def grafik_olustur(tum_sonuclar, output_dir):
     # ── 5: Insert Hızı ──
     fig, ax = plt.subplots(figsize=(12, 6))
     hizlar = [v / max(s, 0.001) for v, s in zip(toplam_veriler, insert_sureleri)]
-    ax.plot(kullanici_sayilari, hizlar, 's-', color='#FF5722', linewidth=2, markersize=5)
-    stil_uygula(ax, xlabel='Kullanıcı Sayısı (log)', ylabel='Veri/Saniye',
+    ax.plot(range(len(kullanici_sayilari)), hizlar, 's-', color='#FF5722', linewidth=2, markersize=5)
+    stil_uygula(ax, xlabel='Kullanıcı Sayısı', ylabel='Veri/Saniye',
                 title='Veri Ekleme Hızı (throughput)')
-    ax.set_xscale('log')
-    ax.xaxis.set_major_locator(ticker.LogLocator(base=10, numticks=10))
-    ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f'{int(x):,}'))
+    n_ticks = min(10, len(kullanici_sayilari))
+    tick_idx = np.linspace(0, len(kullanici_sayilari) - 1, n_ticks, dtype=int)
+    ax.set_xticks(tick_idx)
+    ax.set_xticklabels([f'{kullanici_sayilari[i]:,}' for i in tick_idx], rotation=45, ha='right')
     fig.tight_layout(); fig.savefig(output_dir / '05_insert_hizi.svg', format='svg'); plt.close(fig)
     print(f"  [SVG] 05_insert_hizi.svg")
 
@@ -964,16 +971,18 @@ def grafik_olustur(tum_sonuclar, output_dir):
     print(f"  [SVG] 06_sorgu_sonuc_isi_haritasi.svg")
 
     # ── 7: Özet Tablosu (6 sorgu) ──
-    fig, ax = plt.subplots(figsize=(22, max(10, len(tum_sonuclar)*0.35+2)))
+    fig, ax = plt.subplots(figsize=(24, max(10, len(tum_sonuclar)*0.35+2)))
     ax.axis('off')
     ax.set_title('Deney Sonuçları Özet Tablosu', fontsize=16, fontweight='bold', pad=20)
-    basliklar = ['Deney\nNo','DB Adı','Kullanıcı\nSayısı','Toplam\nVeri','Insert\nSüresi(s)',
+    basliklar = ['Deney\nNo','DB Adı','Kurum\nSayısı','Uzman\nSayısı','Toplam\nKullanıcı','Toplam\nVeri','Insert\nSüresi(s)',
                  'S1\nKurum(s)','S2\nUzman(s)','S3\nOlay(s)','S4\nMedya(s)',
                  'S5\nTarih+\nKurum(s)','S6\nToplanan\nVeri(s)']
     rows = []
     for s in tum_sonuclar:
         rows.append([
-            str(s['deney_no']), s['db_adi'], f"{s['kullanici_sayisi']:,}", f"{s['toplam_veri']:,}",
+            str(s['deney_no']), s['db_adi'],
+            str(s.get('kurum_sayisi', '')), str(s.get('uzman_sayisi', '')),
+            f"{s['kullanici_sayisi']:,}", f"{s['toplam_veri']:,}",
             f"{s['insert_suresi']:.3f}",
             f"{s['sorgular']['sorgu1_kurum']['sure_sn']:.4f}",
             f"{s['sorgular']['sorgu2_uzman']['sure_sn']:.4f}",
@@ -1059,46 +1068,78 @@ def grafik_olustur(tum_sonuclar, output_dir):
     fig.savefig(output_dir / '10_veri_vs_sorgu_scatter.svg', format='svg'); plt.close(fig)
     print(f"  [SVG] 10_veri_vs_sorgu_scatter.svg")
 
-    # ── 11: Artillery HTTP Yük Testi Sonuçları (varsa) ──
-    artillery_sonuclari = [s.get('artillery') for s in tum_sonuclar]
-    if any(a is not None for a in artillery_sonuclari):
-        art_deney = [(s['kullanici_sayisi'], s['artillery'])
-                     for s in tum_sonuclar if s.get('artillery')]
-        if art_deney:
-            art_kullanici = [a[0] for a in art_deney]
-            art_ort_yanit = [a[1]['ortalama_yanit_ms'] for a in art_deney]
-            art_p95 = [a[1]['p95_yanit_ms'] for a in art_deney]
-            art_throughput = [a[1]['istek_saniye'] for a in art_deney]
+    # ── 11: Artillery Sonuçları (4 panel) ──
+    art_deneyler = [(s['kullanici_sayisi'], s['artillery'])
+                    for s in tum_sonuclar if s.get('artillery')]
+    if art_deneyler:
+        art_k    = [a[0] for a in art_deneyler]
+        art_ort  = [a[1]['yanit_ortalama_ms'] for a in art_deneyler]
+        art_p95  = [a[1]['yanit_p95_ms'] for a in art_deneyler]
+        art_min  = [a[1]['yanit_min_ms'] for a in art_deneyler]
+        art_max  = [a[1]['yanit_max_ms'] for a in art_deneyler]
+        art_tp   = [a[1]['istek_saniye'] for a in art_deneyler]
+        art_ok   = [a[1]['basarili_2xx'] for a in art_deneyler]
+        art_fail = [a[1]['basarisiz'] for a in art_deneyler]
 
-            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+        fig, axes = plt.subplots(2, 2, figsize=(16, 12))
 
-            # Sol: Yanıt süreleri
-            ax1.plot(art_kullanici, art_ort_yanit, 'o-', color='black', linewidth=2,
-                     markersize=5, label='Ortalama')
-            ax1.plot(art_kullanici, art_p95, 's--', color='black', linewidth=1.5,
-                     markersize=4, alpha=0.6, label='p95')
-            stil_uygula(ax1, xlabel='Kullanıcı Sayısı', ylabel='Yanıt Süresi (ms)',
-                        title='Artillery HTTP Yanıt Süreleri')
-            ax1.legend(fontsize=11)
+        # Sol üst: Yanıt süreleri (min-max aralığı ile)
+        ax = axes[0, 0]
+        ax.plot(range(len(art_k)), art_ort, 'o-', color='black', linewidth=2, markersize=5, label='Ortalama')
+        ax.plot(range(len(art_k)), art_p95, 's--', color='gray', linewidth=1.5, markersize=4, label='p95')
+        ax.fill_between(range(len(art_k)), art_min, art_max, alpha=0.1, color='black', label='Min-Max')
+        stil_uygula(ax, xlabel='Kullanıcı Sayısı', ylabel='Yanıt Süresi (ms)',
+                    title='Artillery HTTP Yanıt Süreleri')
+        ax.set_xticks(range(len(art_k)))
+        ax.set_xticklabels([str(k) for k in art_k], rotation=45, fontsize=9)
+        ax.legend(fontsize=10)
 
-            # Sağ: Throughput
-            ax2.bar(range(len(art_kullanici)), art_throughput, color='black', alpha=0.8)
-            stil_uygula(ax2, xlabel='Kullanıcı Sayısı', ylabel='İstek/Saniye',
-                        title='Artillery HTTP Throughput')
-            ax2.set_xticks(range(len(art_kullanici)))
-            ax2.set_xticklabels([str(k) for k in art_kullanici], rotation=45, fontsize=10)
+        # Sağ üst: Throughput
+        ax = axes[0, 1]
+        ax.bar(range(len(art_k)), art_tp, color='black', alpha=0.8)
+        stil_uygula(ax, xlabel='Kullanıcı Sayısı', ylabel='İstek/Saniye',
+                    title='Artillery HTTP Throughput')
+        ax.set_xticks(range(len(art_k)))
+        ax.set_xticklabels([str(k) for k in art_k], rotation=45, fontsize=9)
 
-            fig.tight_layout()
-            fig.savefig(output_dir / '11_artillery_sonuclari.svg', format='svg'); plt.close(fig)
-            print(f"  [SVG] 11_artillery_sonuclari.svg")
+        # Sol alt: Başarılı vs Başarısız
+        ax = axes[1, 0]
+        x = np.arange(len(art_k))
+        w = 0.35
+        ax.bar(x - w/2, art_ok, w, label='Başarılı (2xx)', color='#4CAF50', alpha=0.85)
+        ax.bar(x + w/2, art_fail, w, label='Başarısız', color='#F44336', alpha=0.85)
+        stil_uygula(ax, xlabel='Kullanıcı Sayısı', ylabel='İstek Sayısı',
+                    title='Başarılı vs Başarısız İstekler')
+        ax.set_xticks(x)
+        ax.set_xticklabels([str(k) for k in art_k], rotation=45, fontsize=9)
+        ax.legend(fontsize=10)
+
+        # Sağ alt: Başarı oranı (%)
+        ax = axes[1, 1]
+        basari_oran = [ok / max(ok + fail, 1) * 100 for ok, fail in zip(art_ok, art_fail)]
+        ax.plot(range(len(art_k)), basari_oran, 'o-', color='#2196F3', linewidth=2, markersize=6)
+        ax.axhline(y=100, color='green', linestyle='--', alpha=0.5, label='%100 hedef')
+        stil_uygula(ax, xlabel='Kullanıcı Sayısı', ylabel='Başarı Oranı (%)',
+                    title='HTTP Başarı Oranı')
+        ax.set_xticks(range(len(art_k)))
+        ax.set_xticklabels([str(k) for k in art_k], rotation=45, fontsize=9)
+        ax.set_ylim(0, 105)
+        ax.legend(fontsize=10)
+
+        fig.tight_layout()
+        fig.savefig(output_dir / '11_artillery_sonuclari.svg', format='svg'); plt.close(fig)
+        print(f"  [SVG] 11_artillery_sonuclari.svg")
 
     print(f"\n  Tüm grafikler ve tablolar '{output_dir}' klasörüne kaydedildi.")
 
 
 def main():
+    deney_matrisi = deney_matris_olustur()
+    deney_sayisi = len(deney_matrisi)
+
     print("=" * 70)
-    print("  ASİS - PERFORMANS ANALİZ SCRİPTİ (Artillery + DB)")
-    print("  32 Deney | 32 Ayrı Veritabanı | 8 Kurum | 11 Olay Türü | 6 Sorgu")
+    print(f"  ASİS - PERFORMANS ANALİZ SCRİPTİ (Artillery + DB)")
+    print(f"  {deney_sayisi} Deney | Kurum × Uzman matrisi | 6 Sorgu")
     print("=" * 70)
 
     print(f"\n[BİLGİ] Script dizini  : {SCRIPT_DIR}")
@@ -1147,24 +1188,27 @@ def main():
     admin_conn = admin_connect()
     print(f"\n[OK] PostgreSQL sunucu bağlantısı: {DB_CONFIG['host']}:{DB_CONFIG['port']}")
 
-    kullanici_sayilari = deney_kullanici_sayilari()
-    print(f"\n[BİLGİ] 32 Deney planlandı:")
-    print(f"         Deney  1 → {kullanici_sayilari[0]:>5} kullanıcı  →  asis_deney_1")
-    print(f"         Deney 32 → {kullanici_sayilari[-1]:>5} kullanıcı  →  asis_deney_32")
-
+    # Deney matrisi oluştur
+    print(f"\n[BİLGİ] {deney_sayisi} Deney planlandı (kurum × uzman):")
+    print(f"         Kurum sayıları: {KURUM_SAYILARI}")
+    print(f"         Uzman sayıları: {UZMAN_SAYILARI}")
+    print(f"         Deney  1 → {deney_matrisi[0]['kurum_sayisi']} kurum × {deney_matrisi[0]['uzman_sayisi']} uzman = {deney_matrisi[0]['toplam_kullanici']:>5} kullanıcı")
+    print(f"         Deney {deney_sayisi} → {deney_matrisi[-1]['kurum_sayisi']} kurum × {deney_matrisi[-1]['uzman_sayisi']} uzman = {deney_matrisi[-1]['toplam_kullanici']:>5} kullanıcı")
     tum_sonuclar = []
 
-    print(f"\n{'Deney':>5} | {'DB Adı':<16} | {'Kullanıcı':>10} | {'Veri':>10} | "
+    print(f"\n{'Deney':>5} | {'DB Adı':<16} | {'Kurum':>5} | {'Uzman':>5} | {'Toplam':>7} | {'Veri':>10} | "
           f"{'Insert(s)':>10} | {'S1(s)':>8} | {'S2(s)':>8} | {'S3(s)':>8} | "
           f"{'S4(s)':>8} | {'S5(s)':>8} | {'S6(s)':>8} | {'Art.':>6}")
-    print("-" * 145)
+    print("-" * 160)
 
     # Geçici dizin: Artillery dosyaları için
     tmp_dir = Path(tempfile.mkdtemp(prefix='asis_artillery_'))
 
-    for deney_idx in range(DENEY_SAYISI):
+    for deney_idx in range(deney_sayisi):
         deney_no = deney_idx + 1
-        k_sayisi = kullanici_sayilari[deney_idx]
+        deney_config = deney_matrisi[deney_idx]
+        k_sayisi = deney_config['kurum_sayisi']
+        u_sayisi = deney_config['uzman_sayisi']
 
         # 1) Veritabanı oluşturulması
         db_name = create_experiment_db(admin_conn, deney_no)
@@ -1178,8 +1222,8 @@ def main():
         # 4) Olay türlerinin eklenmesi
         olay_turu_ids = olay_turlerini_ekle(conn)
 
-        # 5) Kullanıcıların oluşturulması
-        kullanicilar, kurum_map = kullanicilari_olustur(conn, k_sayisi)
+        # 5) Kullanıcıların oluşturulması (yeni mantık: kurum × uzman)
+        kullanicilar, kurum_map = kullanicilari_olustur(conn, deney_config)
         gercek_k_sayisi = len(kullanicilar)
 
         # 6) Verileri eklenmesi (doğrudan DB'ye – sorgu testi için)
@@ -1199,12 +1243,14 @@ def main():
             json_path = tmp_dir / f'artillery_{deney_no}_result.json'
 
             artillery_csv_olustur(kullanicilar, csv_path)
-            artillery_yaml_olustur(k_sayisi, str(csv_path), str(yaml_path), str(helpers_path))
+            artillery_yaml_olustur(gercek_k_sayisi, str(csv_path), str(yaml_path), str(helpers_path))
             artillery_sonuc = artillery_calistir(str(yaml_path), str(json_path))
 
         sonuc = {
             'deney_no': deney_no,
             'db_adi': db_name,
+            'kurum_sayisi': k_sayisi,
+            'uzman_sayisi': u_sayisi,
             'kullanici_sayisi': gercek_k_sayisi,
             'toplam_veri': toplam_veri,
             'insert_suresi': round(insert_suresi, 3),
@@ -1219,11 +1265,15 @@ def main():
         s4 = sorgular['sorgu4_medya']['sure_sn']
         s5 = sorgular['sorgu5_tarih_kurum']['sure_sn']
         s6 = sorgular['sorgu6_tarih_kurum_count']['sure_sn']
-        art_str = f"{artillery_sonuc['ortalama_yanit_ms']:.0f}ms" if artillery_sonuc else "–"
-        print(f"{deney_no:>5} | {db_name:<16} | {gercek_k_sayisi:>10,} | "
-              f"{toplam_veri:>10,} | {insert_suresi:>10.3f} | {s1:>8.4f} | "
-              f"{s2:>8.4f} | {s3:>8.4f} | {s4:>8.4f} | {s5:>8.4f} | "
-              f"{s6:>8.4f} | {art_str:>6}")
+        if artillery_sonuc:
+            a = artillery_sonuc
+            art_str = f"{a['yanit_ortalama_ms']:.1f}ms {a['basarili_2xx']}/{a['toplam_istek']}"
+        else:
+            art_str = "–"
+        print(f"{deney_no:>5} | {db_name:<16} | {k_sayisi:>5} | {u_sayisi:>5} | "
+              f"{gercek_k_sayisi:>7,} | {toplam_veri:>10,} | {insert_suresi:>10.3f} | "
+              f"{s1:>8.4f} | {s2:>8.4f} | {s3:>8.4f} | {s4:>8.4f} | "
+              f"{s5:>8.4f} | {s6:>8.4f} | {art_str:>6}")
 
     admin_conn.close()
 
@@ -1240,8 +1290,8 @@ def main():
 
     print(f"\n{'=' * 70}")
     print(f"  TAMAMLANDI!")
-    print(f"  pgAdmin'de 32 veritabanı görünür:")
-    print(f"    asis_deney_1, asis_deney_2, ..., asis_deney_32")
+    print(f"  pgAdmin'de {deney_sayisi} veritabanı görünür:")
+    print(f"    asis_deney_1, ..., asis_deney_{deney_sayisi}")
     print(f"  Grafikler: {OUTPUT_DIR}")
     print(f"{'=' * 70}")
 
