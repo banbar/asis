@@ -2058,9 +2058,18 @@ a:focus-visible{
   height: 54px;
 }
 
+.custom-cluster.xlarge { 
+  width: 62px; 
+  height: 62px;
+}
+
 .custom-cluster > span { 
   line-height: 1; 
   font-size: clamp(12px, 2.2vw, 15px);
+}
+
+.custom-cluster.xlarge > span { 
+  font-size: 12px;
 }
 
 
