@@ -371,12 +371,24 @@ function makeMarkersLayer() {
   if (L.markerClusterGroup) {
     return L.markerClusterGroup({
       spiderfyOnEveryZoom: false,
-      chunkedLoading: true
+      chunkedLoading: true,
+      iconCreateFunction: function (cluster) {
+        var count = cluster.getChildCount();
+        var digits = count.toString().length;
+        var sizeClass = 'small';
+        if (digits >= 5)      sizeClass = 'xlarge';
+        else if (digits >= 4) sizeClass = 'large';
+        else if (digits >= 3) sizeClass = 'medium';
+        return L.divIcon({
+          html: '<div class="custom-cluster ' + sizeClass + '"><span>' + count + '</span></div>',
+          className: 'custom-cluster-wrap',
+          iconSize: L.point(40, 40)
+        });
+      }
     });
   }
   return L.layerGroup();
 }
-
 let map = null;
 let markersLayer = null;
 let clickMarker = null;
