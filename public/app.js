@@ -376,22 +376,22 @@ function makeMarkersLayer() {
       iconCreateFunction: function (cluster) {
         var count = cluster.getChildCount();
         var colorClass, sizeClass, outerSize;
-        if (count >= 1000) {
-          colorClass = 'density-red'; sizeClass = 'size-xxl'; outerSize = 76;
-        } else if (count >= 500) {
-          colorClass = 'density-orange'; sizeClass = 'size-xl'; outerSize = 66;
+        if (count >= 10000) {
+          colorClass = 'density-critical'; sizeClass = 'xlarge'; outerSize = 90;
+        } else if (count >= 5000) {
+          colorClass = 'density-high'; sizeClass = 'xlarge'; outerSize = 86;
+        } else if (count >= 1000) {
+          colorClass = 'density-medium-high'; sizeClass = 'large'; outerSize = 78;
         } else if (count >= 100) {
-          colorClass = 'density-orange'; sizeClass = 'size-lg'; outerSize = 60;
-        } else if (count >= 50) {
-          colorClass = 'density-yellow'; sizeClass = 'size-md'; outerSize = 54;
+          colorClass = 'density-medium'; sizeClass = 'medium'; outerSize = 70;
         } else if (count >= 10) {
-          colorClass = 'density-yellow'; sizeClass = 'size-sm'; outerSize = 48;
+          colorClass = 'density-low'; sizeClass = 'small'; outerSize = 62;
         } else {
-          colorClass = 'density-green'; sizeClass = 'size-xs'; outerSize = 40;
+          colorClass = 'density-minimal'; sizeClass = 'xsmall'; outerSize = 54;
         }
         return L.divIcon({
-          html: '<div class="custom-cluster-outer ' + colorClass + ' ' + sizeClass + '">' +
-                  '<div class="custom-cluster-inner ' + colorClass + ' ' + sizeClass + '">' +
+          html: '<div class="custom-cluster-outer ' + colorClass + '">' +
+                  '<div class="custom-cluster-inner ' + sizeClass + ' ' + colorClass + '">' +
                     '<span>' + count + '</span>' +
                   '</div>' +
                 '</div>',
