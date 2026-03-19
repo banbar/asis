@@ -374,32 +374,28 @@ function makeMarkersLayer() {
       chunkedLoading: true,
       iconCreateFunction: function (cluster) {
         var count = cluster.getChildCount();
-        var sizeClass = 'small';
-        var colorClass = 'density-low';
+        var colorClass, sizeClass, outerSize;
         if (count >= 10000) {
-          sizeClass = 'xlarge';
-          colorClass = 'density-critical';
+          colorClass = 'density-critical'; sizeClass = 'xlarge'; outerSize = 90;
         } else if (count >= 5000) {
-          sizeClass = 'large';
-          colorClass = 'density-high';
-        } else if (count >= 2000) {
-          sizeClass = 'large';
-          colorClass = 'density-medium-high';
-        } else if (count >= 500) {
-          sizeClass = 'medium';
-          colorClass = 'density-medium';
+          colorClass = 'density-high'; sizeClass = 'xlarge'; outerSize = 86;
+        } else if (count >= 1000) {
+          colorClass = 'density-medium-high'; sizeClass = 'large'; outerSize = 78;
         } else if (count >= 100) {
-          sizeClass = 'medium';
-          colorClass = 'density-medium-low';
+          colorClass = 'density-medium'; sizeClass = 'medium'; outerSize = 70;
         } else if (count >= 10) {
-          sizeClass = 'small';
-          colorClass = 'density-low';
+          colorClass = 'density-low'; sizeClass = 'small'; outerSize = 62;
+        } else {
+          colorClass = 'density-minimal'; sizeClass = 'xsmall'; outerSize = 54;
         }
-        var sz = sizeClass === 'xlarge' ? 62 : sizeClass === 'large' ? 54 : sizeClass === 'medium' ? 46 : 40;
         return L.divIcon({
-          html: '<div class="custom-cluster ' + sizeClass + ' ' + colorClass + '"><span>' + count + '</span></div>',
+          html: '<div class="custom-cluster-outer ' + colorClass + '">' +
+                  '<div class="custom-cluster-inner ' + sizeClass + ' ' + colorClass + '">' +
+                    '<span>' + count + '</span>' +
+                  '</div>' +
+                '</div>',
           className: 'custom-cluster-wrap',
-          iconSize: L.point(sz, sz)
+          iconSize: L.point(outerSize, outerSize)
         });
       }
     });
