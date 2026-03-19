@@ -39,7 +39,7 @@ DB_CONFIG = {
 
 SCRIPT_DIR  = Path(__file__).resolve().parent
 
-PERFORMANS_DIR = SCRIPT_DIR.parent
+PERFORMANS_DIR = SCRIPT_DIR
 PERF_DATA_DIR  = PERFORMANS_DIR / 'data'
 OUTPUT_DIR     = PERFORMANS_DIR / 'sonuclar'
 PROJECT_DIR    = PERFORMANS_DIR.parent
