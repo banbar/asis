@@ -374,15 +374,32 @@ function makeMarkersLayer() {
       chunkedLoading: true,
       iconCreateFunction: function (cluster) {
         var count = cluster.getChildCount();
-        var digits = count.toString().length;
         var sizeClass = 'small';
-        if (digits >= 5)      sizeClass = 'xlarge';
-        else if (digits >= 4) sizeClass = 'large';
-        else if (digits >= 3) sizeClass = 'medium';
+        var colorClass = 'density-low';
+        if (count >= 10000) {
+          sizeClass = 'xlarge';
+          colorClass = 'density-critical';
+        } else if (count >= 5000) {
+          sizeClass = 'large';
+          colorClass = 'density-high';
+        } else if (count >= 2000) {
+          sizeClass = 'large';
+          colorClass = 'density-medium-high';
+        } else if (count >= 500) {
+          sizeClass = 'medium';
+          colorClass = 'density-medium';
+        } else if (count >= 100) {
+          sizeClass = 'medium';
+          colorClass = 'density-medium-low';
+        } else if (count >= 10) {
+          sizeClass = 'small';
+          colorClass = 'density-low';
+        }
+        var sz = sizeClass === 'xlarge' ? 62 : sizeClass === 'large' ? 54 : sizeClass === 'medium' ? 46 : 40;
         return L.divIcon({
-          html: '<div class="custom-cluster ' + sizeClass + '"><span>' + count + '</span></div>',
+          html: '<div class="custom-cluster ' + sizeClass + ' ' + colorClass + '"><span>' + count + '</span></div>',
           className: 'custom-cluster-wrap',
-          iconSize: L.point(40, 40)
+          iconSize: L.point(sz, sz)
         });
       }
     });
