@@ -23,27 +23,23 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from pathlib import Path
 
+
 load_dotenv()
 
-# Deney matrisi: kurum_sayisi × uzman_sayisi = 8 × 4 = 32 deney
-KURUM_SAYILARI = list(range(3, 11))       # [3, 4, 5, 6, 7, 8, 9, 10]
-UZMAN_SAYILARI = [10, 50, 100, 200]       # Her kuruma atanacak uzman sayısı
-
-
 DB_CONFIG = {
-    'host':     os.getenv('PGHOST', '127.0.0.1'),
-    'port':     int(os.getenv('PGPORT', 5432)),
-    'user':     os.getenv('PGUSER', 'postgres'),
-    'password': os.getenv('PGPASSWORD', '12345Aa'),
-    'database': os.getenv('PGDATABASE', 'asis'),
+    'host':     os.getenv('PGHOST', ''),
+    'port':     int(os.getenv('PGPORT',)),
+    'user':     os.getenv('PGUSER', ''),
+    'password': os.getenv('PGPASSWORD', ''),
+    'database': os.getenv('PGDATABASE', ''),
 }
 
 SCRIPT_DIR  = Path(__file__).resolve().parent
 
-PERFORMANS_DIR = SCRIPT_DIR                # repo_root/Performans/
-PERF_DATA_DIR  = PERFORMANS_DIR / 'data'          # repo_root/Performans/data/
-OUTPUT_DIR     = PERFORMANS_DIR / 'sonuclar'      # repo_root/Performans/sonuclar/
-PROJECT_DIR    = PERFORMANS_DIR.parent            # repo_root/
+PERFORMANS_DIR = SCRIPT_DIR.parent
+PERF_DATA_DIR  = PERFORMANS_DIR / 'data'
+OUTPUT_DIR     = PERFORMANS_DIR / 'sonuclar'
+PROJECT_DIR    = PERFORMANS_DIR.parent
 PHOTO_FILENAME  = '1763203444090_p2385k6hmk.jpg'
 VIDEO_FILENAME  = '1763203444091_affw8078dnc.mp4'
 PHOTO_SRC       = PERF_DATA_DIR / PHOTO_FILENAME
@@ -129,17 +125,16 @@ CREATE INDEX IF NOT EXISTS idx_olay_created_at    ON public.olay (created_at);
 
 PERF_TEST_PASSWORD = 'PerfTest1!'
 
-# Ankara merkez bounding box: enlem 39.75–40.05, boylam 32.50–33.00
 ANKARA_LAT_MIN = 39.75
 ANKARA_LAT_MAX = 40.05
 ANKARA_LNG_MIN = 32.50
 ANKARA_LNG_MAX = 33.00
 
-
 DOMAINS = ["k1.gov.tr", "k2.gov.tr", "k3.gov.tr", "k4.gov.tr", "k5.gov.tr",
            "k6.gov.tr", "k7.gov.tr", "k8.gov.tr", "k9.gov.tr", "k10.gov.tr"]
 
-
+KURUM_SAYILARI = list(range(3, 11))
+UZMAN_SAYILARI = [10, 50, 100, 200]
 
 OLAY_TURLERI = [
     {'ad': 'Az Hasarlı',       'good': True},
@@ -156,13 +151,10 @@ OLAY_TURLERI = [
 ]
 
 
-
-
 def deney_matris_olustur():
-
     matris = []
-    for k_sayisi in KURUM_SAYILARI:        # Tam: KURUM_SAYILARI  |  Az: [:1]
-        for u_sayisi in UZMAN_SAYILARI:    # Tam: UZMAN_SAYILARI  |  Az: [:1]
+    for k_sayisi in [KURUM_SAYILARI[-1]]:
+        for u_sayisi in [UZMAN_SAYILARI[-1]]:
             matris.append({
                 'kurum_sayisi': k_sayisi,
                 'uzman_sayisi': u_sayisi,
@@ -171,9 +163,7 @@ def deney_matris_olustur():
     return matris
 
 
-
 def get_coords():
-    """Ankara il genelinde rastgele koordinat üret (bounding box)."""
     return (
         round(random.uniform(ANKARA_LAT_MIN, ANKARA_LAT_MAX), 6),
         round(random.uniform(ANKARA_LNG_MIN, ANKARA_LNG_MAX), 6),
@@ -193,9 +183,7 @@ def get_desc(olay_adi, good):
         return f'{olay_adi} - Olay yerine ekipler sevk edildi'
 
 
-# Veritabanı oluşturma / bağlanma
 def admin_connect():
-    """PostgreSQL sunucusuna 'postgres' bakım DB'si üzerinden bağlan."""
     try:
         conn = psycopg2.connect(
             host=DB_CONFIG['host'],
@@ -216,10 +204,8 @@ def db_name_for(deney_no):
 
 
 def create_experiment_db(admin_conn, deney_no):
-    """Deney için yeni veritabanı oluştur (varsa sil yeniden oluştur)."""
     db_name = db_name_for(deney_no)
     cur = admin_conn.cursor()
-    # Açık bağlantıları sonlandır
     cur.execute("""
         SELECT pg_terminate_backend(pid)
         FROM pg_stat_activity
@@ -244,7 +230,6 @@ def connect_experiment_db(db_name):
 
 
 def setup_schema(conn):
-    """Tablo yapısını ve eklentileri kur (1_veritabani_tablolari.sql uyumlu)."""
     conn.autocommit = True
     cur = conn.cursor()
     for statement in SCHEMA_SQL.split(';'):
@@ -257,7 +242,6 @@ def setup_schema(conn):
     conn.autocommit = False
 
 
-# Olay türleri, kullanıcılar, veri ekleme
 def olay_turlerini_ekle(conn):
     cur = conn.cursor()
     olay_turu_ids = {}
@@ -282,31 +266,20 @@ def olay_turlerini_ekle(conn):
 
 
 def kullanicilari_olustur(conn, deney_config):
-    """Yeni veritabanında kullanıcıları oluştur.
-    deney_config: {
-        'kurum_sayisi': int,    # Kaç kurum seçilecek (3..10)
-        'uzman_sayisi': int,    # Her kuruma kaç uzman (10, 50, 100, 200)
-    }
-    DOMAINS listesinden kurum_sayisi kadar rastgele seçilir,
-    her seçilen domain'e uzman_sayisi kadar kullanıcı eklenir.
-    """
     cur = conn.cursor()
     kurum_sayisi = deney_config['kurum_sayisi']
     uzman_sayisi = deney_config['uzman_sayisi']
-
-    # Düz listeden rastgele domain seç
     secilen_domainler = random.sample(DOMAINS, kurum_sayisi)
 
     kullanici_idleri = []
     kurum_kullanici_map = {}
 
     for domain in secilen_domainler:
-        kisaltma = domain.split('.')[0]  # "k1.gov.tr" → "k1"
+        kisaltma = domain.split('.')[0]
         kurum_ids = []
         for u_idx in range(uzman_sayisi):
             username = f"{kisaltma}_{u_idx+1}"
             email = f"{username}@{domain}"
-
             cur.execute(
                 """INSERT INTO users (
                        username, password_hash, role, email,
@@ -321,15 +294,11 @@ def kullanicilari_olustur(conn, deney_config):
                 (username, PERF_TEST_PASSWORD, email)
             )
             uid = cur.fetchone()[0]
-
             kullanici_idleri.append({
-                'id': uid,
-                'username': username,
-                'kurum': domain,
-                'domain': domain,
+                'id': uid, 'username': username,
+                'kurum': domain, 'domain': domain,
             })
             kurum_ids.append(uid)
-
         kurum_kullanici_map[domain] = kurum_ids
 
     conn.commit()
@@ -340,7 +309,6 @@ def veri_ekle(conn, kullanicilar, olay_turu_ids):
     cur = conn.cursor()
     olay_adi_listesi = list(olay_turu_ids.keys())
     olay_id_listesi = list(olay_turu_ids.values())
-
     toplam_eklenen = 0
     insert_suresi_baslangic = time.time()
     batch_data = []
@@ -355,12 +323,10 @@ def veri_ekle(conn, kullanicilar, olay_turu_ids):
             olay_id  = olay_id_listesi[olay_idx]
             olay_good = OLAY_TURLERI[olay_idx]['good']
             aciklama = get_desc(olay_adi, olay_good)
-
             has_photo = random.random() < 0.5
             has_video = random.random() < 0.5
             photo_urls = json.dumps([f'/uploads/{PHOTO_FILENAME}']) if has_photo else '[]'
             video_urls = json.dumps([f'/uploads/{VIDEO_FILENAME}']) if has_video else '[]'
-
             batch_data.append((
                 lat, lng, olay_id, aciklama, lng, lat,
                 user_info['username'], 'user', user_info['id'],
@@ -379,14 +345,12 @@ def veri_ekle(conn, kullanicilar, olay_turu_ids):
         %s, %s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s), 4326),
         %s, %s, %s, %s, %s, %s, true
     )"""
-
     BATCH_SIZE = 5000
     for i in range(0, len(batch_data), BATCH_SIZE):
         chunk = batch_data[i:i + BATCH_SIZE]
         psycopg2.extras.execute_values(
             cur, insert_sql, chunk, template=template, page_size=BATCH_SIZE
         )
-
     conn.commit()
     insert_suresi = time.time() - insert_suresi_baslangic
     return toplam_eklenen, insert_suresi
@@ -409,7 +373,7 @@ def supervizor_sorgulari(conn, kurum_kullanici_map):
     sonuclar = {}
     domain_list = list(kurum_kullanici_map.keys())
     secili_domain = random.choice(domain_list)
-    secili_kurum = secili_domain  # DOMAINS düz liste, domain'in kendisi isim
+    secili_kurum = secili_domain
 
     tum_userids = []
     for ids in kurum_kullanici_map.values():
@@ -423,7 +387,6 @@ def supervizor_sorgulari(conn, kurum_kullanici_map):
     t2 = datetime.now()
     t1 = t2 - timedelta(days=30)
 
-    # ── Sorgu 1: Kurum Sorgulama ──
     sql1 = """
         SELECT o.olay_id, o.enlem, o.boylam, o.olay_turu, o.aciklama,
                o.created_by_name, o.photo_urls, o.video_urls, o.created_at
@@ -433,7 +396,6 @@ def supervizor_sorgulari(conn, kurum_kullanici_map):
     rows1, sure1 = sorgu_calistir(conn, sql1, (f'%@{secili_domain}',))
     sonuclar['sorgu1_kurum'] = {'ad': f'Kurum ({secili_kurum})', 'sure_sn': round(sure1, 4), 'sonuc_sayisi': len(rows1)}
 
-    # ── Sorgu 2: Uzman Sorgulama ──
     sql2 = """
         SELECT o.olay_id, o.enlem, o.boylam, o.olay_turu, o.aciklama,
                o.created_by_name, o.photo_urls, o.video_urls, o.created_at
@@ -442,7 +404,6 @@ def supervizor_sorgulari(conn, kurum_kullanici_map):
     rows2, sure2 = sorgu_calistir(conn, sql2, (secili_user_id,))
     sonuclar['sorgu2_uzman'] = {'ad': f'Uzman (id={secili_user_id})', 'sure_sn': round(sure2, 4), 'sonuc_sayisi': len(rows2)}
 
-    # ── Sorgu 3: Olay Türü Sorgulama ──
     sql3 = """
         SELECT o.olay_id, o.enlem, o.boylam, o.aciklama,
                o.created_by_name, o.photo_urls, o.video_urls, o.created_at
@@ -451,7 +412,6 @@ def supervizor_sorgulari(conn, kurum_kullanici_map):
     rows3, sure3 = sorgu_calistir(conn, sql3, (secili_olay_turu,))
     sonuclar['sorgu3_olay_turu'] = {'ad': f'Olay türü (id={secili_olay_turu})', 'sure_sn': round(sure3, 4), 'sonuc_sayisi': len(rows3)}
 
-    # ── Sorgu 4: Medyalı Olay Sorgulama ──
     sql4 = """
         SELECT o.olay_id, o.enlem, o.boylam, o.aciklama,
                o.created_by_name, o.photo_urls, o.video_urls, o.created_at
@@ -463,7 +423,6 @@ def supervizor_sorgulari(conn, kurum_kullanici_map):
     rows4, sure4 = sorgu_calistir(conn, sql4, (secili_olay_turu,))
     sonuclar['sorgu4_medya'] = {'ad': f'Medyalı (tür={secili_olay_turu})', 'sure_sn': round(sure4, 4), 'sonuc_sayisi': len(rows4)}
 
-    # ── Sorgu 5: Tarih aralığı + Kurum Sorgulama ──
     sql5 = """
         SELECT o.olay_id, o.enlem, o.boylam, o.olay_turu, o.aciklama,
                o.created_by_name, o.photo_urls, o.video_urls, o.created_at
@@ -474,7 +433,6 @@ def supervizor_sorgulari(conn, kurum_kullanici_map):
     rows5, sure5 = sorgu_calistir(conn, sql5, (f'%@{secili_domain}', t1, t2))
     sonuclar['sorgu5_tarih_kurum'] = {'ad': f'Tarih aralığı+Kurum ({secili_kurum})', 'sure_sn': round(sure5, 4), 'sonuc_sayisi': len(rows5)}
 
-    # ── Sorgu 6: T1-T2 tarih aralığında [X] kurumundan toplanan veri (COUNT) ──
     sql6 = """
         SELECT COUNT(*) AS toplanan_veri
         FROM olay o JOIN users u ON o.created_by_id = u.id
@@ -493,21 +451,15 @@ def supervizor_sorgulari(conn, kurum_kullanici_map):
 
 
 # ════════════════════════════════════════════════════════════════
-#  SVG Grafik ve Tablo Oluşturma
+#  SVG Grafik ve Tablo Oluşturma (7 adet)
 # ════════════════════════════════════════════════════════════════
 
 def stil_uygula(ax, xlabel='', ylabel='', title='', fontsize_label=14, fontsize_title=15):
-    """Tüm grafiklere ortak stil uygula:
-    - Sadece sol (y) ve alt (x) eksenler görünsün, kalın olsun
-    - Eksen etiketleri büyük puntolu
-    - Y ekseni eşit aralıklı (MaxNLocator)
-    """
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_linewidth(2.5)
     ax.spines['bottom'].set_linewidth(2.5)
     ax.tick_params(axis='both', width=2, length=6, labelsize=12)
-    # Y ekseni eşit aralıklı tick'ler
     ax.yaxis.set_major_locator(ticker.MaxNLocator(nbins=8, integer=False))
     if xlabel:
         ax.set_xlabel(xlabel, fontsize=fontsize_label, fontweight='bold')
@@ -526,7 +478,6 @@ def grafik_olustur(tum_sonuclar, output_dir):
     toplam_veriler     = [s['toplam_veri'] for s in tum_sonuclar]
     insert_sureleri    = [s['insert_suresi'] for s in tum_sonuclar]
 
-    # ── 6 sorgu tanımı ──
     sorgu_isimleri = [
         ('sorgu1_kurum',             'S1: Kurum Sorgulama'),
         ('sorgu2_uzman',             'S2: Uzman Sorgulama'),
@@ -584,51 +535,7 @@ def grafik_olustur(tum_sonuclar, output_dir):
     fig.tight_layout(); fig.savefig(output_dir / '03_sorgu_sureleri.svg', format='svg'); plt.close(fig)
     print(f"  [SVG] 03_sorgu_sureleri.svg")
 
-    # ── 4: Ortalama Yanıt Süreleri (6 sorgu) ──
-    fig, ax = plt.subplots(figsize=(12, 7))
-    ort_sureler = [np.mean(sorgu_sureleri[k]) for k, _ in sorgu_isimleri]
-    std_sureler = [np.std(sorgu_sureleri[k]) for k, _ in sorgu_isimleri]
-    x_pos = np.arange(len(sorgu_isimleri))
-    bars = ax.bar(x_pos, ort_sureler, yerr=std_sureler, capsize=5,
-                  color=renk_paleti, alpha=0.85, edgecolor='black', linewidth=0.5)
-    stil_uygula(ax, ylabel='Ortalama Süre (s)', title='Ortalama Yanıt Süreleri')
-    ax.set_xticks(x_pos)
-    ax.set_xticklabels([l for _, l in sorgu_isimleri], rotation=25, ha='right', fontsize=10)
-    for bar, val in zip(bars, ort_sureler):
-        ax.text(bar.get_x()+bar.get_width()/2, bar.get_height()+0.001,
-                f'{val:.4f}s', ha='center', va='bottom', fontsize=9, fontweight='bold')
-    fig.tight_layout(); fig.savefig(output_dir / '04_ortalama_sorgu_sureleri.svg', format='svg'); plt.close(fig)
-    print(f"  [SVG] 04_ortalama_sorgu_sureleri.svg")
-
-    # ── 5: Insert Hızı ──
-    fig, ax = plt.subplots(figsize=(12, 6))
-    hizlar = [v / max(s, 0.001) for v, s in zip(toplam_veriler, insert_sureleri)]
-    ax.plot(range(len(kullanici_sayilari)), hizlar, 's-', color='#FF5722', linewidth=2, markersize=5)
-    stil_uygula(ax, xlabel='Kullanıcı Sayısı', ylabel='Veri/Saniye',
-                title='Veri Ekleme Hızı (throughput)')
-    n_ticks = min(10, len(kullanici_sayilari))
-    tick_idx = np.linspace(0, len(kullanici_sayilari) - 1, n_ticks, dtype=int)
-    ax.set_xticks(tick_idx)
-    ax.set_xticklabels([f'{kullanici_sayilari[i]:,}' for i in tick_idx], rotation=45, ha='right')
-    fig.tight_layout(); fig.savefig(output_dir / '05_insert_hizi.svg', format='svg'); plt.close(fig)
-    print(f"  [SVG] 05_insert_hizi.svg")
-
-    # ── 6: Isı Haritası (6 sorgu) ──
-    fig, ax = plt.subplots(figsize=(14, 7))
-    matrix = [[s['sorgular'][k]['sonuc_sayisi'] for s in tum_sonuclar] for k, _ in sorgu_isimleri]
-    im = ax.imshow(matrix, aspect='auto', cmap='YlOrRd')
-    ax.set_yticks(range(len(sorgu_isimleri)))
-    ax.set_yticklabels([l for _, l in sorgu_isimleri], fontsize=10)
-    tick_step = max(1, len(deney_nolari) // 8)
-    xtick_pos = list(range(0, len(deney_nolari), tick_step))
-    ax.set_xticks(xtick_pos)
-    ax.set_xticklabels([str(deney_nolari[i]) for i in xtick_pos])
-    stil_uygula(ax, xlabel='Deney No', title='Sorgu Sonuç Sayıları (Isı Haritası)')
-    fig.colorbar(im, label='Sonuç Sayısı')
-    fig.tight_layout(); fig.savefig(output_dir / '06_sorgu_sonuc_isi_haritasi.svg', format='svg'); plt.close(fig)
-    print(f"  [SVG] 06_sorgu_sonuc_isi_haritasi.svg")
-
-    # ── 7: Özet Tablosu (6 sorgu) ──
+    # ── 4: Özet Tablosu ──
     fig, ax = plt.subplots(figsize=(24, max(10, len(tum_sonuclar)*0.35+2)))
     ax.axis('off')
     ax.set_title('Deney Sonuçları Özet Tablosu', fontsize=16, fontweight='bold', pad=20)
@@ -657,10 +564,10 @@ def grafik_olustur(tum_sonuclar, output_dir):
         for j in range(len(basliklar)):
             tablo[i,j].set_facecolor('#E3F2FD' if i%2==0 else '#FFFFFF')
     fig.tight_layout()
-    fig.savefig(output_dir / '07_ozet_tablosu.svg', format='svg', bbox_inches='tight'); plt.close(fig)
-    print(f"  [SVG] 07_ozet_tablosu.svg")
+    fig.savefig(output_dir / '04_ozet_tablosu.svg', format='svg', bbox_inches='tight'); plt.close(fig)
+    print(f"  [SVG] 04_ozet_tablosu.svg")
 
-    # ── 8: İstatistik Özeti (6 sorgu) ──
+    # ── 5: İstatistik Özeti ──
     fig, ax = plt.subplots(figsize=(14, 7))
     ax.axis('off')
     ax.set_title('İstatistiksel Özet', fontsize=16, fontweight='bold', pad=20)
@@ -689,10 +596,10 @@ def grafik_olustur(tum_sonuclar, output_dir):
         for j in range(len(ist_baslik)):
             t2[i,j].set_facecolor('#E8F5E9' if i%2==0 else '#FFFFFF')
     fig.tight_layout()
-    fig.savefig(output_dir / '08_istatistik_ozeti.svg', format='svg', bbox_inches='tight'); plt.close(fig)
-    print(f"  [SVG] 08_istatistik_ozeti.svg")
+    fig.savefig(output_dir / '05_istatistik_ozeti.svg', format='svg', bbox_inches='tight'); plt.close(fig)
+    print(f"  [SVG] 05_istatistik_ozeti.svg")
 
-    # ── 9: Box Plot (6 sorgu) ──
+    # ── 6: Box Plot ──
     fig, ax = plt.subplots(figsize=(14, 7))
     bp = ax.boxplot([sorgu_sureleri[k] for k, _ in sorgu_isimleri],
                     patch_artist=True,
@@ -702,10 +609,10 @@ def grafik_olustur(tum_sonuclar, output_dir):
         patch.set_alpha(0.6)
     stil_uygula(ax, ylabel='Sorgu Süresi (s)', title='Sorgu Süresi Dağılımları (Box Plot)')
     ax.set_xticklabels([l for _, l in sorgu_isimleri], rotation=20, ha='right', fontsize=10)
-    fig.tight_layout(); fig.savefig(output_dir / '09_sorgu_boxplot.svg', format='svg'); plt.close(fig)
-    print(f"  [SVG] 09_sorgu_boxplot.svg")
+    fig.tight_layout(); fig.savefig(output_dir / '06_sorgu_boxplot.svg', format='svg'); plt.close(fig)
+    print(f"  [SVG] 06_sorgu_boxplot.svg")
 
-    # ── 10: Scatter – Tüm noktalar SİYAH (6 sorgu → 2x3 grid) ──
+    # ── 7: Scatter ──
     fig, axes = plt.subplots(2, 3, figsize=(18, 10))
     axes_flat = axes.flatten()
     for idx, (key, label) in enumerate(sorgu_isimleri):
@@ -722,8 +629,8 @@ def grafik_olustur(tum_sonuclar, output_dir):
     fig.suptitle('Veri Miktarı vs Sorgu Süreleri (Trend Çizgisiyle)',
                  fontsize=14, fontweight='bold')
     fig.tight_layout(rect=[0, 0, 1, 0.95])
-    fig.savefig(output_dir / '10_veri_vs_sorgu_scatter.svg', format='svg'); plt.close(fig)
-    print(f"  [SVG] 10_veri_vs_sorgu_scatter.svg")
+    fig.savefig(output_dir / '07_veri_vs_sorgu_scatter.svg', format='svg'); plt.close(fig)
+    print(f"  [SVG] 07_veri_vs_sorgu_scatter.svg")
 
     print(f"\n  Tüm grafikler ve tablolar '{output_dir}' klasörüne kaydedildi.")
 
@@ -753,11 +660,9 @@ def main():
     else:
         print(f"[UYARI] Video bulunamadı: {VIDEO_SRC}")
 
-    # PostgreSQL sunucusuna bağlan
     admin_conn = admin_connect()
     print(f"\n[OK] PostgreSQL sunucu bağlantısı: {DB_CONFIG['host']}:{DB_CONFIG['port']}")
 
-    # Deney matrisi
     print(f"\n[BİLGİ] {deney_sayisi} Deney planlandı (kurum × uzman):")
     print(f"         Kurum sayıları: {KURUM_SAYILARI}")
     print(f"         Uzman sayıları: {UZMAN_SAYILARI}")
@@ -777,29 +682,14 @@ def main():
         k_sayisi = deney_config['kurum_sayisi']
         u_sayisi = deney_config['uzman_sayisi']
 
-        # 1) Veritabanı oluşturulması
         db_name = create_experiment_db(admin_conn, deney_no)
-
-        # 2) Yeni veritabanına bağlanılması
         conn = connect_experiment_db(db_name)
-
-        # 3) Şemanın kurulması
         setup_schema(conn)
-
-        # 4) Olay türlerinin eklenmesi
         olay_turu_ids = olay_turlerini_ekle(conn)
-
-        # 5) Kullanıcıların oluşturulması (kurum × uzman)
         kullanicilar, kurum_map = kullanicilari_olustur(conn, deney_config)
         gercek_k_sayisi = len(kullanicilar)
-
-        # 6) Verileri eklenmesi
         toplam_veri, insert_suresi = veri_ekle(conn, kullanicilar, olay_turu_ids)
-
-        # 7) Sorguların çalışması (6 sorgu)
         sorgular = supervizor_sorgulari(conn, kurum_map)
-
-        # 8) Bağlantıyı kapat
         conn.close()
 
         sonuc = {
