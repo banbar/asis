@@ -23,15 +23,19 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from pathlib import Path
 
-
 load_dotenv()
 
+# Deney matrisi: kurum_sayisi × uzman_sayisi = 8 × 4 = 32 deney
+KURUM_SAYILARI = list(range(3, 11))       # [3, 4, 5, 6, 7, 8, 9, 10]
+UZMAN_SAYILARI = [10, 50, 100, 200]       # Her kuruma atanacak uzman sayısı
+
+
 DB_CONFIG = {
-    'host':     os.getenv('PGHOST', ''),
-    'port':     int(os.getenv('PGPORT',)),
-    'user':     os.getenv('PGUSER', ''),
-    'password': os.getenv('PGPASSWORD', ''),
-    'database': os.getenv('PGDATABASE', ''),
+    'host':     os.getenv('PGHOST', '127.0.0.1'),
+    'port':     int(os.getenv('PGPORT', 5432)),
+    'user':     os.getenv('PGUSER', 'postgres'),
+    'password': os.getenv('PGPASSWORD', '12345Aa'),
+    'database': os.getenv('PGDATABASE', 'asis'),
 }
 
 SCRIPT_DIR  = Path(__file__).resolve().parent
@@ -135,9 +139,7 @@ ANKARA_LNG_MAX = 33.00
 DOMAINS = ["k1.gov.tr", "k2.gov.tr", "k3.gov.tr", "k4.gov.tr", "k5.gov.tr",
            "k6.gov.tr", "k7.gov.tr", "k8.gov.tr", "k9.gov.tr", "k10.gov.tr"]
 
-# Deney matrisi: kurum_sayisi × uzman_sayisi = 8 × 4 = 32 deney
-KURUM_SAYILARI = list(range(3, 11))       # [3, 4, 5, 6, 7, 8, 9, 10]
-UZMAN_SAYILARI = [10, 50, 100, 200]       # Her kuruma atanacak uzman sayısı
+
 
 OLAY_TURLERI = [
     {'ad': 'Az Hasarlı',       'good': True},
@@ -159,8 +161,8 @@ OLAY_TURLERI = [
 def deney_matris_olustur():
 
     matris = []
-    for k_sayisi in [KURUM_SAYILARI[-1]]:        # Tam: KURUM_SAYILARI  |  Az: [:1]
-        for u_sayisi in [UZMAN_SAYILARI[-1]]:    # Tam: UZMAN_SAYILARI  |  Az: [:1]
+    for k_sayisi in KURUM_SAYILARI:        # Tam: KURUM_SAYILARI  |  Az: [:1]
+        for u_sayisi in UZMAN_SAYILARI:    # Tam: UZMAN_SAYILARI  |  Az: [:1]
             matris.append({
                 'kurum_sayisi': k_sayisi,
                 'uzman_sayisi': u_sayisi,
