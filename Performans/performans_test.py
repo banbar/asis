@@ -358,12 +358,15 @@ def veri_ekle(conn, kullanicilar, olay_turu_ids):
 #  Sorgular (6 adet)
 # ════════════════════════════════════════════════════════════════
 
-def sorgu_calistir(conn, sql, params=None):
+def sorgu_calistir(conn, sql, params=None, tekrar=10):
     cur = conn.cursor()
-    baslangic = time.time()
     cur.execute(sql, params or ())
     rows = cur.fetchall()
-    sure = time.time() - baslangic
+    baslangic = time.perf_counter()
+    for _ in range(tekrar):
+        cur.execute(sql, params or ())
+        cur.fetchall()
+    sure = (time.perf_counter() - baslangic) / tekrar
     return rows, sure
 
 
@@ -386,62 +389,55 @@ def supervizor_sorgulari(conn, kurum_kullanici_map):
     t1 = t2 - timedelta(days=30)
 
     sql1 = """
-        SELECT o.olay_id, o.enlem, o.boylam, o.olay_turu, o.aciklama,
-               o.created_by_name, o.photo_urls, o.video_urls, o.created_at
+        SELECT *
         FROM olay o JOIN users u ON o.created_by_id = u.id
-        WHERE u.email LIKE %s AND COALESCE(o.active, true) = true
+        WHERE u.email LIKE %s
     """
     rows1, sure1 = sorgu_calistir(conn, sql1, (f'%@{secili_domain}',))
-    sonuclar['sorgu1_kurum'] = {'ad': f'Kurum ({secili_kurum})', 'sure_sn': round(sure1, 4), 'sonuc_sayisi': len(rows1)}
+    sonuclar['sorgu1_kurum'] = {'ad': f'Kurum ({secili_kurum})', 'sure_sn': round(sure1, 6), 'sonuc_sayisi': len(rows1)}
 
     sql2 = """
-        SELECT o.olay_id, o.enlem, o.boylam, o.olay_turu, o.aciklama,
-               o.created_by_name, o.photo_urls, o.video_urls, o.created_at
-        FROM olay o WHERE o.created_by_id = %s AND COALESCE(o.active, true) = true
+        SELECT *
+        FROM olay o WHERE o.created_by_id = %s 
     """
     rows2, sure2 = sorgu_calistir(conn, sql2, (secili_user_id,))
-    sonuclar['sorgu2_uzman'] = {'ad': f'Uzman (id={secili_user_id})', 'sure_sn': round(sure2, 4), 'sonuc_sayisi': len(rows2)}
+    sonuclar['sorgu2_uzman'] = {'ad': f'Uzman (id={secili_user_id})', 'sure_sn': round(sure2, 6), 'sonuc_sayisi': len(rows2)}
 
     sql3 = """
-        SELECT o.olay_id, o.enlem, o.boylam, o.aciklama,
-               o.created_by_name, o.photo_urls, o.video_urls, o.created_at
-        FROM olay o WHERE o.olay_turu = %s AND COALESCE(o.active, true) = true
+        SELECT *
+        FROM olay o WHERE o.olay_turu = %s
     """
     rows3, sure3 = sorgu_calistir(conn, sql3, (secili_olay_turu,))
-    sonuclar['sorgu3_olay_turu'] = {'ad': f'Olay türü (id={secili_olay_turu})', 'sure_sn': round(sure3, 4), 'sonuc_sayisi': len(rows3)}
+    sonuclar['sorgu3_olay_turu'] = {'ad': f'Olay türü (id={secili_olay_turu})', 'sure_sn': round(sure3, 6), 'sonuc_sayisi': len(rows3)}
 
     sql4 = """
-        SELECT o.olay_id, o.enlem, o.boylam, o.aciklama,
-               o.created_by_name, o.photo_urls, o.video_urls, o.created_at
+        SELECT *
         FROM olay o
-        WHERE o.olay_turu = %s AND COALESCE(o.active, true) = true
+        WHERE o.olay_turu = %s
           AND ((o.photo_urls IS NOT NULL AND o.photo_urls <> '[]')
                OR (o.video_urls IS NOT NULL AND o.video_urls <> '[]'))
     """
     rows4, sure4 = sorgu_calistir(conn, sql4, (secili_olay_turu,))
-    sonuclar['sorgu4_medya'] = {'ad': f'Medyalı (tür={secili_olay_turu})', 'sure_sn': round(sure4, 4), 'sonuc_sayisi': len(rows4)}
+    sonuclar['sorgu4_medya'] = {'ad': f'Medyalı (tür={secili_olay_turu})', 'sure_sn': round(sure4, 6), 'sonuc_sayisi': len(rows4)}
 
     sql5 = """
-        SELECT o.olay_id, o.enlem, o.boylam, o.olay_turu, o.aciklama,
-               o.created_by_name, o.photo_urls, o.video_urls, o.created_at
-        FROM olay o JOIN users u ON o.created_by_id = u.id
-        WHERE u.email LIKE %s AND o.created_at BETWEEN %s AND %s
-          AND COALESCE(o.active, true) = true
+        SELECT *
+        FROM olay o 
+        WHERE o.created_at BETWEEN %s AND %s 
     """
-    rows5, sure5 = sorgu_calistir(conn, sql5, (f'%@{secili_domain}', t1, t2))
-    sonuclar['sorgu5_tarih_kurum'] = {'ad': f'Tarih aralığı+Kurum ({secili_kurum})', 'sure_sn': round(sure5, 4), 'sonuc_sayisi': len(rows5)}
+    rows5, sure5 = sorgu_calistir(conn, sql5, (t1, t2))
+    sonuclar['sorgu5_tarih_kurum'] = {'ad': f'Tarih aralığı+Kurum ({secili_kurum})', 'sure_sn': round(sure5, 6), 'sonuc_sayisi': len(rows5)}
 
     sql6 = """
-        SELECT COUNT(*) AS toplanan_veri
+        SELECT *
         FROM olay o JOIN users u ON o.created_by_id = u.id
         WHERE u.email LIKE %s AND o.created_at BETWEEN %s AND %s
-          AND COALESCE(o.active, true) = true
     """
     rows6, sure6 = sorgu_calistir(conn, sql6, (f'%@{secili_domain}', t1, t2))
     toplanan_veri = rows6[0][0] if rows6 else 0
     sonuclar['sorgu6_tarih_kurum_count'] = {
         'ad': f'T1-T2 {secili_kurum} toplanan veri',
-        'sure_sn': round(sure6, 4),
+        'sure_sn': round(sure6, 6),
         'sonuc_sayisi': toplanan_veri
     }
 
@@ -547,12 +543,12 @@ def grafik_olustur(tum_sonuclar, output_dir):
             str(s.get('kurum_sayisi', '')), str(s.get('uzman_sayisi', '')),
             f"{s['kullanici_sayisi']:,}", f"{s['toplam_veri']:,}",
             f"{s['insert_suresi']:.3f}",
-            f"{s['sorgular']['sorgu1_kurum']['sure_sn']:.4f}",
-            f"{s['sorgular']['sorgu2_uzman']['sure_sn']:.4f}",
-            f"{s['sorgular']['sorgu3_olay_turu']['sure_sn']:.4f}",
-            f"{s['sorgular']['sorgu4_medya']['sure_sn']:.4f}",
-            f"{s['sorgular']['sorgu5_tarih_kurum']['sure_sn']:.4f}",
-            f"{s['sorgular']['sorgu6_tarih_kurum_count']['sure_sn']:.4f}",
+            f"{s['sorgular']['sorgu1_kurum']['sure_sn']:.6f}",
+            f"{s['sorgular']['sorgu2_uzman']['sure_sn']:.6f}",
+            f"{s['sorgular']['sorgu3_olay_turu']['sure_sn']:.6f}",
+            f"{s['sorgular']['sorgu4_medya']['sure_sn']:.6f}",
+            f"{s['sorgular']['sorgu5_tarih_kurum']['sure_sn']:.6f}",
+            f"{s['sorgular']['sorgu6_tarih_kurum_count']['sure_sn']:.6f}",
         ])
     tablo = ax.table(cellText=rows, colLabels=basliklar, loc='center', cellLoc='center')
     tablo.auto_set_font_size(False); tablo.set_fontsize(7); tablo.scale(1, 1.4)
@@ -584,8 +580,8 @@ def grafik_olustur(tum_sonuclar, output_dir):
     ist_rows = []
     for ad, v in metrikler:
         a = np.array(v)
-        ist_rows.append([ad, f"{a.min():.4f}", f"{a.max():.4f}",
-                         f"{a.mean():.4f}", f"{np.median(a):.4f}", f"{a.std():.4f}"])
+        ist_rows.append([ad, f"{a.min():.6f}", f"{a.max():.6f}",
+                         f"{a.mean():.6f}", f"{np.median(a):.6f}", f"{a.std():.6f}"])
     t2 = ax.table(cellText=ist_rows, colLabels=ist_baslik, loc='center', cellLoc='center')
     t2.auto_set_font_size(False); t2.set_fontsize(9); t2.scale(1, 1.6)
     for j in range(len(ist_baslik)):
@@ -670,8 +666,8 @@ def main():
     tum_sonuclar = []
 
     print(f"\n{'Deney':>5} | {'DB Adı':<16} | {'Kurum':>5} | {'Uzman':>5} | {'Toplam':>7} | {'Veri':>10} | "
-          f"{'Insert(s)':>10} | {'S1(s)':>8} | {'S2(s)':>8} | {'S3(s)':>8} | "
-          f"{'S4(s)':>8} | {'S5(s)':>8} | {'S6(s)':>8}")
+          f"{'Insert(s)':>10} | {'S1(s)':>10} | {'S2(s)':>10} | {'S3(s)':>10} | "
+          f"{'S4(s)':>10} | {'S5(s)':>10} | {'S6(s)':>10}")
     print("-" * 145)
 
     for deney_idx in range(deney_sayisi):
@@ -710,8 +706,8 @@ def main():
         s6 = sorgular['sorgu6_tarih_kurum_count']['sure_sn']
         print(f"{deney_no:>5} | {db_name:<16} | {k_sayisi:>5} | {u_sayisi:>5} | "
               f"{gercek_k_sayisi:>7,} | {toplam_veri:>10,} | {insert_suresi:>10.3f} | "
-              f"{s1:>8.4f} | {s2:>8.4f} | {s3:>8.4f} | {s4:>8.4f} | "
-              f"{s5:>8.4f} | {s6:>8.4f}")
+              f"{s1:>10.6f} | {s2:>10.6f} | {s3:>10.6f} | {s4:>10.6f} | "
+              f"{s5:>10.6f} | {s6:>10.6f}")
 
     admin_conn.close()
 

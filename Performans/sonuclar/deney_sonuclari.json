@@ -5,38 +5,38 @@
     "kurum_sayisi": 3,
     "uzman_sayisi": 10,
     "kullanici_sayisi": 30,
-    "toplam_veri": 913,
-    "insert_suresi": 0.031,
+    "toplam_veri": 926,
+    "insert_suresi": 0.037,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k2.gov.tr)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 329
+        "ad": "Kurum (k8.gov.tr)",
+        "sure_sn": 0.001035,
+        "sonuc_sayisi": 304
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=28)",
-        "sure_sn": 0.0011,
-        "sonuc_sayisi": 18
+        "ad": "Uzman (id=20)",
+        "sure_sn": 0.000158,
+        "sonuc_sayisi": 37
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=9)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 77
+        "ad": "Olay türü (id=3)",
+        "sure_sn": 0.000247,
+        "sonuc_sayisi": 98
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=9)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 63
+        "ad": "Medyalı (tür=3)",
+        "sure_sn": 0.000308,
+        "sonuc_sayisi": 74
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k2.gov.tr)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 153
+        "ad": "Tarih aralığı+Kurum (k8.gov.tr)",
+        "sure_sn": 0.00124,
+        "sonuc_sayisi": 442
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k2.gov.tr toplanan veri",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 153
+        "ad": "T1-T2 k8.gov.tr toplanan veri",
+        "sure_sn": 0.00103,
+        "sonuc_sayisi": 2
       }
     }
   },
@@ -46,38 +46,38 @@
     "kurum_sayisi": 3,
     "uzman_sayisi": 50,
     "kullanici_sayisi": 150,
-    "toplam_veri": 4309,
-    "insert_suresi": 0.133,
+    "toplam_veri": 4498,
+    "insert_suresi": 0.147,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k10.gov.tr)",
-        "sure_sn": 0.003,
-        "sonuc_sayisi": 1477
+        "ad": "Kurum (k7.gov.tr)",
+        "sure_sn": 0.00516,
+        "sonuc_sayisi": 1511
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=103)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 17
+        "ad": "Uzman (id=138)",
+        "sure_sn": 0.000153,
+        "sonuc_sayisi": 42
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=4)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 385
+        "ad": "Olay türü (id=5)",
+        "sure_sn": 0.001023,
+        "sonuc_sayisi": 460
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=4)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 288
+        "ad": "Medyalı (tür=5)",
+        "sure_sn": 0.000978,
+        "sonuc_sayisi": 342
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k10.gov.tr)",
-        "sure_sn": 0.0081,
-        "sonuc_sayisi": 711
+        "ad": "Tarih aralığı+Kurum (k7.gov.tr)",
+        "sure_sn": 0.004796,
+        "sonuc_sayisi": 2187
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k10.gov.tr toplanan veri",
-        "sure_sn": 0.006,
-        "sonuc_sayisi": 711
+        "ad": "T1-T2 k7.gov.tr toplanan veri",
+        "sure_sn": 0.008946,
+        "sonuc_sayisi": 1459
       }
     }
   },
@@ -87,38 +87,38 @@
     "kurum_sayisi": 3,
     "uzman_sayisi": 100,
     "kullanici_sayisi": 300,
-    "toplam_veri": 8716,
-    "insert_suresi": 0.267,
+    "toplam_veri": 9109,
+    "insert_suresi": 0.297,
     "sorgular": {
       "sorgu1_kurum": {
         "ad": "Kurum (k9.gov.tr)",
-        "sure_sn": 0.005,
-        "sonuc_sayisi": 2918
+        "sure_sn": 0.009417,
+        "sonuc_sayisi": 2861
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=209)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 24
+        "ad": "Uzman (id=170)",
+        "sure_sn": 0.000215,
+        "sonuc_sayisi": 25
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=1)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 791
+        "ad": "Olay türü (id=2)",
+        "sure_sn": 0.001921,
+        "sonuc_sayisi": 885
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=1)",
-        "sure_sn": 0.0015,
-        "sonuc_sayisi": 592
+        "ad": "Medyalı (tür=2)",
+        "sure_sn": 0.001657,
+        "sonuc_sayisi": 655
       },
       "sorgu5_tarih_kurum": {
         "ad": "Tarih aralığı+Kurum (k9.gov.tr)",
-        "sure_sn": 0.0275,
-        "sonuc_sayisi": 1401
+        "sure_sn": 0.010319,
+        "sonuc_sayisi": 4451
       },
       "sorgu6_tarih_kurum_count": {
         "ad": "T1-T2 k9.gov.tr toplanan veri",
-        "sure_sn": 0.024,
-        "sonuc_sayisi": 1401
+        "sure_sn": 0.030829,
+        "sonuc_sayisi": 1
       }
     }
   },
@@ -128,38 +128,38 @@
     "kurum_sayisi": 3,
     "uzman_sayisi": 200,
     "kullanici_sayisi": 600,
-    "toplam_veri": 17489,
-    "insert_suresi": 0.545,
+    "toplam_veri": 18188,
+    "insert_suresi": 0.581,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k7.gov.tr)",
-        "sure_sn": 0.0101,
-        "sonuc_sayisi": 5882
+        "ad": "Kurum (k2.gov.tr)",
+        "sure_sn": 0.020048,
+        "sonuc_sayisi": 6067
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=258)",
-        "sure_sn": 0.0,
+        "ad": "Uzman (id=289)",
+        "sure_sn": 0.000204,
         "sonuc_sayisi": 47
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=6)",
-        "sure_sn": 0.003,
-        "sonuc_sayisi": 1587
+        "ad": "Olay türü (id=3)",
+        "sure_sn": 0.003882,
+        "sonuc_sayisi": 1804
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=6)",
-        "sure_sn": 0.002,
-        "sonuc_sayisi": 1177
+        "ad": "Medyalı (tür=3)",
+        "sure_sn": 0.003103,
+        "sonuc_sayisi": 1320
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k7.gov.tr)",
-        "sure_sn": 0.1096,
-        "sonuc_sayisi": 2900
+        "ad": "Tarih aralığı+Kurum (k2.gov.tr)",
+        "sure_sn": 0.021445,
+        "sonuc_sayisi": 8928
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k7.gov.tr toplanan veri",
-        "sure_sn": 0.1003,
-        "sonuc_sayisi": 2900
+        "ad": "T1-T2 k2.gov.tr toplanan veri",
+        "sure_sn": 0.131946,
+        "sonuc_sayisi": 6243
       }
     }
   },
@@ -169,38 +169,38 @@
     "kurum_sayisi": 4,
     "uzman_sayisi": 10,
     "kullanici_sayisi": 40,
-    "toplam_veri": 1240,
-    "insert_suresi": 0.039,
+    "toplam_veri": 1201,
+    "insert_suresi": 0.045,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k9.gov.tr)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 366
+        "ad": "Kurum (k3.gov.tr)",
+        "sure_sn": 0.001515,
+        "sonuc_sayisi": 381
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=13)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 16
+        "ad": "Uzman (id=22)",
+        "sure_sn": 0.0001,
+        "sonuc_sayisi": 14
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=5)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 113
+        "ad": "Olay türü (id=7)",
+        "sure_sn": 0.000336,
+        "sonuc_sayisi": 133
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=5)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 81
+        "ad": "Medyalı (tür=7)",
+        "sure_sn": 0.000354,
+        "sonuc_sayisi": 112
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k9.gov.tr)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 177
+        "ad": "Tarih aralığı+Kurum (k3.gov.tr)",
+        "sure_sn": 0.001493,
+        "sonuc_sayisi": 589
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k9.gov.tr toplanan veri",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 177
+        "ad": "T1-T2 k3.gov.tr toplanan veri",
+        "sure_sn": 0.00122,
+        "sonuc_sayisi": 336
       }
     }
   },
@@ -210,38 +210,38 @@
     "kurum_sayisi": 4,
     "uzman_sayisi": 50,
     "kullanici_sayisi": 200,
-    "toplam_veri": 6139,
-    "insert_suresi": 0.185,
+    "toplam_veri": 6114,
+    "insert_suresi": 0.206,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k6.gov.tr)",
-        "sure_sn": 0.003,
-        "sonuc_sayisi": 1616
+        "ad": "Kurum (k7.gov.tr)",
+        "sure_sn": 0.004988,
+        "sonuc_sayisi": 1531
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=195)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 36
+        "ad": "Uzman (id=49)",
+        "sure_sn": 0.000235,
+        "sonuc_sayisi": 31
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=1)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 575
+        "ad": "Olay türü (id=2)",
+        "sure_sn": 0.001431,
+        "sonuc_sayisi": 594
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=1)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 419
+        "ad": "Medyalı (tür=2)",
+        "sure_sn": 0.001186,
+        "sonuc_sayisi": 431
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k6.gov.tr)",
-        "sure_sn": 0.0105,
-        "sonuc_sayisi": 809
+        "ad": "Tarih aralığı+Kurum (k7.gov.tr)",
+        "sure_sn": 0.007249,
+        "sonuc_sayisi": 3040
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k6.gov.tr toplanan veri",
-        "sure_sn": 0.01,
-        "sonuc_sayisi": 809
+        "ad": "T1-T2 k7.gov.tr toplanan veri",
+        "sure_sn": 0.013359,
+        "sonuc_sayisi": 3086
       }
     }
   },
@@ -251,38 +251,38 @@
     "kurum_sayisi": 4,
     "uzman_sayisi": 100,
     "kullanici_sayisi": 400,
-    "toplam_veri": 12259,
-    "insert_suresi": 0.4,
+    "toplam_veri": 11899,
+    "insert_suresi": 0.393,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k2.gov.tr)",
-        "sure_sn": 0.005,
-        "sonuc_sayisi": 3014
+        "ad": "Kurum (k6.gov.tr)",
+        "sure_sn": 0.009283,
+        "sonuc_sayisi": 3009
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=118)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 34
+        "ad": "Uzman (id=133)",
+        "sure_sn": 9.1e-05,
+        "sonuc_sayisi": 16
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=8)",
-        "sure_sn": 0.002,
-        "sonuc_sayisi": 1100
+        "ad": "Olay türü (id=3)",
+        "sure_sn": 0.002756,
+        "sonuc_sayisi": 1206
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=8)",
-        "sure_sn": 0.002,
-        "sonuc_sayisi": 848
+        "ad": "Medyalı (tür=3)",
+        "sure_sn": 0.002112,
+        "sonuc_sayisi": 890
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k2.gov.tr)",
-        "sure_sn": 0.0442,
-        "sonuc_sayisi": 1428
+        "ad": "Tarih aralığı+Kurum (k6.gov.tr)",
+        "sure_sn": 0.012863,
+        "sonuc_sayisi": 5836
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k2.gov.tr toplanan veri",
-        "sure_sn": 0.037,
-        "sonuc_sayisi": 1428
+        "ad": "T1-T2 k6.gov.tr toplanan veri",
+        "sure_sn": 0.040382,
+        "sonuc_sayisi": 2946
       }
     }
   },
@@ -292,38 +292,38 @@
     "kurum_sayisi": 4,
     "uzman_sayisi": 200,
     "kullanici_sayisi": 800,
-    "toplam_veri": 23909,
-    "insert_suresi": 0.785,
+    "toplam_veri": 23423,
+    "insert_suresi": 0.79,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k6.gov.tr)",
-        "sure_sn": 0.0105,
-        "sonuc_sayisi": 5915
+        "ad": "Kurum (k9.gov.tr)",
+        "sure_sn": 0.018526,
+        "sonuc_sayisi": 5941
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=59)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 12
+        "ad": "Uzman (id=240)",
+        "sure_sn": 0.000155,
+        "sonuc_sayisi": 35
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=11)",
-        "sure_sn": 0.004,
-        "sonuc_sayisi": 2206
+        "ad": "Olay türü (id=8)",
+        "sure_sn": 0.005386,
+        "sonuc_sayisi": 2312
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=11)",
-        "sure_sn": 0.0031,
-        "sonuc_sayisi": 1633
+        "ad": "Medyalı (tür=8)",
+        "sure_sn": 0.004153,
+        "sonuc_sayisi": 1726
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k6.gov.tr)",
-        "sure_sn": 0.1559,
-        "sonuc_sayisi": 2908
+        "ad": "Tarih aralığı+Kurum (k9.gov.tr)",
+        "sure_sn": 0.027619,
+        "sonuc_sayisi": 11551
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k6.gov.tr toplanan veri",
-        "sure_sn": 0.148,
-        "sonuc_sayisi": 2908
+        "ad": "T1-T2 k9.gov.tr toplanan veri",
+        "sure_sn": 0.195287,
+        "sonuc_sayisi": 11865
       }
     }
   },
@@ -333,38 +333,38 @@
     "kurum_sayisi": 5,
     "uzman_sayisi": 10,
     "kullanici_sayisi": 50,
-    "toplam_veri": 1594,
-    "insert_suresi": 0.075,
+    "toplam_veri": 1717,
+    "insert_suresi": 0.055,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k2.gov.tr)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 294
+        "ad": "Kurum (k4.gov.tr)",
+        "sure_sn": 0.001009,
+        "sonuc_sayisi": 297
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=28)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 35
+        "ad": "Uzman (id=42)",
+        "sure_sn": 9.2e-05,
+        "sonuc_sayisi": 17
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=7)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 148
+        "ad": "Olay türü (id=5)",
+        "sure_sn": 0.000482,
+        "sonuc_sayisi": 179
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=7)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 113
+        "ad": "Medyalı (tür=5)",
+        "sure_sn": 0.000391,
+        "sonuc_sayisi": 133
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k2.gov.tr)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 144
+        "ad": "Tarih aralığı+Kurum (k4.gov.tr)",
+        "sure_sn": 0.001813,
+        "sonuc_sayisi": 842
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k2.gov.tr toplanan veri",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 144
+        "ad": "T1-T2 k4.gov.tr toplanan veri",
+        "sure_sn": 0.001045,
+        "sonuc_sayisi": 401
       }
     }
   },
@@ -374,38 +374,38 @@
     "kurum_sayisi": 5,
     "uzman_sayisi": 50,
     "kullanici_sayisi": 250,
-    "toplam_veri": 7224,
-    "insert_suresi": 0.222,
+    "toplam_veri": 7433,
+    "insert_suresi": 0.244,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k8.gov.tr)",
-        "sure_sn": 0.0025,
-        "sonuc_sayisi": 1219
+        "ad": "Kurum (k3.gov.tr)",
+        "sure_sn": 0.005091,
+        "sonuc_sayisi": 1546
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=161)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 15
+        "ad": "Uzman (id=177)",
+        "sure_sn": 0.000176,
+        "sonuc_sayisi": 41
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=1)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 681
+        "ad": "Olay türü (id=8)",
+        "sure_sn": 0.001623,
+        "sonuc_sayisi": 738
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=1)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 523
+        "ad": "Medyalı (tür=8)",
+        "sure_sn": 0.001509,
+        "sonuc_sayisi": 551
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k8.gov.tr)",
-        "sure_sn": 0.012,
-        "sonuc_sayisi": 618
+        "ad": "Tarih aralığı+Kurum (k3.gov.tr)",
+        "sure_sn": 0.008581,
+        "sonuc_sayisi": 3679
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k8.gov.tr toplanan veri",
-        "sure_sn": 0.0115,
-        "sonuc_sayisi": 618
+        "ad": "T1-T2 k3.gov.tr toplanan veri",
+        "sure_sn": 0.015197,
+        "sonuc_sayisi": 1414
       }
     }
   },
@@ -415,38 +415,38 @@
     "kurum_sayisi": 5,
     "uzman_sayisi": 100,
     "kullanici_sayisi": 500,
-    "toplam_veri": 15237,
-    "insert_suresi": 0.48,
+    "toplam_veri": 15450,
+    "insert_suresi": 0.528,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k10.gov.tr)",
-        "sure_sn": 0.005,
-        "sonuc_sayisi": 3318
+        "ad": "Kurum (k2.gov.tr)",
+        "sure_sn": 0.009563,
+        "sonuc_sayisi": 3016
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=473)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 16
+        "ad": "Uzman (id=215)",
+        "sure_sn": 0.000255,
+        "sonuc_sayisi": 49
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=4)",
-        "sure_sn": 0.002,
-        "sonuc_sayisi": 1340
+        "ad": "Olay türü (id=6)",
+        "sure_sn": 0.003416,
+        "sonuc_sayisi": 1536
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=4)",
-        "sure_sn": 0.0013,
-        "sonuc_sayisi": 999
+        "ad": "Medyalı (tür=6)",
+        "sure_sn": 0.002702,
+        "sonuc_sayisi": 1161
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k10.gov.tr)",
-        "sure_sn": 0.0505,
-        "sonuc_sayisi": 1590
+        "ad": "Tarih aralığı+Kurum (k2.gov.tr)",
+        "sure_sn": 0.017488,
+        "sonuc_sayisi": 7573
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k10.gov.tr toplanan veri",
-        "sure_sn": 0.0475,
-        "sonuc_sayisi": 1590
+        "ad": "T1-T2 k2.gov.tr toplanan veri",
+        "sure_sn": 0.006494,
+        "sonuc_sayisi": 7
       }
     }
   },
@@ -456,38 +456,38 @@
     "kurum_sayisi": 5,
     "uzman_sayisi": 200,
     "kullanici_sayisi": 1000,
-    "toplam_veri": 30523,
-    "insert_suresi": 0.933,
+    "toplam_veri": 30279,
+    "insert_suresi": 1.005,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k8.gov.tr)",
-        "sure_sn": 0.0113,
-        "sonuc_sayisi": 5992
+        "ad": "Kurum (k3.gov.tr)",
+        "sure_sn": 0.018975,
+        "sonuc_sayisi": 6149
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=838)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 28
+        "ad": "Uzman (id=787)",
+        "sure_sn": 0.00017,
+        "sonuc_sayisi": 43
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=10)",
-        "sure_sn": 0.005,
-        "sonuc_sayisi": 2824
+        "ad": "Olay türü (id=6)",
+        "sure_sn": 0.007122,
+        "sonuc_sayisi": 3061
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=10)",
-        "sure_sn": 0.004,
-        "sonuc_sayisi": 2149
+        "ad": "Medyalı (tür=6)",
+        "sure_sn": 0.005419,
+        "sonuc_sayisi": 2271
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k8.gov.tr)",
-        "sure_sn": 0.2007,
-        "sonuc_sayisi": 2930
+        "ad": "Tarih aralığı+Kurum (k3.gov.tr)",
+        "sure_sn": 0.041886,
+        "sonuc_sayisi": 14894
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k8.gov.tr toplanan veri",
-        "sure_sn": 0.1964,
-        "sonuc_sayisi": 2930
+        "ad": "T1-T2 k3.gov.tr toplanan veri",
+        "sure_sn": 0.266019,
+        "sonuc_sayisi": 1
       }
     }
   },
@@ -497,38 +497,38 @@
     "kurum_sayisi": 6,
     "uzman_sayisi": 10,
     "kullanici_sayisi": 60,
-    "toplam_veri": 1822,
-    "insert_suresi": 0.058,
+    "toplam_veri": 1810,
+    "insert_suresi": 0.061,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k5.gov.tr)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 349
+        "ad": "Kurum (k7.gov.tr)",
+        "sure_sn": 0.000887,
+        "sonuc_sayisi": 259
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=8)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 47
+        "ad": "Uzman (id=13)",
+        "sure_sn": 0.000201,
+        "sonuc_sayisi": 24
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=3)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 191
+        "ad": "Olay türü (id=1)",
+        "sure_sn": 0.000388,
+        "sonuc_sayisi": 162
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=3)",
-        "sure_sn": 0.0013,
-        "sonuc_sayisi": 148
+        "ad": "Medyalı (tür=1)",
+        "sure_sn": 0.000323,
+        "sonuc_sayisi": 126
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k5.gov.tr)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 170
+        "ad": "Tarih aralığı+Kurum (k7.gov.tr)",
+        "sure_sn": 0.001948,
+        "sonuc_sayisi": 904
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k5.gov.tr toplanan veri",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 170
+        "ad": "T1-T2 k7.gov.tr toplanan veri",
+        "sure_sn": 0.001062,
+        "sonuc_sayisi": 967
       }
     }
   },
@@ -538,38 +538,38 @@
     "kurum_sayisi": 6,
     "uzman_sayisi": 50,
     "kullanici_sayisi": 300,
-    "toplam_veri": 9024,
-    "insert_suresi": 0.278,
+    "toplam_veri": 8748,
+    "insert_suresi": 0.285,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k7.gov.tr)",
-        "sure_sn": 0.0025,
-        "sonuc_sayisi": 1430
+        "ad": "Kurum (k4.gov.tr)",
+        "sure_sn": 0.005018,
+        "sonuc_sayisi": 1526
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=191)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 18
+        "ad": "Uzman (id=193)",
+        "sure_sn": 0.000155,
+        "sonuc_sayisi": 43
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=8)",
-        "sure_sn": 0.002,
-        "sonuc_sayisi": 871
+        "ad": "Olay türü (id=7)",
+        "sure_sn": 0.002049,
+        "sonuc_sayisi": 930
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=8)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 652
+        "ad": "Medyalı (tür=7)",
+        "sure_sn": 0.001698,
+        "sonuc_sayisi": 703
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k7.gov.tr)",
-        "sure_sn": 0.0136,
-        "sonuc_sayisi": 693
+        "ad": "Tarih aralığı+Kurum (k4.gov.tr)",
+        "sure_sn": 0.009566,
+        "sonuc_sayisi": 4302
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k7.gov.tr toplanan veri",
-        "sure_sn": 0.013,
-        "sonuc_sayisi": 693
+        "ad": "T1-T2 k4.gov.tr toplanan veri",
+        "sure_sn": 0.015245,
+        "sonuc_sayisi": 5875
       }
     }
   },
@@ -579,38 +579,38 @@
     "kurum_sayisi": 6,
     "uzman_sayisi": 100,
     "kullanici_sayisi": 600,
-    "toplam_veri": 17910,
-    "insert_suresi": 0.558,
+    "toplam_veri": 18490,
+    "insert_suresi": 0.636,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k3.gov.tr)",
-        "sure_sn": 0.0065,
-        "sonuc_sayisi": 3062
+        "ad": "Kurum (k6.gov.tr)",
+        "sure_sn": 0.009469,
+        "sonuc_sayisi": 3087
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=185)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 45
+        "ad": "Uzman (id=314)",
+        "sure_sn": 0.000329,
+        "sonuc_sayisi": 36
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=4)",
-        "sure_sn": 0.003,
-        "sonuc_sayisi": 1632
+        "ad": "Olay türü (id=9)",
+        "sure_sn": 0.004014,
+        "sonuc_sayisi": 1848
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=4)",
-        "sure_sn": 0.003,
-        "sonuc_sayisi": 1232
+        "ad": "Medyalı (tür=9)",
+        "sure_sn": 0.003353,
+        "sonuc_sayisi": 1392
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k3.gov.tr)",
-        "sure_sn": 0.0555,
-        "sonuc_sayisi": 1478
+        "ad": "Tarih aralığı+Kurum (k6.gov.tr)",
+        "sure_sn": 0.020357,
+        "sonuc_sayisi": 9156
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k3.gov.tr toplanan veri",
-        "sure_sn": 0.0515,
-        "sonuc_sayisi": 1478
+        "ad": "T1-T2 k6.gov.tr toplanan veri",
+        "sure_sn": 0.064182,
+        "sonuc_sayisi": 12273
       }
     }
   },
@@ -620,38 +620,38 @@
     "kurum_sayisi": 6,
     "uzman_sayisi": 200,
     "kullanici_sayisi": 1200,
-    "toplam_veri": 36663,
+    "toplam_veri": 35772,
     "insert_suresi": 1.179,
     "sorgular": {
       "sorgu1_kurum": {
         "ad": "Kurum (k6.gov.tr)",
-        "sure_sn": 0.01,
-        "sonuc_sayisi": 6006
+        "sure_sn": 0.021278,
+        "sonuc_sayisi": 6035
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=558)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 14
+        "ad": "Uzman (id=227)",
+        "sure_sn": 0.000203,
+        "sonuc_sayisi": 25
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=6)",
-        "sure_sn": 0.005,
-        "sonuc_sayisi": 3276
+        "ad": "Olay türü (id=9)",
+        "sure_sn": 0.008599,
+        "sonuc_sayisi": 3587
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=6)",
-        "sure_sn": 0.0045,
-        "sonuc_sayisi": 2438
+        "ad": "Medyalı (tür=9)",
+        "sure_sn": 0.007799,
+        "sonuc_sayisi": 2664
       },
       "sorgu5_tarih_kurum": {
         "ad": "Tarih aralığı+Kurum (k6.gov.tr)",
-        "sure_sn": 0.2204,
-        "sonuc_sayisi": 2872
+        "sure_sn": 0.048259,
+        "sonuc_sayisi": 17528
       },
       "sorgu6_tarih_kurum_count": {
         "ad": "T1-T2 k6.gov.tr toplanan veri",
-        "sure_sn": 0.2149,
-        "sonuc_sayisi": 2872
+        "sure_sn": 0.273114,
+        "sonuc_sayisi": 6092
       }
     }
   },
@@ -661,38 +661,38 @@
     "kurum_sayisi": 7,
     "uzman_sayisi": 10,
     "kullanici_sayisi": 70,
-    "toplam_veri": 2129,
-    "insert_suresi": 0.067,
+    "toplam_veri": 2276,
+    "insert_suresi": 0.074,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k4.gov.tr)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 295
+        "ad": "Kurum (k6.gov.tr)",
+        "sure_sn": 0.001368,
+        "sonuc_sayisi": 381
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=64)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 10
+        "ad": "Uzman (id=37)",
+        "sure_sn": 0.000157,
+        "sonuc_sayisi": 37
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=6)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 192
+        "ad": "Olay türü (id=10)",
+        "sure_sn": 0.000515,
+        "sonuc_sayisi": 223
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=6)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 143
+        "ad": "Medyalı (tür=10)",
+        "sure_sn": 0.000412,
+        "sonuc_sayisi": 158
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k4.gov.tr)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 144
+        "ad": "Tarih aralığı+Kurum (k6.gov.tr)",
+        "sure_sn": 0.002431,
+        "sonuc_sayisi": 1111
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k4.gov.tr toplanan veri",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 144
+        "ad": "T1-T2 k6.gov.tr toplanan veri",
+        "sure_sn": 0.001421,
+        "sonuc_sayisi": 1549
       }
     }
   },
@@ -702,38 +702,38 @@
     "kurum_sayisi": 7,
     "uzman_sayisi": 50,
     "kullanici_sayisi": 350,
-    "toplam_veri": 10606,
-    "insert_suresi": 0.327,
+    "toplam_veri": 10357,
+    "insert_suresi": 0.34,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k1.gov.tr)",
-        "sure_sn": 0.003,
-        "sonuc_sayisi": 1547
+        "ad": "Kurum (k4.gov.tr)",
+        "sure_sn": 0.004695,
+        "sonuc_sayisi": 1460
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=59)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 13
+        "ad": "Uzman (id=123)",
+        "sure_sn": 0.000231,
+        "sonuc_sayisi": 20
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=8)",
-        "sure_sn": 0.0025,
-        "sonuc_sayisi": 974
+        "ad": "Olay türü (id=2)",
+        "sure_sn": 0.002186,
+        "sonuc_sayisi": 1007
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=8)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 722
+        "ad": "Medyalı (tür=2)",
+        "sure_sn": 0.001999,
+        "sonuc_sayisi": 764
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k1.gov.tr)",
-        "sure_sn": 0.016,
-        "sonuc_sayisi": 777
+        "ad": "Tarih aralığı+Kurum (k4.gov.tr)",
+        "sure_sn": 0.011221,
+        "sonuc_sayisi": 5144
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k1.gov.tr toplanan veri",
-        "sure_sn": 0.0165,
-        "sonuc_sayisi": 777
+        "ad": "T1-T2 k4.gov.tr toplanan veri",
+        "sure_sn": 0.018112,
+        "sonuc_sayisi": 8901
       }
     }
   },
@@ -743,38 +743,38 @@
     "kurum_sayisi": 7,
     "uzman_sayisi": 100,
     "kullanici_sayisi": 700,
-    "toplam_veri": 20754,
-    "insert_suresi": 0.615,
+    "toplam_veri": 21559,
+    "insert_suresi": 0.733,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k4.gov.tr)",
-        "sure_sn": 0.006,
-        "sonuc_sayisi": 3156
+        "ad": "Kurum (k8.gov.tr)",
+        "sure_sn": 0.01015,
+        "sonuc_sayisi": 3100
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=96)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 22
+        "ad": "Uzman (id=116)",
+        "sure_sn": 0.00024,
+        "sonuc_sayisi": 13
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=11)",
-        "sure_sn": 0.003,
-        "sonuc_sayisi": 1962
+        "ad": "Olay türü (id=9)",
+        "sure_sn": 0.006651,
+        "sonuc_sayisi": 2042
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=11)",
-        "sure_sn": 0.0035,
-        "sonuc_sayisi": 1463
+        "ad": "Medyalı (tür=9)",
+        "sure_sn": 0.004246,
+        "sonuc_sayisi": 1551
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k4.gov.tr)",
-        "sure_sn": 0.0615,
-        "sonuc_sayisi": 1548
+        "ad": "Tarih aralığı+Kurum (k8.gov.tr)",
+        "sure_sn": 0.02371,
+        "sonuc_sayisi": 10573
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k4.gov.tr toplanan veri",
-        "sure_sn": 0.0601,
-        "sonuc_sayisi": 1548
+        "ad": "T1-T2 k8.gov.tr toplanan veri",
+        "sure_sn": 0.075804,
+        "sonuc_sayisi": 18562
       }
     }
   },
@@ -784,38 +784,38 @@
     "kurum_sayisi": 7,
     "uzman_sayisi": 200,
     "kullanici_sayisi": 1400,
-    "toplam_veri": 42096,
-    "insert_suresi": 1.285,
+    "toplam_veri": 42267,
+    "insert_suresi": 1.462,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k9.gov.tr)",
-        "sure_sn": 0.0105,
-        "sonuc_sayisi": 6037
+        "ad": "Kurum (k8.gov.tr)",
+        "sure_sn": 0.021221,
+        "sonuc_sayisi": 6014
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=883)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 20
+        "ad": "Uzman (id=1385)",
+        "sure_sn": 0.000359,
+        "sonuc_sayisi": 42
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=6)",
-        "sure_sn": 0.006,
-        "sonuc_sayisi": 3868
+        "ad": "Olay türü (id=7)",
+        "sure_sn": 0.011124,
+        "sonuc_sayisi": 4225
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=6)",
-        "sure_sn": 0.006,
-        "sonuc_sayisi": 2941
+        "ad": "Medyalı (tür=7)",
+        "sure_sn": 0.009178,
+        "sonuc_sayisi": 3130
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k9.gov.tr)",
-        "sure_sn": 0.268,
-        "sonuc_sayisi": 2955
+        "ad": "Tarih aralığı+Kurum (k8.gov.tr)",
+        "sure_sn": 0.065647,
+        "sonuc_sayisi": 20949
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k9.gov.tr toplanan veri",
-        "sure_sn": 0.2602,
-        "sonuc_sayisi": 2955
+        "ad": "T1-T2 k8.gov.tr toplanan veri",
+        "sure_sn": 0.353566,
+        "sonuc_sayisi": 1
       }
     }
   },
@@ -825,38 +825,38 @@
     "kurum_sayisi": 8,
     "uzman_sayisi": 10,
     "kullanici_sayisi": 80,
-    "toplam_veri": 2561,
-    "insert_suresi": 0.081,
+    "toplam_veri": 2521,
+    "insert_suresi": 0.096,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k1.gov.tr)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 290
+        "ad": "Kurum (k5.gov.tr)",
+        "sure_sn": 0.001033,
+        "sonuc_sayisi": 317
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=32)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 40
+        "ad": "Uzman (id=80)",
+        "sure_sn": 0.000183,
+        "sonuc_sayisi": 34
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=4)",
-        "sure_sn": 0.0009,
-        "sonuc_sayisi": 246
+        "ad": "Olay türü (id=9)",
+        "sure_sn": 0.000772,
+        "sonuc_sayisi": 283
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=4)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 180
+        "ad": "Medyalı (tür=9)",
+        "sure_sn": 0.000635,
+        "sonuc_sayisi": 212
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k1.gov.tr)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 140
+        "ad": "Tarih aralığı+Kurum (k5.gov.tr)",
+        "sure_sn": 0.00272,
+        "sonuc_sayisi": 1231
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k1.gov.tr toplanan veri",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 140
+        "ad": "T1-T2 k5.gov.tr toplanan veri",
+        "sure_sn": 0.001418,
+        "sonuc_sayisi": 1
       }
     }
   },
@@ -866,38 +866,38 @@
     "kurum_sayisi": 8,
     "uzman_sayisi": 50,
     "kullanici_sayisi": 400,
-    "toplam_veri": 12217,
-    "insert_suresi": 0.365,
+    "toplam_veri": 12322,
+    "insert_suresi": 0.395,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k4.gov.tr)",
-        "sure_sn": 0.0034,
-        "sonuc_sayisi": 1554
+        "ad": "Kurum (k3.gov.tr)",
+        "sure_sn": 0.004659,
+        "sonuc_sayisi": 1458
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=192)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 25
+        "ad": "Uzman (id=97)",
+        "sure_sn": 0.000139,
+        "sonuc_sayisi": 42
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=3)",
-        "sure_sn": 0.002,
-        "sonuc_sayisi": 1129
+        "ad": "Olay türü (id=4)",
+        "sure_sn": 0.002681,
+        "sonuc_sayisi": 1284
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=3)",
-        "sure_sn": 0.002,
-        "sonuc_sayisi": 837
+        "ad": "Medyalı (tür=4)",
+        "sure_sn": 0.002241,
+        "sonuc_sayisi": 966
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k4.gov.tr)",
-        "sure_sn": 0.0195,
-        "sonuc_sayisi": 751
+        "ad": "Tarih aralığı+Kurum (k3.gov.tr)",
+        "sure_sn": 0.012959,
+        "sonuc_sayisi": 6015
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k4.gov.tr toplanan veri",
-        "sure_sn": 0.018,
-        "sonuc_sayisi": 751
+        "ad": "T1-T2 k3.gov.tr toplanan veri",
+        "sure_sn": 0.0216,
+        "sonuc_sayisi": 6087
       }
     }
   },
@@ -907,38 +907,38 @@
     "kurum_sayisi": 8,
     "uzman_sayisi": 100,
     "kullanici_sayisi": 800,
-    "toplam_veri": 23957,
-    "insert_suresi": 0.732,
+    "toplam_veri": 24048,
+    "insert_suresi": 0.787,
     "sorgular": {
       "sorgu1_kurum": {
         "ad": "Kurum (k5.gov.tr)",
-        "sure_sn": 0.0095,
-        "sonuc_sayisi": 3033
+        "sure_sn": 0.011757,
+        "sonuc_sayisi": 3130
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=276)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 22
+        "ad": "Uzman (id=267)",
+        "sure_sn": 0.000216,
+        "sonuc_sayisi": 40
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=8)",
-        "sure_sn": 0.004,
-        "sonuc_sayisi": 2204
+        "ad": "Olay türü (id=6)",
+        "sure_sn": 0.005327,
+        "sonuc_sayisi": 2395
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=8)",
-        "sure_sn": 0.002,
-        "sonuc_sayisi": 1634
+        "ad": "Medyalı (tür=6)",
+        "sure_sn": 0.004311,
+        "sonuc_sayisi": 1779
       },
       "sorgu5_tarih_kurum": {
         "ad": "Tarih aralığı+Kurum (k5.gov.tr)",
-        "sure_sn": 0.0055,
-        "sonuc_sayisi": 1487
+        "sure_sn": 0.025842,
+        "sonuc_sayisi": 11805
       },
       "sorgu6_tarih_kurum_count": {
         "ad": "T1-T2 k5.gov.tr toplanan veri",
-        "sure_sn": 0.002,
-        "sonuc_sayisi": 1487
+        "sure_sn": 0.007234,
+        "sonuc_sayisi": 21025
       }
     }
   },
@@ -948,38 +948,38 @@
     "kurum_sayisi": 8,
     "uzman_sayisi": 200,
     "kullanici_sayisi": 1600,
-    "toplam_veri": 47445,
-    "insert_suresi": 1.499,
+    "toplam_veri": 47668,
+    "insert_suresi": 1.743,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k4.gov.tr)",
-        "sure_sn": 0.0105,
-        "sonuc_sayisi": 5875
+        "ad": "Kurum (k3.gov.tr)",
+        "sure_sn": 0.022817,
+        "sonuc_sayisi": 6187
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=866)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 11
+        "ad": "Uzman (id=11)",
+        "sure_sn": 0.00041,
+        "sonuc_sayisi": 38
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=3)",
-        "sure_sn": 0.007,
-        "sonuc_sayisi": 4291
+        "ad": "Olay türü (id=1)",
+        "sure_sn": 0.013768,
+        "sonuc_sayisi": 4774
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=3)",
-        "sure_sn": 0.0065,
-        "sonuc_sayisi": 3210
+        "ad": "Medyalı (tür=1)",
+        "sure_sn": 0.012192,
+        "sonuc_sayisi": 3572
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k4.gov.tr)",
-        "sure_sn": 0.318,
-        "sonuc_sayisi": 2803
+        "ad": "Tarih aralığı+Kurum (k3.gov.tr)",
+        "sure_sn": 0.066008,
+        "sonuc_sayisi": 23445
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k4.gov.tr toplanan veri",
-        "sure_sn": 0.3218,
-        "sonuc_sayisi": 2803
+        "ad": "T1-T2 k3.gov.tr toplanan veri",
+        "sure_sn": 0.426967,
+        "sonuc_sayisi": 35659
       }
     }
   },
@@ -989,38 +989,38 @@
     "kurum_sayisi": 9,
     "uzman_sayisi": 10,
     "kullanici_sayisi": 90,
-    "toplam_veri": 2651,
-    "insert_suresi": 0.083,
+    "toplam_veri": 2673,
+    "insert_suresi": 0.091,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k7.gov.tr)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 257
+        "ad": "Kurum (k9.gov.tr)",
+        "sure_sn": 0.000893,
+        "sonuc_sayisi": 259
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=2)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 50
+        "ad": "Uzman (id=56)",
+        "sure_sn": 0.000142,
+        "sonuc_sayisi": 42
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=4)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 235
+        "ad": "Olay türü (id=9)",
+        "sure_sn": 0.000776,
+        "sonuc_sayisi": 250
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=4)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 170
+        "ad": "Medyalı (tür=9)",
+        "sure_sn": 0.000542,
+        "sonuc_sayisi": 204
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k7.gov.tr)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 114
+        "ad": "Tarih aralığı+Kurum (k9.gov.tr)",
+        "sure_sn": 0.002888,
+        "sonuc_sayisi": 1322
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k7.gov.tr toplanan veri",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 114
+        "ad": "T1-T2 k9.gov.tr toplanan veri",
+        "sure_sn": 0.00127,
+        "sonuc_sayisi": 932
       }
     }
   },
@@ -1030,38 +1030,38 @@
     "kurum_sayisi": 9,
     "uzman_sayisi": 50,
     "kullanici_sayisi": 450,
-    "toplam_veri": 13750,
-    "insert_suresi": 0.429,
+    "toplam_veri": 13445,
+    "insert_suresi": 0.441,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k9.gov.tr)",
-        "sure_sn": 0.003,
-        "sonuc_sayisi": 1563
+        "ad": "Kurum (k10.gov.tr)",
+        "sure_sn": 0.004407,
+        "sonuc_sayisi": 1420
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=252)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 26
+        "ad": "Uzman (id=156)",
+        "sure_sn": 0.000107,
+        "sonuc_sayisi": 25
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=5)",
-        "sure_sn": 0.002,
-        "sonuc_sayisi": 1282
+        "ad": "Olay türü (id=10)",
+        "sure_sn": 0.003047,
+        "sonuc_sayisi": 1334
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=5)",
-        "sure_sn": 0.002,
-        "sonuc_sayisi": 969
+        "ad": "Medyalı (tür=10)",
+        "sure_sn": 0.00248,
+        "sonuc_sayisi": 1022
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k9.gov.tr)",
-        "sure_sn": 0.0244,
-        "sonuc_sayisi": 793
+        "ad": "Tarih aralığı+Kurum (k10.gov.tr)",
+        "sure_sn": 0.014657,
+        "sonuc_sayisi": 6696
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k9.gov.tr toplanan veri",
-        "sure_sn": 0.0225,
-        "sonuc_sayisi": 793
+        "ad": "T1-T2 k10.gov.tr toplanan veri",
+        "sure_sn": 0.02385,
+        "sonuc_sayisi": 9063
       }
     }
   },
@@ -1071,38 +1071,38 @@
     "kurum_sayisi": 9,
     "uzman_sayisi": 100,
     "kullanici_sayisi": 900,
-    "toplam_veri": 27377,
-    "insert_suresi": 0.84,
+    "toplam_veri": 27292,
+    "insert_suresi": 0.876,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k6.gov.tr)",
-        "sure_sn": 0.006,
-        "sonuc_sayisi": 2977
+        "ad": "Kurum (k4.gov.tr)",
+        "sure_sn": 0.011518,
+        "sonuc_sayisi": 2900
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=754)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 39
+        "ad": "Uzman (id=313)",
+        "sure_sn": 0.000154,
+        "sonuc_sayisi": 30
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=8)",
-        "sure_sn": 0.004,
-        "sonuc_sayisi": 2472
+        "ad": "Olay türü (id=1)",
+        "sure_sn": 0.005615,
+        "sonuc_sayisi": 2650
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=8)",
-        "sure_sn": 0.0035,
-        "sonuc_sayisi": 1832
+        "ad": "Medyalı (tür=1)",
+        "sure_sn": 0.004826,
+        "sonuc_sayisi": 1961
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k6.gov.tr)",
-        "sure_sn": 0.0887,
-        "sonuc_sayisi": 1446
+        "ad": "Tarih aralığı+Kurum (k4.gov.tr)",
+        "sure_sn": 0.029633,
+        "sonuc_sayisi": 13471
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k6.gov.tr toplanan veri",
-        "sure_sn": 0.0865,
-        "sonuc_sayisi": 1446
+        "ad": "T1-T2 k4.gov.tr toplanan veri",
+        "sure_sn": 0.007627,
+        "sonuc_sayisi": 3492
       }
     }
   },
@@ -1112,38 +1112,38 @@
     "kurum_sayisi": 9,
     "uzman_sayisi": 200,
     "kullanici_sayisi": 1800,
-    "toplam_veri": 53622,
-    "insert_suresi": 1.734,
+    "toplam_veri": 53983,
+    "insert_suresi": 2.027,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k3.gov.tr)",
-        "sure_sn": 0.01,
-        "sonuc_sayisi": 6043
+        "ad": "Kurum (k4.gov.tr)",
+        "sure_sn": 0.022679,
+        "sonuc_sayisi": 5931
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=1060)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 38
+        "ad": "Uzman (id=1270)",
+        "sure_sn": 0.000234,
+        "sonuc_sayisi": 16
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=5)",
-        "sure_sn": 0.009,
-        "sonuc_sayisi": 4703
+        "ad": "Olay türü (id=3)",
+        "sure_sn": 0.014391,
+        "sonuc_sayisi": 5416
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=5)",
-        "sure_sn": 0.007,
-        "sonuc_sayisi": 3535
+        "ad": "Medyalı (tür=3)",
+        "sure_sn": 0.012001,
+        "sonuc_sayisi": 4015
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k3.gov.tr)",
-        "sure_sn": 0.3664,
-        "sonuc_sayisi": 2956
+        "ad": "Tarih aralığı+Kurum (k4.gov.tr)",
+        "sure_sn": 0.073574,
+        "sonuc_sayisi": 26738
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k3.gov.tr toplanan veri",
-        "sure_sn": 0.3658,
-        "sonuc_sayisi": 2956
+        "ad": "T1-T2 k4.gov.tr toplanan veri",
+        "sure_sn": 0.492826,
+        "sonuc_sayisi": 1
       }
     }
   },
@@ -1153,38 +1153,38 @@
     "kurum_sayisi": 10,
     "uzman_sayisi": 10,
     "kullanici_sayisi": 100,
-    "toplam_veri": 3089,
-    "insert_suresi": 0.105,
+    "toplam_veri": 3078,
+    "insert_suresi": 0.106,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k3.gov.tr)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 312
+        "ad": "Kurum (k7.gov.tr)",
+        "sure_sn": 0.001221,
+        "sonuc_sayisi": 348
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=76)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 42
+        "ad": "Uzman (id=47)",
+        "sure_sn": 0.000102,
+        "sonuc_sayisi": 18
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=7)",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 267
+        "ad": "Olay türü (id=5)",
+        "sure_sn": 0.000745,
+        "sonuc_sayisi": 305
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=7)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 194
+        "ad": "Medyalı (tür=5)",
+        "sure_sn": 0.000776,
+        "sonuc_sayisi": 229
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k3.gov.tr)",
-        "sure_sn": 0.002,
-        "sonuc_sayisi": 154
+        "ad": "Tarih aralığı+Kurum (k7.gov.tr)",
+        "sure_sn": 0.003275,
+        "sonuc_sayisi": 1440
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k3.gov.tr toplanan veri",
-        "sure_sn": 0.001,
-        "sonuc_sayisi": 154
+        "ad": "T1-T2 k7.gov.tr toplanan veri",
+        "sure_sn": 0.001623,
+        "sonuc_sayisi": 1750
       }
     }
   },
@@ -1194,38 +1194,38 @@
     "kurum_sayisi": 10,
     "uzman_sayisi": 50,
     "kullanici_sayisi": 500,
-    "toplam_veri": 15220,
-    "insert_suresi": 0.467,
+    "toplam_veri": 15584,
+    "insert_suresi": 0.535,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k2.gov.tr)",
-        "sure_sn": 0.003,
-        "sonuc_sayisi": 1593
+        "ad": "Kurum (k10.gov.tr)",
+        "sure_sn": 0.004936,
+        "sonuc_sayisi": 1529
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=263)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 25
+        "ad": "Uzman (id=378)",
+        "sure_sn": 0.000178,
+        "sonuc_sayisi": 40
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=2)",
-        "sure_sn": 0.003,
-        "sonuc_sayisi": 1396
+        "ad": "Olay türü (id=6)",
+        "sure_sn": 0.003416,
+        "sonuc_sayisi": 1488
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=2)",
-        "sure_sn": 0.002,
-        "sonuc_sayisi": 1033
+        "ad": "Medyalı (tür=6)",
+        "sure_sn": 0.0028,
+        "sonuc_sayisi": 1122
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k2.gov.tr)",
-        "sure_sn": 0.025,
-        "sonuc_sayisi": 789
+        "ad": "Tarih aralığı+Kurum (k10.gov.tr)",
+        "sure_sn": 0.017668,
+        "sonuc_sayisi": 7787
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k2.gov.tr toplanan veri",
-        "sure_sn": 0.0242,
-        "sonuc_sayisi": 789
+        "ad": "T1-T2 k10.gov.tr toplanan veri",
+        "sure_sn": 0.004357,
+        "sonuc_sayisi": 3
       }
     }
   },
@@ -1235,38 +1235,38 @@
     "kurum_sayisi": 10,
     "uzman_sayisi": 100,
     "kullanici_sayisi": 1000,
-    "toplam_veri": 29790,
-    "insert_suresi": 0.953,
+    "toplam_veri": 30497,
+    "insert_suresi": 1.037,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k4.gov.tr)",
-        "sure_sn": 0.005,
-        "sonuc_sayisi": 2840
+        "ad": "Kurum (k8.gov.tr)",
+        "sure_sn": 0.011133,
+        "sonuc_sayisi": 2882
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=499)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 46
+        "ad": "Uzman (id=743)",
+        "sure_sn": 0.000327,
+        "sonuc_sayisi": 36
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=10)",
-        "sure_sn": 0.005,
-        "sonuc_sayisi": 2738
+        "ad": "Olay türü (id=4)",
+        "sure_sn": 0.008264,
+        "sonuc_sayisi": 3015
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=10)",
-        "sure_sn": 0.004,
-        "sonuc_sayisi": 2030
+        "ad": "Medyalı (tür=4)",
+        "sure_sn": 0.005528,
+        "sonuc_sayisi": 2261
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k4.gov.tr)",
-        "sure_sn": 0.0973,
-        "sonuc_sayisi": 1378
+        "ad": "Tarih aralığı+Kurum (k8.gov.tr)",
+        "sure_sn": 0.038701,
+        "sonuc_sayisi": 14820
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k4.gov.tr toplanan veri",
-        "sure_sn": 0.0957,
-        "sonuc_sayisi": 1378
+        "ad": "T1-T2 k8.gov.tr toplanan veri",
+        "sure_sn": 0.132497,
+        "sonuc_sayisi": 24286
       }
     }
   },
@@ -1276,38 +1276,38 @@
     "kurum_sayisi": 10,
     "uzman_sayisi": 200,
     "kullanici_sayisi": 2000,
-    "toplam_veri": 60731,
-    "insert_suresi": 1.975,
+    "toplam_veri": 60166,
+    "insert_suresi": 2.306,
     "sorgular": {
       "sorgu1_kurum": {
-        "ad": "Kurum (k9.gov.tr)",
-        "sure_sn": 0.0111,
-        "sonuc_sayisi": 6200
+        "ad": "Kurum (k10.gov.tr)",
+        "sure_sn": 0.023311,
+        "sonuc_sayisi": 6211
       },
       "sorgu2_uzman": {
-        "ad": "Uzman (id=1101)",
-        "sure_sn": 0.0,
-        "sonuc_sayisi": 45
+        "ad": "Uzman (id=1186)",
+        "sure_sn": 0.000173,
+        "sonuc_sayisi": 50
       },
       "sorgu3_olay_turu": {
-        "ad": "Olay türü (id=8)",
-        "sure_sn": 0.0095,
-        "sonuc_sayisi": 5439
+        "ad": "Olay türü (id=1)",
+        "sure_sn": 0.017029,
+        "sonuc_sayisi": 5902
       },
       "sorgu4_medya": {
-        "ad": "Medyalı (tür=8)",
-        "sure_sn": 0.007,
-        "sonuc_sayisi": 4073
+        "ad": "Medyalı (tür=1)",
+        "sure_sn": 0.0151,
+        "sonuc_sayisi": 4446
       },
       "sorgu5_tarih_kurum": {
-        "ad": "Tarih aralığı+Kurum (k9.gov.tr)",
-        "sure_sn": 0.4268,
-        "sonuc_sayisi": 3043
+        "ad": "Tarih aralığı+Kurum (k10.gov.tr)",
+        "sure_sn": 0.083605,
+        "sonuc_sayisi": 29736
       },
       "sorgu6_tarih_kurum_count": {
-        "ad": "T1-T2 k9.gov.tr toplanan veri",
-        "sure_sn": 0.426,
-        "sonuc_sayisi": 3043
+        "ad": "T1-T2 k10.gov.tr toplanan veri",
+        "sure_sn": 0.56321,
+        "sonuc_sayisi": 5832
       }
     }
   }
