@@ -367,6 +367,7 @@ function placeMicIntoMediaBar(){
 /* ----------------- Map ----------------- */
 const WORLD_BOUNDS = L.latLngBounds([-85, -180], [85, 180]);
 
+
 function makeMarkersLayer() {
   if (L.markerClusterGroup) {
     return L.markerClusterGroup({
