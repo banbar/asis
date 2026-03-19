@@ -136,21 +136,18 @@ ANKARA_LNG_MAX = 33.00
 DOMAINS = ["k1.gov.tr", "k2.gov.tr", "k3.gov.tr", "k4.gov.tr", "k5.gov.tr",
            "k6.gov.tr", "k7.gov.tr", "k8.gov.tr", "k9.gov.tr", "k10.gov.tr"]
 
-
 OLAY_TURLERI = [
-    {'ad': 'Az Hasarlı',       'good': True},
-    {'ad': 'Orta Hasarlı',     'good': True},
-    {'ad': 'Çok Hasarlı',      'good': True},
-    {'ad': 'Yıkık',            'good': True},
+    {'ad': 'Az Hasarlı',       'good': False},
+    {'ad': 'Orta Hasarlı',     'good': False},
+    {'ad': 'Çok Hasarlı',      'good': False},
+    {'ad': 'Yıkık',            'good': False},
     {'ad': 'Elektrik kaçağı',  'good': False},
     {'ad': 'Su dağıtım',       'good': True},
-    {'ad': 'Gaz kaçağı',       'good': False},
-    {'ad': 'Polis',            'good': False},
+    {'ad': 'Polis',            'good': True},
     {'ad': 'Yemek dağıtım',   'good': True},
     {'ad': 'Erzak dağıtım',   'good': True},
     {'ad': 'Çocuk bakım',      'good': True},
 ]
-
 
 def deney_matris_olustur():
     matris = []
