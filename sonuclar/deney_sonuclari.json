@@ -1,0 +1,43 @@
+[
+  {
+    "deney_no": 1,
+    "db_adi": "asis_deney_1",
+    "kurum_sayisi": 10,
+    "uzman_sayisi": 200,
+    "kullanici_sayisi": 2000,
+    "toplam_veri": 59861,
+    "insert_suresi": 1.956,
+    "sorgular": {
+      "sorgu1_kurum": {
+        "ad": "Kurum (k3.gov.tr)",
+        "sure_sn": 0.0118,
+        "sonuc_sayisi": 5904
+      },
+      "sorgu2_uzman": {
+        "ad": "Uzman (id=450)",
+        "sure_sn": 0.001,
+        "sonuc_sayisi": 37
+      },
+      "sorgu3_olay_turu": {
+        "ad": "Olay türü (id=1)",
+        "sure_sn": 0.0178,
+        "sonuc_sayisi": 5525
+      },
+      "sorgu4_medya": {
+        "ad": "Medyalı (tür=1)",
+        "sure_sn": 0.008,
+        "sonuc_sayisi": 4101
+      },
+      "sorgu5_tarih_kurum": {
+        "ad": "Tarih aralığı+Kurum (k3.gov.tr)",
+        "sure_sn": 0.4168,
+        "sonuc_sayisi": 2942
+      },
+      "sorgu6_tarih_kurum_count": {
+        "ad": "T1-T2 k3.gov.tr toplanan veri",
+        "sure_sn": 0.3979,
+        "sonuc_sayisi": 2942
+      }
+    }
+  }
+]

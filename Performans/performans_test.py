@@ -26,6 +26,9 @@ from pathlib import Path
 
 load_dotenv()
 
+KURUM_SAYILARI = list(range(3, 11))
+UZMAN_SAYILARI = [10, 50, 100, 200]
+
 DB_CONFIG = {
     'host':     os.getenv('PGHOST', ''),
     'port':     int(os.getenv('PGPORT',)),
@@ -133,8 +136,6 @@ ANKARA_LNG_MAX = 33.00
 DOMAINS = ["k1.gov.tr", "k2.gov.tr", "k3.gov.tr", "k4.gov.tr", "k5.gov.tr",
            "k6.gov.tr", "k7.gov.tr", "k8.gov.tr", "k9.gov.tr", "k10.gov.tr"]
 
-KURUM_SAYILARI = list(range(3, 11))
-UZMAN_SAYILARI = [10, 50, 100, 200]
 
 OLAY_TURLERI = [
     {'ad': 'Az Hasarlı',       'good': True},
@@ -153,8 +154,8 @@ OLAY_TURLERI = [
 
 def deney_matris_olustur():
     matris = []
-    for k_sayisi in [KURUM_SAYILARI[-1]]:
-        for u_sayisi in [UZMAN_SAYILARI[-1]]:
+    for k_sayisi in KURUM_SAYILARI:
+        for u_sayisi in UZMAN_SAYILARI:
             matris.append({
                 'kurum_sayisi': k_sayisi,
                 'uzman_sayisi': u_sayisi,
